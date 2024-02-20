@@ -1,0 +1,370 @@
+:root {
+  --grey-color: #E0E0E0; /* Define the color variable */
+  --black-color: #000000;
+  --dark-grey:	#B8B8B8;
+
+}
+body{
+	background-color: #383838;
+}
+
+.container{
+	padding-right: 0px;
+	padding-left: 0px;
+	background-color:var(--grey-color);
+	height: 825px;
+	border: 1px solid var(--dark-grey);
+}
+
+#canvas:hover {
+    cursor:grab;
+}
+
+
+/*================Style for topbar_id================*/
+#topbar_id nav
+{
+	background-color:var(--grey-color);
+	border: 1px solid var(--dark-grey);
+}
+
+#topbar_id a
+{
+	color: var(--black-color);
+}
+
+ #fileInput{
+      display: none;
+ }
+
+/*================Style for tabbar_id================*/
+#tabbar_id{
+	text-align: center;
+	background-color: var(--grey-color);
+	border: 1px solid var(--dark-grey);
+}
+
+
+#tabbar_id .close-tab {
+      cursor: pointer;
+      position: absolute;
+      right: 5px;
+      top: 0;
+    }
+/*================Style for tool_id================*/
+#tool_id 
+{
+	background-color: var(--grey-color);
+	border: 1px solid var(--dark-grey);
+}
+
+#tool_id button
+{
+	margin: 0px;
+	display: block;
+	width: 100%;
+	height: 35px;
+  padding: 0px 0px 0px 0px;
+}
+
+#tool_id .row
+{
+	margin-right: 0px;
+	margin-left: 0px;
+}
+
+#tool_id .col-sm-6
+{
+	padding: 0px;
+    margin: 0px;
+
+}
+
+#tool_id .fa {
+padding: 10px 5px 10px 5px;
+}
+
+#tool_id .fas {
+padding: 10px 5px 10px 5px;
+}
+/*================Style for Editor_id================*/
+#Editor_id
+{
+	margin: 1%;
+	background-color: var(--grey-color);
+/*	border: 1px solid var(--dark-grey);*/
+}
+
+#Editor_id .selected {
+  background-color: #007bff; /* Change the background color to indicate selection */
+  color: #ffffff; /* Change the text color to indicate selection */
+}
+
+/*================Style for canvas_id================*/
+#canvas_id{
+/*		padding-top: 2%;*/
+}
+canvas {
+/*     border: 1px solid var(--dark-grey);*/
+     cursor: crosshair;
+}
+
+#canvas_id {
+    background-image: url('background.png');
+    background-size: cover; /* Adjust as needed */
+    position: relative;
+    width: 750px; /* Set the width of the container */
+    height: 600px; /* Set the height of the container */
+}
+/*================Style for operation_id================*/
+
+
+#operation_id .panel{
+	background-color: var(--grey-color);
+	border: 1px solid var(--dark-grey);
+	border-bottom: 1px solid black;
+}
+
+#collapse2{
+	text-align: center;
+}
+
+#collapse2 span{
+    text-align: left;
+    float: left;
+}
+
+#collapse1{
+  text-align: left;
+}
+
+#operation_id .panel-heading{
+	background-color: var(--grey-color);
+	border-bottom: 1px solid black;
+}
+
+/*#operation_id .panel-group button
+{
+	border: 1px solid black;
+}*/
+
+.layerbutton{
+	text-align:  "left";
+     background-color: "#6c757d";
+     color:  "#ffffff";
+}
+
+/*#collapse3 .btn-block{
+	text-align:  "left";
+     background-color: "#6c757d";
+     color:  "#ffffff";
+}*/
+
+#opacityRange {
+    background-color: black;
+}
+
+#opacityRange::-webkit-slider-thumb {
+        background-color: black;
+        border: 1px solid #ddd; /* Optional: Add a border for better visibility */
+}
+#opacityRange::-moz-range-thumb {
+        background-color: black;
+        border: 1px solid #ddd; /* Optional: Add a border for better visibility */
+    }
+
+    #opacityRange::-ms-thumb {
+        background-color: black;
+        border: 1px solid #ddd; /* Optional: Add a border for better visibility */
+    }
+
+/*=====================style for caret====================*/
+#shadowUL {
+  list-style-type: none;
+}
+
+#shadowUL {
+  margin: 0;
+  padding: 0;
+}
+
+#shadowList .caret {
+  cursor: pointer;
+  -webkit-user-select: none; /* Safari 3.1+ */
+  -moz-user-select: none; /* Firefox 2+ */
+  -ms-user-select: none; /* IE 10+ */
+  user-select: none;
+      display: inline-block;
+     width: 100%; 
+     height: 100%; 
+    margin-left: 2px;
+    vertical-align: middle;
+    border-top: 1px solid;
+    border-top: 1px solid;
+    border-right: 1px solid black; 
+    border-left: 1px solid black; 
+}
+
+#shadowList .caret::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+#shadowList .caret-down::before {
+  -ms-transform: rotate(90deg); /* IE 9 */
+  -webkit-transform: rotate(90deg); /* Safari */'
+  transform: rotate(90deg);  
+}
+
+#shadowList .nested {
+  display: none;
+}
+
+#shadowList .active {
+  display: block;
+}
+
+  #cursorInfo .form-check {
+    display: inline-block;
+    margin-right: 10px; /* Adjust the margin as needed */
+  }
+
+#collapse2 .active-button {
+    background-color: black; /* Change this to your desired active background color */
+    color: #ffffff; /* Change this to your desired active text color */
+  }
+
+#collapse2 .btn-group{
+  margin: 10px 0px 10px 0px;
+}
+
+/*==============styling for switch=============*/
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 14px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 1px;
+  right: 1px;
+  bottom: 0px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(20px);
+  -ms-transform: translateX(20px);
+  transform: translateX(20px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 14px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+#operation_id .panel-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+}
+
+#collapse1 .switch{
+  float: right;
+}
+
+hr{
+  margin-top: 2px;
+  margin-bottom: 2px;
+  border:1px solid #B8B8B8;
+}
+
+/*====================Zoom Control============================*/
+#zoomControls{
+  position: absolute;
+  top:10px;
+  right: 20px;  
+}
+/*style="position: absolute; top: 10px; right: 10px;"*/
+
+
+/*===================checkbox color===========================*/
+input[type=checkbox] {
+  accent-color: red;
+}
+
+
+/*=========================paint brush popover===========================*/
+    .circle-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .circle-container i {
+        margin: 0 5px; 
+    }
+
+    .circle-10, .circle-15, .circle-20, .circle-25, .circle-30 {
+        display: block;
+    }
+
+    .circle-10 {
+        font-size: 10px;
+    }
+
+    .circle-15 {
+        font-size: 15px;
+    }
+
+    .circle-20 {
+        font-size: 20px;
+    }
+
+    .circle-25 {
+        font-size: 25px;
+    }
+
+    .circle-30 {
+        font-size: 30px;
+    }
