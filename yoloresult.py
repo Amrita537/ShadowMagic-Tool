@@ -1,10 +1,6 @@
 import os
 import sys
 
-
-import os
-import sys
-
 def auto_merge(image_folder, json_folder):
     image_files = [f for f in os.listdir(image_folder) if f.lower().endswith('.png') or f.lower().endswith('.jpg')]
     json_files = [f for f in os.listdir(json_folder) if f.lower().endswith('.json')]
