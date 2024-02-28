@@ -7,8 +7,6 @@
       });
 
       fabric.Object.prototype.set({
-        // borderColor: 'black',
-        // cornerColor: 'black',
         cornerSize: 6,
         transparentCorners: false
       });
@@ -28,6 +26,21 @@
     $('[data-toggle="popover"]').popover({
         html: true
     });
+
+    //Variables//
+    let isErasing = false;
+
+
+
+
+    //======================Run python function=================== 
+    document.querySelector("#mybutton").onclick = function () {
+
+      eel.random_python()(function(number){                       
+        console.log("files loaded")
+      }) 
+      
+    }
 
     // ====================Tab bar functions================
 
@@ -85,6 +98,8 @@ fileInput.addEventListener("change", handleFileSelect);
 
 const images = [];
 const initialSizes = [];
+let actual_h=0;
+let actual_w=0;
 
 function handleFileSelect(event) {
   console.log("clicked");
@@ -97,18 +112,38 @@ function handleFileSelect(event) {
       const reader = new FileReader();
       reader.onload = function (e) {
         fabric.Image.fromURL(e.target.result, function (img) {
+          
+          canvas.width= 750
+          canvas.height= 600
+
+          actual_h=img.height;
+          actual_w=img.width;
           const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+          
           img.scale(scaleFactor);
           img.customSelected = false; // Custom property to indicate selected state
           img.customImageName = file.name;
           img.customBase64 = e.target.result;
           img.selectable = false;
           console.log("adding", img.customImageName)
+          console.log("adding", img.customBase64)
+
           images.push(img);
           initialSizes.push({ width: img.width, height: img.height });
           canvas.add(img);
+
           updateLayerList(images);
+          
+
+          sc_imgwidth = actual_w * scaleFactor;
+          sc_imgheight = actual_h * scaleFactor;
+          const canvasWidth = Math.min(sc_imgwidth, img.width);
+          const canvasHeight = Math.min(sc_imgheight, img.height);
+          canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+
+          console.log(canvas.width, canvas.height)
           displayImages();
+
         });
       };
       reader.readAsDataURL(file);
@@ -127,11 +162,31 @@ function displayImages() {
   canvas.renderAll();
 }
 
+//====================base 64 to image =======================
+function base64ToImage(base64String) {
+  const byteCharacters = atob(base64String.replace(/^data:image\/(png|jpeg);base64,/, ''));
+  const byteArrays = [];
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+  const blob = new Blob(byteArrays, { type: 'image/png' }); // Change the content type based on your image format
+  const file = new File([blob], 'image.png', { type: 'image/png' }); // Change the file name and type as needed
+  return file;
+}
+
+
 // ====================Layer functions================
 
 const layerList = document.getElementById("layerList");
 
 function updateLayerList(images) {
+
   console.log("img_length", images.length);
   layerList.innerHTML = "";
 
@@ -140,8 +195,6 @@ function updateLayerList(images) {
     let layerButton = document.createElement("button");
     layerButton.id = `layerButton_${i}`;
     layerButton.className = "btn btn-secondary btn-block";
-
-    const imageSource = images[i].customImageName;
 
     // Create an image element for the icon
     const eyeIcon = document.createElement("i");
@@ -152,17 +205,20 @@ function updateLayerList(images) {
 
     // Create an image element for the icon
     const iconImage = document.createElement("img");
-    iconImage.src = imageSource; // Set the image source
     iconImage.className = "icon-image"; // Add a class for styling if needed
     iconImage.style.marginRight = "2px";
     iconImage.style.width = "30px"; // Adjust the width of the icon
-    iconImage.style.height = "auto";
+    iconImage.style.height = "30px";
     iconImage.style.border ="1px solid black";
     iconImage.style.backgroundColor="white";
+    iconImage.style.objectFit = "cover";
+    const imageFile = base64ToImage(images[i].customBase64);
+    iconImage.src = URL.createObjectURL(imageFile);
+
 
     // Create a span for the image name
     const imageNameSpan = document.createElement("span");
-    imageNameSpan.innerText = imageSource;
+    imageNameSpan.innerText = images[i].customImageName;
 
     // Create a cross icon
     const crossIcon = document.createElement("i");
@@ -205,7 +261,6 @@ function updateLayerList(images) {
 
 
 }
-
 
 
 function toggleLayerVisibility(index) {
@@ -285,6 +340,35 @@ document.getElementById('btn_shadow').addEventListener('change', function () {
 });
 
 
+// function fetch_Shadow_files(names_shadow_segment){
+//     const relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
+
+//     names_shadow_segment.forEach(name => {
+//         const fullPath = relativePath + name;
+//         fetch(fullPath)
+//             .then(response => response.blob())
+//             .then(blob => {
+//                 const reader = new FileReader();
+//                 reader.onload = function() {
+//                     const img = new fabric.Image();
+//                     img.setElement(document.createElement('img'));
+//                     img.getElement().src = reader.result;
+//                     img.getElement().onload = function() {
+//                         const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+//                         img.scale(scaleFactor);
+//                         img.customImageName = name;
+//                         img.selectable = false;
+//                         img.visible = false;
+//                         canvas.add(img);
+//                         shadow_segment_images.push(img);
+//                     };
+//                 };
+//                 reader.readAsDataURL(blob);
+//             });
+//     });
+// }
+
+
 
   function fetch_Shadow_files(names_shadow_segment){
       const relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
@@ -296,7 +380,7 @@ document.getElementById('btn_shadow').addEventListener('change', function () {
               img.scale(scaleFactor);
               img.customImageName=name;
               img.selectable = false;
-              img.visible=false;
+              img.visible = false;
               canvas.add(img);
               shadow_segment_images.push(img);
         }); 
@@ -304,44 +388,32 @@ document.getElementById('btn_shadow').addEventListener('change', function () {
       });
   }
 
-          // Add event listener for mouse click on the canvas
-    canvas.on('mouse:up', function (event) {
-        const target = event.target;
-        
-        if (target && target.type === 'image') {
-            // If the clicked object is an image, you can alert its name
-            // alert('Clicked on image: ' + target.customImageName);
-        }
-    });
 
-
-// Your checkbox IDs
 const checkboxIds = ['hairCheckbox', 'faceCheckbox', 'clothCheckbox', 'armCheckbox', 'objectCheckbox', 'allCheckbox'];
-// Your button IDs
+
 const buttonIds = ['btnTop', 'btnLeft', 'btnRight', 'btnBack'];
 
-let selectedDirection = null; // Variable to store the selected direction
-let direction = null; // Variable to store the global direction
+let selectedDirection = null; 
+let direction = null; 
 
-// Attach event listeners to buttons
+
 buttonIds.forEach(buttonId => {
 
       const button = document.getElementById(buttonId);
      
       button.addEventListener('click', function () {
 
-              const directionName = directions[buttonId]; // Get direction name from directions object
-              addShadowButton(directionName); // Call function to add shadow button for this direction
-              // Remove active class from all buttons
+              const directionName = directions[buttonId]; 
+              // addShadowButton(directionName); 
+              addShadowButton();
+
               buttonIds.forEach(id => {
                 const btn = document.getElementById(id);
                 btn.classList.remove('active-button');
               });
 
-              // Add active class to the clicked button
               button.classList.add('active-button');
 
-              // Hide items related to the previous direction
               if (selectedDirection) {
                 checkboxIds.forEach(checkboxId => {
                   const segment = checkboxId.replace('Checkbox', '');
@@ -366,6 +438,34 @@ buttonIds.forEach(buttonId => {
       });
 });
 
+
+function toggleVisibilityByDirectionAndSegment(direction, segment, isVisible) {
+  if (isErasing) {
+          const eraserBtn_1 = document.getElementById("eraserBtn");
+          eraserBtn_1.click();
+  }
+  // Iterate through shadow image names
+  names_shadow_segment.forEach(name => {
+    const isDirectionMatch = name.includes(`_${direction}_`);
+    const isSegmentMatch = name.endsWith(`_${segment}.png`);
+    
+    if (isDirectionMatch && isSegmentMatch) 
+          {
+                const image = canvas.getObjects().find(obj => obj.customImageName === name);
+                if (image) {
+                  image.erasable = true;
+                  image.visible = isVisible;
+                  canvas.renderAll();
+                }
+                else{
+                  canvas.renderAll();
+                }
+          }
+
+  });
+
+}
+
 // Attach event listeners to checkboxes
 checkboxIds.forEach(checkboxId => {
   const checkbox = document.getElementById(checkboxId);
@@ -380,24 +480,7 @@ checkboxIds.forEach(checkboxId => {
   checkbox.disabled = true;
 });
 
-function toggleVisibilityByDirectionAndSegment(direction, segment, isVisible) {
-  // Iterate through shadow image names
-  names_shadow_segment.forEach(name => {
-    const isDirectionMatch = name.includes(`_${direction}_`);
-    const isSegmentMatch = name.endsWith(`_${segment}.png`);
-    
-    if (isDirectionMatch && isSegmentMatch) {
-      const image = canvas.getObjects().find(obj => obj.customImageName === name);
-      
-      if (image) {
-        image.visible = isVisible;
-        canvas.renderAll();
-      }
-    }
-  });
-}
 
-// Example: Toggle visibility of all images when 'All' checkbox is clicked
 const allCheckbox = document.getElementById('allCheckbox');
 allCheckbox.addEventListener('change', function () {
   checkboxIds.forEach(checkboxId => {
@@ -423,60 +506,225 @@ const directions = {
 
 
 // Function to add shadow button for a given direction
-function addShadowButton(directionName) {
-    const buttonName = `${directionName} Shadow`;
+// function addShadowButton(directionName) {
+//     const buttonName = `${directionName} Shadow`;
     
-    // Check if button for this direction already exists
-    if (!document.getElementById(`${directionName}ShadowButton`)) {
-        const shadowButton = document.createElement("button");
-        // shadowButton.textContent = buttonName;
-        shadowButton.id = `${directionName}ShadowButton`;
+//     // Check if button for this direction already exists
+//     if (!document.getElementById(`${directionName}ShadowButton`)) {
 
-        shadowButton.className = "btn btn-block";
-        shadowButton.style.textAlign = "left";
-        shadowButton.style.backgroundColor = "#6c757d";
-        shadowButton.style.color = "#ffffff";
-
-        // Create an image element for the icon
-        const ShadEyeIcon = document.createElement("i");
-        ShadEyeIcon.className = "fa fa-eye";
-        ShadEyeIcon.style.fontSize = "10px";
-        ShadEyeIcon.style.marginRight = "8px";
-
-
-        // Create a span for the direction name
-        const directionNameSpan = document.createElement("span");
-        directionNameSpan.innerText = buttonName;
-
-
-        // Create a cross icon
-        const crossIcon = document.createElement("i");
-        crossIcon.className = "fa fa-times cross-icon";
-        crossIcon.style.float = "right";
-        crossIcon.style.marginTop = "5px";
-        crossIcon.style.marginRight = "5px";
-
-        const tickIcon= document.createElement("i");
-        tickIcon.className="fa fa-check";
-        tickIcon.style.float= "right";
-        tickIcon.style.marginTop = "5px";
-
-        // Append the components to the shadowButton
-        shadowButton.appendChild(ShadEyeIcon);
-        shadowButton.appendChild(directionNameSpan);
-        shadowButton.appendChild(tickIcon);
-        shadowButton.appendChild(crossIcon);
-
-
-        crossIcon.addEventListener("click", function (event) {
-          // Your shadow button removal logic here
-          console.log("Removing shadow button for", directionName);
-          shadowButton.remove();
-        });
+//         const hasObjectsWithDirection = canvas.getObjects().some(obj => obj.type === 'image' && obj.customImageName && obj.customImageName.includes(directionName.toLowerCase()) && names_shadow_segment.includes(obj.customImageName));
         
-        shadowList.appendChild(shadowButton); // Append shadow button to shadowList
+//         if (hasObjectsWithDirection) {
+//               const shadowButton = document.createElement("button");
+//               shadowButton.id = `${directionName}ShadowButton`;
+
+//               shadowButton.className = "btn btn-block";
+//               shadowButton.style.textAlign = "left";
+//               shadowButton.style.backgroundColor = "#6c757d";
+//               shadowButton.style.color = "#ffffff";
+
+//               // Create an image element for the icon
+//               const ShadEyeIcon = document.createElement("i");
+//               ShadEyeIcon.className = "fa fa-eye";
+//               ShadEyeIcon.style.fontSize = "10px";
+//               ShadEyeIcon.style.marginRight = "8px";
+
+
+//               // Create a span for the direction name
+//               const directionNameSpan = document.createElement("span");
+//               directionNameSpan.innerText = buttonName;
+
+
+//               // Create a cross icon
+//               const crossIcon = document.createElement("i");
+//               crossIcon.className = "fa fa-times cross-icon";
+//               crossIcon.style.float = "right";
+//               crossIcon.style.marginTop = "5px";
+//               crossIcon.style.marginRight = "5px";
+
+//               const tickIcon= document.createElement("i");
+//               tickIcon.className="fa fa-check";
+//               tickIcon.style.float= "right";
+//               tickIcon.style.marginTop = "5px";
+
+//               // Append the components to the shadowButton
+//               shadowButton.appendChild(ShadEyeIcon);
+//               shadowButton.appendChild(directionNameSpan);
+//               shadowButton.appendChild(tickIcon);
+//               shadowButton.appendChild(crossIcon);
+
+//               ShadEyeIcon.addEventListener("click", function (event) {
+//                   console.log("Toggling visibility for", directionName);
+
+//                                       // Toggle the icon class
+//                     if (ShadEyeIcon.classList.contains('fa-eye')) {
+//                         ShadEyeIcon.classList.remove('fa-eye');
+//                         ShadEyeIcon.classList.add('fa-eye-slash');
+//                     } else {
+//                         ShadEyeIcon.classList.remove('fa-eye-slash');
+//                         ShadEyeIcon.classList.add('fa-eye');
+//                     }
+
+//                     const allCheckbox = document.getElementById('allCheckbox');
+//                     allCheckbox.checked = !allCheckbox.checked;
+
+//                     const event1 = new Event('change');
+//                     allCheckbox.dispatchEvent(event1);
+
+//               });
+
+
+//               crossIcon.addEventListener("click", function (event) {
+//                   console.log("Removing shadow button for", directionName);
+
+//                   const confirmRemove = confirm("Are you sure you want to remove the image?");
+//                   if (confirmRemove) {
+//                       canvas.getObjects().forEach(obj => {
+                          
+//                           if (obj.type === 'image' && obj.customImageName && obj.customImageName.includes(directionName.toLowerCase()) && names_shadow_segment.includes(obj.customImageName)) {
+//                               console.log("removing image", obj.customImageName);
+//                               canvas.remove(obj);
+//                               canvas.renderAll();
+//                           }
+//                       });
+//                        shadowButton.remove();
+//                    }
+
+//               });
+
+
+//               tickIcon.addEventListener("click", function (event) {
+//                   // Remove the tick and cross icons
+//                   crossIcon.remove();
+//                   tickIcon.remove();
+
+//                   // Change the button background color to black
+//                   shadowButton.style.backgroundColor = "black";
+//               });
+              
+//               shadowList.appendChild(shadowButton); // Append shadow button to shadowList
+//           }
+//         }
+// }
+
+
+let savedCounter=1;
+let savedLayers = [];
+function addShadowButton() {
+    // Check if shadowList already has a button with id "unsaved"
+    if (document.getElementById("unsaved")) {
+        return; // Exit the function if "unsaved" button already exists
     }
+
+    const shadowButton = document.createElement("button");
+    shadowButton.id = "unsaved"; // Set id to "unsaved"
+    console.log(shadowButton.id);
+
+    shadowButton.className = "btn btn-block";
+    shadowButton.style.textAlign = "left";
+    shadowButton.style.backgroundColor = "#6c757d";
+    shadowButton.style.color = "#ffffff";
+
+    // Create an image element for the icon
+    const ShadEyeIcon = document.createElement("i");
+    ShadEyeIcon.className = "fa fa-eye";
+    ShadEyeIcon.style.fontSize = "10px";
+    ShadEyeIcon.style.marginRight = "8px";
+
+    const tickIcon = document.createElement("i");
+    tickIcon.className = "fa fa-check";
+    tickIcon.style.float = "right";
+    tickIcon.style.marginTop = "5px";
+
+
+    const downloadIcon = document.createElement("i");
+    downloadIcon.className = "fa fa-download";
+    downloadIcon.style.float = "right";
+    downloadIcon.style.marginTop = "5px";
+
+    // Create a span for the direction name
+    const NameSpan = document.createElement("span");
+    NameSpan.innerText = 'Shadow Layer';  
+
+    shadowButton.appendChild(ShadEyeIcon);
+    shadowButton.appendChild(NameSpan);
+    shadowButton.appendChild(tickIcon);
+
+    shadowList.appendChild(shadowButton);
+
+    ShadEyeIcon.addEventListener("click", function (event) {
+
+        if (ShadEyeIcon.classList.contains('fa-eye')) {
+            ShadEyeIcon.classList.remove('fa-eye');
+            ShadEyeIcon.classList.add('fa-eye-slash');
+        } else {
+            ShadEyeIcon.classList.remove('fa-eye-slash');
+            ShadEyeIcon.classList.add('fa-eye');
+            }
+
+            const allCheckbox = document.getElementById('allCheckbox');
+            allCheckbox.checked = !allCheckbox.checked;
+
+            const event1 = new Event('change');
+            allCheckbox.dispatchEvent(event1);
+
+  });
+    
+    tickIcon.addEventListener("click", function (event) {
+        const canvasStatus = JSON.stringify(canvas.toJSON());
+        savedLayers.push(canvasStatus);
+        console.log(canvasStatus);
+        shadowButton.id = `saved_${savedCounter}`; // Change the button id
+        console.log(shadowButton.id);
+        shadowButton.style.backgroundColor = "black"; // Change the background color
+        savedCounter++; // Increment the counter for the next button
+        tickIcon.remove();
+        ShadEyeIcon.remove();
+        shadowButton.appendChild(downloadIcon);
+    });
+
+    // Add click event listener to the download icon
+    // downloadIcon.addEventListener("click", function (event) {
+    //     // Convert canvas to data URL and download it
+    //     const canvasDataUrl = canvas.toDataURL({ format: 'png' });
+    //     const a = document.createElement('a');
+    //     a.href = canvasDataUrl;
+    //     a.download = 'canvas.png';
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    // });
+
+
+// Add click event listener to the download icon
+downloadIcon.addEventListener("click", function (event) {
+    // Convert canvas to data URL and download it
+    const canvasDataUrl = canvas.toDataURL({ format: 'png', withAncestors: true });
+    const a = document.createElement('a');
+    a.href = canvasDataUrl;
+    a.download = 'canvas.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+});
+
+
+    //   // Add click event listener to the shadow button to fetch and render the saved canvas state
+    // shadowButton.addEventListener("click", function (event) {
+    //   const buttonId = shadowButton.id;
+    //   const buttonIndex = parseInt(buttonId.split('_')[1]) - 1; // Get the index of the saved canvas state in the array
+    //   if (buttonIndex >= 0 && buttonIndex < savedLayers.length) {
+    //     const canvasStatus = JSON.parse(savedLayers[buttonIndex]);
+    //     canvas.loadFromJSON(canvasStatus, canvas.renderAll.bind(canvas));
+    //   }
+    // });
+
+
 }
+
+
+
+
 
 
 
@@ -496,82 +744,52 @@ function addShadowButton(directionName) {
           displayImages();
       }
 
-  //==============Drawing on canvas==================//
-
-//    document.getElementById("paintBrushBtn").addEventListener("click", function() {
-  
-//   // Clear the existing content of cursorInfoPanel div
-//   cursorInfoPanel.innerHTML = "";
-
-//   // Create the drawingContent div
-//   const drawingContent = document.createElement('div');
-//   drawingContent.id = 'drawingContent';
-//   drawingContent.className = 'bg-dark mb-4';
-//   drawingContent.innerHTML = `
-//     <div id="drawing-mode-options">
-//       <label for="drawing-mode-selector">Mode:</label>
-//       <select id="drawing-mode-selector">
-//         <option>Pencil</option>
-//         <option>Circle</option>
-//         <option>Spray</option>
-//       </select><br>
-//       <label for="drawing-line-width">Line width:</label>
-//       <span class="info">1</span><input type="range" value="1" min="0" max="150" id="drawing-line-width">
-//       <br>
-//       <label for="drawing-color">Line color:</label>
-//       <input type="color" value="#000000" id="drawing-color"><br>
-//     </div>
-//     <button id="clear-drawings" class="btn">Clear</button><br>
-//   `;
-
-//   // Append the drawingContent div to the cursorInfoPanel
-//   cursorInfoPanel.appendChild(drawingContent);
-// });
-
 
 //========================draw segments=========================//
 
 
-let isDataFetched = false;
-let polygonVisible = false;  // Add a flag to track the visibility of the polygon
+        let isDataFetched = false;
+        let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
-document.getElementById('btn_segment').addEventListener('change', function () {
-    const isChecked = this.checked;
+        document.getElementById('btn_segment').addEventListener('change', function () {
+            const isChecked = this.checked;
 
-    if (isChecked) {
-        if (!isDataFetched) {
-            fetch('http://localhost:8000/0004_back_flat.json')
-                .then(response => response.json())
-                .then(data => {
-                    isDataFetched = true;
+            if (isChecked) {
+                if (!isDataFetched||images[0].customImageName !== jsonFileName) {
+                    jsonFileName = images[0].customImageName.replace('.png', '.json');
+                    console.log(jsonFileName);
+                    fetch(`http://localhost:8000/RefinedOutput/json/${jsonFileName}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            isDataFetched = true;
 
-                    data.regions.forEach(region => {
-                        const originalCoordinates = region.coordinates;
-                        const color = region.color; // Get color from JSON
-                        const scaleFactor = calculateScaleFactor(images[0].width, images[0].height, canvas.width, canvas.height);
-                        const scaledCoordinates = originalCoordinates.map(point => ({
-                            x: point[0] * scaleFactor,
-                            y: point[1] * scaleFactor
-                        }));
+                            data.regions.forEach(region => {
+                                const originalCoordinates = region.coordinates;
+                                const color = region.color; // Get color from JSON
+                                const scaleFactor = calculateScaleFactor(images[0].width, images[0].height, canvas.width, canvas.height);
+                                const scaledCoordinates = originalCoordinates.map(point => ({
+                                    x: point[0] * scaleFactor,
+                                    y: point[1] * scaleFactor
+                                }));
 
-                        // Draw the polygon on the canvas and set its initial visibility
-                        drawPolygon(scaledCoordinates, color);
-                    });
-                })
-                .catch(error => console.error('Error fetching JSON file:', error));
+                                // Draw the polygon on the canvas and set its initial visibility
+                                drawPolygon(scaledCoordinates, color);
+                            });
+                        })
+                        .catch(error => console.error('Error fetching JSON file:', error));
 
-        } else {
-            // Data has already been fetched, toggle visibility based on the button state
-            polygonVisible = isChecked;
-            console.log(polygonVisible);
-            togglePolygonVisibility(polygonVisible);
-        }
-    }
-    else{
-            polygonVisible = false;
-            togglePolygonVisibility(polygonVisible);
-    }
-});
+                } else {
+                    // Data has already been fetched, toggle visibility based on the button state
+                    polygonVisible = isChecked;
+                    console.log(polygonVisible);
+                    togglePolygonVisibility(polygonVisible);
+                }
+            }
+            else{
+                    polygonVisible = false;
+                    togglePolygonVisibility(polygonVisible);
+            }
+        });
 
 
         function drawPolygon(points, color) {
@@ -599,18 +817,6 @@ document.getElementById('btn_segment').addEventListener('change', function () {
             canvas.renderAll();
         }
 
-//=========================Editor functions===========================//
-   // const btnGroup = document.querySelector('.editorbtns1');
-   // const btnGroup = document.querySelector('.editorbtns2');
-   //  // Add event listener to the parent container
-   //  btnGroup.addEventListener('click', function(event) {
-   //      // Check if the clicked element is a radio button
-   //        alert("here");
-   //      if (event.target.matches('input[type="radio"]')) {
-   //          // Print the ID of the clicked radio button
-   //          console.log(event.target.id);
-   //      }
-   //  });
 
 //======================zooming functionality=======================//
 //Zooming variables///
@@ -631,13 +837,17 @@ document.getElementById('btn_segment').addEventListener('change', function () {
         function zoomOut() {
             const zoom = canvas.getZoom();
             const center = { x: canvas.width / 2, y: canvas.height / 2 };
+            console.log("center",center);
             canvas.zoomToPoint(center, zoom / 1.1);
+
+            console.log(canvas.width,",",canvas.height);
             updateZoomPercentage();
         }
 
         function updateZoomPercentage() {
           const zoomPercentage = (canvas.getZoom() * 100).toFixed(0);
           zoomPercentageElement.innerText = `${zoomPercentage}%`;
+
         }
 
 
@@ -726,10 +936,8 @@ canvas.on("mouse:up", function () {
 
 //===============eraser code========================//
 
-let isErasing = false;
 const eraserBtn = document.getElementById("eraserBtn");
 
-// Add event listener to the eraser button
 eraserBtn.addEventListener("click", toggleErasing);
 
 function toggleErasing() {
@@ -741,12 +949,15 @@ function toggleErasing() {
         canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
         canvas.isDrawingMode = true;
       
-        // canvas.freeDrawingBrush.width = 10;
         canvas.forEachObject(function(obj) {
-            if (obj.type === 'image' && obj.customImageName && obj.customImageName.includes('flat')) {
-                obj.erasable = false;
-            }
-        });
+                    if (obj.type === 'image' && obj.customImageName && obj.customImageName.includes('flat')) 
+                    {
+                        obj.erasable = false;
+                    } 
+                    if (!obj.visible) {
+                        obj.erasable = false;
+                    }
+                });
 
 
         document.querySelectorAll('#eraseSize span').forEach(function(circle_id) {
@@ -807,49 +1018,189 @@ function UndoErase() {
     // });
 
 //===================save image=====================//
-// Get a reference to the Save button
+
 const saveBtn = document.getElementById("save_id");
-// Add an event listener to the Save button
 saveBtn.addEventListener('click', saveCanvasImage);
 
-// Function to save the canvas content as an image without the background
 function saveCanvasImage() {
-    // Store the current background image
-    const backgroundImage = canvas.backgroundImage;
 
-    // Temporarily remove the background image
+    const scaleFactor = calculateScaleFactor(actual_w, actual_h, 600, 750)*10;
+    // const scaleFactor = 5;
+
+    // Scale up all objects on the canvas
+    canvas.getObjects().forEach(obj => {
+        obj.scaleX *= scaleFactor;
+        obj.scaleY *= scaleFactor;
+        canvas.width *=scaleFactor;
+        canvas.height *=scaleFactor;
+        // obj.setCoords(); // Update object's coordinates
+    });
+
+    const backgroundImage = canvas.backgroundImage;
     canvas.backgroundImage = null;
     canvas.renderAll();
 
-    // Convert the canvas content to a data URL with PNG format and maximum quality
     const dataURL = canvas.toDataURL('image/png', 1.0);
-
-    // Restore the background image
     canvas.backgroundImage = backgroundImage;
     canvas.renderAll();
-
-    // Create a temporary link element
     const link = document.createElement('a');
-    link.download = 'canvas-image.png'; // Set the download attribute
-    link.href = dataURL; // Set the href attribute to the data URL
-    // Simulate a click on the link to trigger the download
+    link.download = 'canvas-image.png'; 
+    link.href = dataURL; 
+
     link.click();
+
+    canvas.getObjects().forEach(obj => {
+        obj.scaleX /= scaleFactor;
+        obj.scaleY /= scaleFactor;
+        canvas.width /=scaleFactor;
+        canvas.height /=scaleFactor;
+        obj.setCoords(); // Update object's coordinates
+
+    });
+
+    canvas.renderAll();
 }
 
+// function saveCanvasImage() {
+//     const visibleObjects = canvas.getObjects().filter(obj => obj.visible);
+//     console.log("actual_w",actual_w)
+//     visibleObjects.forEach(obj => {
+//         const dataURL = obj.toDataURL({
+//             format: 'png',
+//             multiplier: 1.0,
+//             width: actual_w,
+//             height: actual_h
+//         });
+
+//         const imageFile = base64ToImage(dataURL);
+//         const imageUrl = URL.createObjectURL(imageFile);
+
+//         // Do something with the image URL, such as displaying it on the page or saving it to a list
+//         const a = document.createElement('a');
+//         a.href = imageUrl;
+//         a.download = 'image.png';
+//         document.body.appendChild(a);
+//         a.click();
+//         document.body.removeChild(a);
+//     });
+// }
+
+// function base64ToBlob(base64String, contentType) {
+//   const byteCharacters = atob(base64String.replace(/^data:image\/(png|jpeg);base64,/, ''));
+//   const byteArrays = [];
+//   for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+//     const slice = byteCharacters.slice(offset, offset + 512);
+//     const byteNumbers = new Array(slice.length);
+//     for (let i = 0; i < slice.length; i++) {
+//       byteNumbers[i] = slice.charCodeAt(i);
+//     }
+//     const byteArray = new Uint8Array(byteNumbers);
+//     byteArrays.push(byteArray);
+//   }
+//   return new Blob(byteArrays, { type: contentType });
+// }
+
+// function saveCanvasImage() {
+//       // Scale factor (e.g., scale up by 2)
+//     const scaleFactor = 5;
+
+//     // Scale up all objects on the canvas
+//     canvas.getObjects().forEach(obj => {
+//         obj.scaleX *= scaleFactor;
+//         obj.scaleY *= scaleFactor;
+//         canvas.width *=scaleFactor;
+//         canvas.height *=scaleFactor;
+//         obj.setCoords(); // Update object's coordinates
+//     });
+
+//     // Render the canvas to apply the changes
+//     canvas.renderAll();
+
+//         // // const dataURL = images[0].customBase64;
+//         // const dataURL = canvas.toDataURL({
+//         //     format: 'jpeg',
+//         //     quality: 1.0,// Set the quality to maximum (1.0)
+//         // });
+
+//         // const imageFile = base64ToBlob(dataURL, 'image/png');
+//         // const imageUrl = URL.createObjectURL(imageFile);
+
+//         // const a = document.createElement('a');
+//         // a.href = imageUrl;
+//         // a.download = 'image.png';
+//         // a.click();
+//         // URL.revokeObjectURL(dataURL);
+
+//         const visibleObjects = canvas.getObjects().filter(obj => obj.visible);
+
+//         visibleObjects.forEach((obj, index) => {
+//             const dataURL = obj.toDataURL({
+//                 format: 'png',
+//                 quality: 1.0,
+//                 //without transform
+//             });
+
+//             const imageFile = base64ToBlob(dataURL, 'image/jpeg');
+//             const imageUrl = URL.createObjectURL(imageFile);
+
+//             const a = document.createElement('a');
+//             a.href = imageUrl;
+//             a.download = `image_${index}.jpg`;
+//             a.click();
+
+//             URL.revokeObjectURL(imageUrl);
+//         });
+
+
+//             // Reset the scale of all objects (optional)
+//     canvas.getObjects().forEach(obj => {
+//         obj.scaleX /= scaleFactor;
+//         obj.scaleY /= scaleFactor;
+//         canvas.width /=scaleFactor;
+//         canvas.height /=scaleFactor;
+//         obj.setCoords(); // Update object's coordinates
+
+//     });
+
+//     canvas.renderAll();
+// }
+
+
+
+
+// function saveBase64ImageToFile(base64String, fileName) {
+//   const blob = base64ToBlob(base64String, 'image/png'); // Change the content type based on your image format
+//   const url = URL.createObjectURL(blob);
+//   const a = document.createElement('a');
+//   a.href = url;
+//   a.download = fileName;
+//   a.click();
+//   URL.revokeObjectURL(url);
+// }
 
 //========================paint brush functions==========================//
 
     var isDrawingMode = false;
+    const cursorUrl = 'circle_icon.png';
+    var mousecursor; 
+    var undoStack = [];
+    var redoStack = [];
 
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
+
         if (isErasing) {
-          toggleErasing();
-          // $(eraserBtn.querySelector('i')).popover('hide');
+          const eraserBtn_1 = document.getElementById("eraserBtn");
+          eraserBtn_1.click();
         }
 
         isDrawingMode = !isDrawingMode;
 
         if (isDrawingMode) {
+            
+            canvas.defaultCursor = `url("${cursorUrl}"), auto`;
+            canvas.hoverCursor = `url("${cursorUrl}"), auto`;
+            canvas.moveCursor = `url("${cursorUrl}"), auto`;
+
             canvas.freeDrawingBrush.color = 'rgba(0,0,0,0.5)';
             canvas.isDrawingMode = true;
 
@@ -861,8 +1212,10 @@ function saveCanvasImage() {
                 circle_id.addEventListener('click', function(event) {
                     event.stopPropagation();
                     event.preventDefault();
+
                     var paint_brush_size = this.getAttribute('id');
                     canvas.freeDrawingBrush.width = parseInt(paint_brush_size);
+
                     document.querySelectorAll('#brushSize span').forEach(function(span) {
                               span.style.color = 'black';
                               span.style.backgroundColor= 'white';
@@ -872,17 +1225,53 @@ function saveCanvasImage() {
                 });
             });
 
-            canvas.on('object:added', function(e) {
-                e.target.selectable = false;
-            });
+        canvas.on('object:added', function(e) {
+            e.target.selectable = false;
+            undoStack.push(e.target);
+            redoStack = [];
+        });
+
+
         } else {
             canvas.isDrawingMode = false;
             this.style.backgroundColor = '';
             this.style.color = '';
         }
+
+
     });
 
+    // var isDrawingMode = false;
+    // document.getElementById('paintBrushBtn').addEventListener('click', function() {
+    // isDrawingMode = !isDrawingMode;
+    // canvas.defaultCursor = "url(circle_icon.png), auto";
+    // canvas.hoverCursor = "url(circle_icon.png), auto";
+    // canvas.isDrawingMode = true;
+    // });
 
-    
+// Function to undo the last action
+function undo() {
+    if (undoStack.length > 0) {
+        var obj = undoStack.pop();
+        canvas.remove(obj);
+        redoStack.push(obj);
+        canvas.renderAll();
+    }
+}
+
+// Function to redo the last undone action
+function redo() {
+    if (redoStack.length > 0) {
+        var obj = redoStack.pop();
+        canvas.add(obj);
+        undoStack.push(obj);
+        canvas.renderAll();
+    }
+}
+
+// Event listeners for undo and redo buttons
+document.getElementById('UndoBtn').addEventListener('click', undo);
+document.getElementById('RedoBtn').addEventListener('click', redo);
+
+
 });
-    
