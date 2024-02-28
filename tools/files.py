@@ -53,6 +53,7 @@ def open_psd(path_to_psd, path_to_png):
     name = get_file_name(path_to_psd)
     
     w, h = psd.width, psd.height
+    
     # extract each layer into png files 
     for i in range(len(psd)):    
         layer_to_png(psd[i], os.path.join(path_to_png, name), (h, w))

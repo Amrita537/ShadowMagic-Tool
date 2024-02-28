@@ -4,9 +4,12 @@ import os
 from random import randint
 from tools.files import open_psd
 
+# need to consider multi-user case? no, let just consider single user case for now
+# I think in the future, we should run the front end locally and backend on cluster
+# but now it is fine to just run everything on the cluster
+
 @eel.expose	 
 def random_python(): 
-    # Todo: 
     python_file_path = "D:/Studies/Eel/EEL-DEMO/yoloresult.py"
     input_images_path = "D:/Studies/Eel/EEL-DEMO/InputImages"
     labels_path = "D:/Studies/Eel/EEL-DEMO/yolov5/runs/predict-seg/exp/labels"
@@ -15,13 +18,16 @@ def random_python():
 # helper function for openning psd files
 @eel.expose
 def open_psd_py(path_to_psd):
-    return True if open_psd(path_to_psd) else False
+    open_psd(path_to_psd)
+    
 
-# for debug
-open_psd("./test/image59.psd", "./InputImages/")
+'''
+for debug
+'''
+# open_psd("./test/image59.psd", "./InputImages/")
 
 # start main GUI
 eel.init("web") 
-# we will need to run this code on cluster, so eventually it should be something running remotely
+# let's run this code remotely for now
 print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
 eel.start("GUI2.html", mode=False, all_interfaces=True)
