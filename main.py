@@ -30,9 +30,14 @@ def open_psd_py(path_to_psd):
     open_psd(path_to_psd, PATH_TO_INPUT)
     # open extracted pngs
     flat = np.array(Image.open(os.path.join(PATH_TO_INPUT, name+"_flat.png")))
+    # add white backgournd if flat has alpha channel
+    if flat.shape[-1] == 4:
+        bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
+        alpha = flat[..., -1][..., np.newaxis] / 255
+        rgb = flat[..., 0:3]
+        flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
     line = np.array(Image.open(os.path.join(PATH_TO_INPUT, name+"_line.png")))
     color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
-
 
     # send image to backend and get the shadows back
     url = "http://164.90.158.133:8080/shadowsingle"
@@ -45,12 +50,10 @@ def open_psd_py(path_to_psd):
     data_send['line'] = array_to_base64(line)
     data_send['color'] = array_to_base64(color.astype(np.uint8))
     
-    resp = requests.post(url=url, json=json.dumps(data_send), timeout=5000)
-
-
-    # save result to png files
     for i in range(4):
-        shadow = to_pil(resp['shadow_%d'%i])
+        resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
+        resp = resp.json()
+        shadow = to_pil(resp['shadow_0'])
         shadow.save(os.path.join(PATH_TO_SHADOW, name + "_" + direction + "_shadow_%d.png"%i))
 
 def array_to_base64(array):
@@ -71,7 +74,7 @@ def to_pil(byte):
     A helper function to convert byte png to PIL.Image
     '''
     byte = base64.b64decode(byte)
-    return Image.open(BytesIO(byte))
+    return Image.open(io.BytesIO(byte))
 
 # def file_to_base64(path_to_file):
 #     with open(path_to_file) as f:
