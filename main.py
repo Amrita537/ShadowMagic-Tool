@@ -40,21 +40,24 @@ def open_psd_py(path_to_psd):
     color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
 
     # send image to backend and get the shadows back
-    url = "http://164.90.158.133:8080/shadowsingle"
-    direction = 'right'
-    data_send = {}
-    data_send['user'] = 'userA'
-    data_send['direction'] = direction
-    data_send['name'] = name
-    data_send['flat'] = array_to_base64(flat)
-    data_send['line'] = array_to_base64(line)
-    data_send['color'] = array_to_base64(color.astype(np.uint8))
-    
-    for i in range(4):
-        resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
-        resp = resp.json()
-        shadow = to_pil(resp['shadow_0'])
-        shadow.save(os.path.join(PATH_TO_SHADOW, name + "_" + direction + "_shadow_%d.png"%i))
+    dirs = ['left', 'right', "top", "back"]
+
+    for direction in dirs:
+        url = "http://164.90.158.133:8080/shadowsingle"
+        direction = 'right'
+        data_send = {}
+        data_send['user'] = 'userA'
+        data_send['direction'] = direction
+        data_send['name'] = name
+        data_send['flat'] = array_to_base64(flat)
+        data_send['line'] = array_to_base64(line)
+        data_send['color'] = array_to_base64(color.astype(np.uint8))
+        
+        for i in range(4):
+            resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
+            resp = resp.json()
+            shadow = to_pil(resp['shadow_0'])
+            shadow.save(os.path.join(PATH_TO_SHADOW, name + "_" + direction + "_shadow_%d.png"%i))
 
 def array_to_base64(array):
     '''
@@ -76,16 +79,11 @@ def to_pil(byte):
     byte = base64.b64decode(byte)
     return Image.open(io.BytesIO(byte))
 
-# def file_to_base64(path_to_file):
-#     with open(path_to_file) as f:
-#         img_bytes = f.read()
-#         img = base64.b64encode(img_bytes).decode("utf8")
-#     return img
-
-# for debug
-open_psd_py("./test/image59.psd")
-# # start main GUI
-# eel.init("web") 
-# # let's run this code remotely for now
-# print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
-# eel.start("GUI2.html", mode=False, all_interfaces=True)
+if __name__ == "__main__":
+    # for debug
+    # open_psd_py("./test/image59.psd")
+    # start main GUI
+    eel.init("web") 
+    # let's run this code remotely for now
+    # print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
+    eel.start("GUI2.html")
