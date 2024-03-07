@@ -11,20 +11,24 @@ import json
 from random import randint
 from tools.files import open_psd, get_file_name
 from PIL import Image
+from tqdm import tqdm
+
 
 PATH_TO_INPUT = './InputImages/'
 PATH_TO_SHADOW = './web/Shadows'
+# why need to do so?
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
+DIRS = ['left', 'right', "top", "back"]
 
 @eel.expose	 
 def random_python(): 
-    python_file_path = "D:/Studies/Eel/EEL-DEMO/yoloresult.py"
-    input_images_path = "D:/Studies/Eel/EEL-DEMO/InputImages"
-    labels_path = "D:/Studies/Eel/EEL-DEMO/yolov5/runs/predict-seg/exp/labels"
+    python_file_path = "./yoloresult.py"
+    input_images_path = "./InputImages"
+    labels_path = "./yolov5/runs/predict-seg/exp/labels"
     os.system(f'python "{python_file_path}" "{input_images_path}" "{labels_path}"')
 
 @eel.expose
-def open_psd_py(path_to_psd):
+def open_psd_py(path_to_psd, var = 4):
     # extract png images from psd files
     name = get_file_name(path_to_psd)
     open_psd(path_to_psd, PATH_TO_INPUT)
@@ -38,11 +42,11 @@ def open_psd_py(path_to_psd):
         flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
     line = np.array(Image.open(os.path.join(PATH_TO_INPUT, name+"_line.png")))
     color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
+    # save color to file
+    Image.fromarray(color.astype(np.uint8)).save(os.path.join(PATH_TO_INPUT, name+"_color.png"))
 
-    # send image to backend and get the shadows back
-    dirs = ['left', 'right', "top", "back"]
-
-    for direction in dirs:
+    # get shadows
+    for direction in DIRS:
         url = "http://164.90.158.133:8080/shadowsingle"
         direction = 'right'
         data_send = {}
@@ -53,11 +57,44 @@ def open_psd_py(path_to_psd):
         data_send['line'] = array_to_base64(line)
         data_send['color'] = array_to_base64(color.astype(np.uint8))
         
-        for i in range(4):
+        for i in range(var):
             resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
             resp = resp.json()
             shadow = to_pil(resp['shadow_0'])
             shadow.save(os.path.join(PATH_TO_SHADOW, name + "_" + direction + "_shadow_%d.png"%i))
+
+    # get the segmentation result
+    pass
+
+@eel.expose
+def batch_process(path_to_psds = './batch_input', var = 20):
+    for psd in tqdm(os.listdir(path_to_psds)):
+        if ".psd" not in psd: continue
+        # check if this file has been processed
+        processed = True
+        # check extracted files
+        name = get_file_name(psd)
+        if os.path.exists(os.path.join(PATH_TO_INPUT, name+"_color.png")) == False: processed = False
+        if os.path.exists(os.path.join(PATH_TO_INPUT, name+"_flat.png")) == False: processed = False
+        if os.path.exists(os.path.join(PATH_TO_INPUT, name+"_lilne.png")) == False: processed = False
+
+        for direction in DIRS:
+            if processed == False: break
+            for i in range(var):
+                # check shadows
+                if os.path.exists(os.path.join(PATH_TO_SHADOW, 
+                    +"_"+ direction + "_shadow_%d.png"%i)) == False: 
+                    processed = False
+                    break
+                # check sub shadows
+                pass    
+        if processed:continue
+        open_psd_py(os.path.join(path_to_psds, psd))
+
+@eel.expose
+def shadow_decrease():
+    # todo
+    pass
 
 def array_to_base64(array):
     '''
@@ -82,6 +119,8 @@ def to_pil(byte):
 if __name__ == "__main__":
     # for debug
     # open_psd_py("./test/image59.psd")
+    batch_process()
+
     # start main GUI
     eel.init("web") 
     # let's run this code remotely for now
