@@ -45,21 +45,21 @@ def create_directories_if_not_exist(image_path):
         os.makedirs(annot_txt_path)
 
     # Create the annot_txt_path directory if it doesn't exist
-    ref_txt_path = os.path.join(parent_directory, "RefinedOutput", "labels")
+    ref_txt_path = os.path.join(parent_directory, "web", "RefinedOutput", "labels")
     if not os.path.exists(ref_txt_path):
         os.makedirs(ref_txt_path)
 
     # Create the annot_txt_path directory if it doesn't exist
-    ref_json_path = os.path.join(parent_directory, "RefinedOutput", "json")
+    ref_json_path = os.path.join(parent_directory,"web", "RefinedOutput", "json")
     if not os.path.exists(ref_json_path):
         os.makedirs(ref_json_path)
 
     # Create the annot_txt_path directory if it doesn't exist
-    ref_output_img = os.path.join(parent_directory, "RefinedOutput", "images")
+    ref_output_img = os.path.join(parent_directory, "web","RefinedOutput", "images")
     if not os.path.exists(ref_output_img):
         os.makedirs(ref_output_img)
 
-    ref_raw_img = os.path.join(parent_directory, "RefinedOutput", "Rawimages")
+    ref_raw_img = os.path.join(parent_directory,"web", "RefinedOutput", "Rawimages")
     if not os.path.exists(ref_raw_img):
         os.makedirs(ref_raw_img)
 
@@ -81,10 +81,10 @@ def main(image_path, yolo_txt_path):
     annot_txt_path = os.path.join(parent_directory, "AnnotOutput", "labels")
 
     # to hold refined annotated image, merged images and json file of merged images and text label file.
-    ref_output_img=os.path.join(parent_directory, "RefinedOutput", "images")
-    ref_raw_img=os.path.join(parent_directory, "RefinedOutput", "Rawimages")
-    ref_json_path=os.path.join(parent_directory, "RefinedOutput", "json")
-    ref_txt_path=os.path.join(parent_directory, "RefinedOutput", "labels")
+    ref_output_img=os.path.join(parent_directory,"web", "RefinedOutput", "images")
+    ref_raw_img=os.path.join(parent_directory, "web", "RefinedOutput", "Rawimages")
+    ref_json_path=os.path.join(parent_directory, "web", "RefinedOutput", "json")
+    ref_txt_path=os.path.join(parent_directory, "web", "RefinedOutput", "labels")
     
     
     # Convert raw yolo txt label file to json file and map json annotation on the image

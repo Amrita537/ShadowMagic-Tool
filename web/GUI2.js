@@ -2,8 +2,10 @@
       console.log("hello from web");
     // ====================canvas functions====================
       const canvas = new fabric.Canvas('canvas', {
-         // backgroundColor: 'white',
+         // backgroundColor: '#6B6B6B',
+         backgroundImageStretch: 'none',
          selection: false // Disable Fabric.js default selection behavior
+
       });
 
       fabric.Object.prototype.set({
@@ -11,13 +13,16 @@
         transparentCorners: false
       });
 
+    canvas.setDimensions({ width: 750, height: 600});
 
+    // canvas.setDimensions({ width: 500, height: 500 });
     fabric.Image.fromURL('background.png', function (img) {
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
             scaleX: canvas.width / img.width,
             scaleY: canvas.height / img.height
         });
     });
+
 
     $('[data-toggle="tooltip"]').tooltip({
         trigger: 'hover' // Show tooltip on hover only
@@ -34,61 +39,21 @@
 
 
     //======================Run python function=================== 
-    document.querySelector("#mybutton").onclick = function () {
+    // document.querySelector("#mybutton").onclick = function () {
 
-      eel.random_python()(function(number){                       
+    //   eel.random_python()(function(number){                       
+    //     console.log("files loaded")
+    //   }) 
+      
+    // }
+
+    function Semantic_segmentation(imageName){
+
+      eel.random_python(imageName)(function(number){                       
         console.log("files loaded")
       }) 
       
     }
-
-    // ====================Tab bar functions================
-
-      $(".nav-tabs li").each(function(){
-        $(this).append('<span class="close-tab" aria-hidden="true">&times;</span>');
-      });
-
-      $(".nav-tabs .close-tab").on("click", function(){
-        var tabId = $(this).closest('li').find('a[data-toggle="tab"]').attr('href');
-        console.log(tabId);
-        $(tabId).remove();
-        $(this).closest('li').remove();
-        tabCounter--;
-      });
-
-
-      var tabCounter = 3; 
-
-      $("#new_doc_id").on("click", function(){
-        var tabId = "Editor_id" + tabCounter;
-        var newTabContent = $("#" + "Editor_id2").clone().attr("id", tabId).removeClass("in active");
-
-        // Update IDs of child elements in the cloned content
-        newTabContent.find("[id]").each(function () {
-          var oldId = $(this).attr("id");
-          var newId = oldId + tabCounter;
-          $(this).attr("id", newId);
-        });
-
-        $(".nav-tabs").append('<li><a data-toggle="tab" href="#' + tabId + '">' + 'document ' + tabCounter + '</a><span class="close-tab" aria-hidden="true">&times;</span></li>');
-        $(".tab-content").append(newTabContent);
-
-
-
-        // Activate the new tab
-        $("#" + tabId).tab('show');
-
-        tabCounter++;
-
-        // Rebind the close icon click event
-        $(".nav-tabs .close-tab").off("click").on("click", function(){
-          var tabId = $(this).closest('li').find('a[data-toggle="tab"]').attr('href');
-          $(tabId).remove();
-          $(this).closest('li').remove();
-          tabCounter--;
-        });
-      });
-
 
 
 // ====================Open image functions================
@@ -102,6 +67,27 @@ let actual_h=0;
 let actual_w=0;
 
 function handleFileSelect(event) {
+    console.log("clicked");
+    const files = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+        const fileName = files[i].name;
+        const extension = fileName.split('.').pop().toLowerCase(); // Get the file extension
+
+        if (extension === 'png') {
+            console.log(fileName + ' is a PNG file');
+            handleImageSelect(event);
+
+        } else if (extension === 'psd') {
+            console.log(fileName + ' is a PSD file');
+            handlePSDSelect(event);
+
+        } else {
+            console.log(fileName + ' has an unknown extension');
+        }
+    }
+}
+
+function handleImageSelect(event) {
   console.log("clicked");
   const files = event.target.files;
 
@@ -112,13 +98,10 @@ function handleFileSelect(event) {
       const reader = new FileReader();
       reader.onload = function (e) {
         fabric.Image.fromURL(e.target.result, function (img) {
-          
-          canvas.width= 750
-          canvas.height= 600
 
           actual_h=img.height;
           actual_w=img.width;
-          const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+          const scaleFactor = calculateScaleFactor(img.width, img.height, 700, 600);
           
           img.scale(scaleFactor);
           img.customSelected = false; // Custom property to indicate selected state
@@ -126,23 +109,42 @@ function handleFileSelect(event) {
           img.customBase64 = e.target.result;
           img.selectable = false;
           console.log("adding", img.customImageName)
-          console.log("adding", img.customBase64)
 
           images.push(img);
           initialSizes.push({ width: img.width, height: img.height });
           canvas.add(img);
 
-          updateLayerList(images);
-          
-
           sc_imgwidth = actual_w * scaleFactor;
           sc_imgheight = actual_h * scaleFactor;
-          const canvasWidth = Math.min(sc_imgwidth, img.width);
-          const canvasHeight = Math.min(sc_imgheight, img.height);
+          const canvasWidth = Math.min(sc_imgwidth);
+          const canvasHeight = Math.min(sc_imgheight);
           canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
 
-          console.log(canvas.width, canvas.height)
+          let backimg_name='';
+          if (sc_imgwidth < 400){
+                backimg_name='backgroundVer.png';
+          }
+          else if(sc_imgwidth>400 && sc_imgwidth <600)
+          {
+                backimg_name='backgroundVer2.png';
+          }
+          else{
+                backimg_name='background.png';
+          }
+          console.log(backimg_name)
+          fabric.Image.fromURL(backimg_name, function (backimg) {
+                  canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
+                      scaleX: canvas.width / backimg.width,
+                      scaleY: canvas.height / backimg.height
+
+                  });
+          });
+          
+          updateLayerList(images);
           displayImages();
+          Save_Image_backend(img.customBase64, img.customImageName);
+          Semantic_segmentation(img.customImageName);
+          GenerateShadow();
 
         });
       };
@@ -160,6 +162,106 @@ function calculateScaleFactor(originalWidth, originalHeight, targetWidth, target
 
 function displayImages() {
   canvas.renderAll();
+}
+//======================load from psd=======================//
+
+psd_layer_names=[];
+function handlePSDSelect(event) {
+    const files = event.target.files;
+    console.log("Selected files:");
+    eel.open_psd_py("./web/D4_01_L_M.psd");
+
+    loader.style.display = 'block';
+
+    for (let i = 0; i < files.length; i++) {
+            const fileName = files[i].name;
+            const baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
+
+            // Add _flat.png and _line.png to the base name
+            const flatName = baseName + "_flat.png";
+            const lineName = baseName + "_line.png";
+
+            psd_layer_names.push(flatName);
+            psd_layer_names.push(lineName);
+
+            console.log("Flat name:", flatName);
+            console.log("Line name:", lineName);
+        }
+
+      const rel_path = "PsdToPng/"; 
+        
+      psd_layer_names.forEach(psdlayername => {
+        folderPath = rel_path+psdlayername;
+        fetch(folderPath)
+            .then(response => response.blob())
+            .then(blob => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    loader.style.display = 'none';
+                    const imgData = e.target.result;
+                    fabric.Image.fromURL(imgData, function (img) {
+                        canvas.width= 750;
+                        canvas.height= 600;
+
+                        actual_h = img.height;
+                        actual_w = img.width;
+                        const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                        
+                        img.scale(scaleFactor);
+                        img.customSelected = false; // Custom property to indicate selected state
+                        img.customImageName = "D4_01_L_M_flat.png";
+                        img.customBase64 = imgData; // Set custom base64 data
+                        img.selectable = false;
+                        console.log("adding", img.customImageName);
+
+                        images.push(img);
+                        initialSizes.push({ width: img.width, height: img.height });
+                        canvas.add(img);
+
+                        updateLayerList(images);
+                        
+                        sc_imgwidth = actual_w * scaleFactor;
+                        sc_imgheight = actual_h * scaleFactor;
+                        const canvasWidth = Math.min(sc_imgwidth, img.width);
+                        const canvasHeight = Math.min(sc_imgheight, img.height);
+                        canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+
+                        console.log(canvas.width, canvas.height);
+
+                           let backimg_name='';
+                            if (sc_imgwidth < 400){
+                              backimg_name='backgroundVer.png';
+                            }
+                            else if(sc_imgwidth>400 && sc_imgwidth <600)
+                            {
+                              backimg_name='backgroundVer2.png';
+                            }
+                            else{
+                              backimg_name='background.png';
+                            }
+                            console.log(backimg_name)
+                            fabric.Image.fromURL(backimg_name, function (backimg) {
+                                      canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
+                                          scaleX: canvas.width / backimg.width,
+                                          scaleY: canvas.height / backimg.height
+
+                                      });
+                            });
+
+                        displayImages();
+                    });
+                };
+                reader.readAsDataURL(blob);
+            })
+            .catch(error => console.error('Error fetching image:', error));
+          });
+}
+
+
+function Save_Image_backend(base64String, imageName){
+    eel.save_image_from_base64(base64String, imageName)((response) => {
+    console.log(response); // Log the response from the Python function
+  });
 }
 
 //====================base 64 to image =======================
@@ -181,7 +283,7 @@ function base64ToImage(base64String) {
 }
 
 
-// ====================Layer functions================
+// ====================Base Layer functions================
 
 const layerList = document.getElementById("layerList");
 
@@ -251,6 +353,11 @@ function updateLayerList(images) {
       canvas.remove(removedImage);
       layerButton.remove();
       console.log("Removing image at index:", i);
+
+      canvas.getObjects().forEach(function(object) {
+              canvas.remove(object);
+      });
+
       canvas.renderAll();
       updateLayerList(images);
       displayImages();
@@ -276,181 +383,175 @@ function toggleLayerVisibility(index) {
 
 //====================Fetching Shadow functions================
 
+
 const names_shadow_segment = [];
+const names_shadow=[];
 const shadow_segment_images = [];
+const base_shadow_images=[];
+const directions = ['back', 'top', 'left', 'right'];
+const segments = ['hair', 'face', 'cloth', 'arm', 'object'];
 
-  const panelBody = document.getElementById('collapse2').getElementsByClassName('panel-body')[0];
-  const elementsToDisable = panelBody.querySelectorAll('button, input[type="range"]');
-  
-  for (const element of elementsToDisable) {
-    element.disabled = true;
-  }
+function GenerateShadow() {
+    if (names_shadow_segment.length === 0) 
+    {
+        const firstImage = images[0];
+        if (firstImage) 
+        {
+            const imageName = firstImage.customImageName;
+            const shadow_image = imageName.replace('flat', 'color');
+            
+            directions.flatMap(direction => {
+               
+                const baseName = shadow_image.replace('.png', `_${direction}_shadow`).replace('color_', 'color_');
+                
+                for (let i = 0; i <= 3; i++) 
+                  {
+                    const base_shadow= baseName + `${i}.png`;
+                    names_shadow.push(base_shadow);
+                  }
 
-document.getElementById('btn_shadow').addEventListener('change', function () {
+                segments.flatMap(segment => {
+                    const segmentNames = [];
+                    for (let i = 0; i <= 3; i++) 
+                    {
+                        const base_shadow_segment = baseName + `${i}_${segment}.png`;
+                        names_shadow_segment.push(base_shadow_segment);
+                    }
+                });
 
-  const isChecked = this.checked;
-  // Enable/disable panel body based on checkbox state
-  const panelBody = document.getElementById('collapse2').getElementsByClassName('panel-body')[0];
-  const elementsToDisable = panelBody.querySelectorAll('button, input[type="range"]');
-  
-  for (const element of elementsToDisable) {
-    element.disabled = !isChecked;
-  }
-
-    // Enable/disable collapse1 based on checkbox state
-  const collapse1 = document.getElementById('collapse1');
-  const formCheckboxes = collapse1.querySelectorAll('input[type="checkbox"]');
-  
-  for (const checkbox of formCheckboxes) {
-    checkbox.disabled = !isChecked;
-  }
-
-  if (isChecked && names_shadow_segment.length === 0) {
-        firstImage=images[0];
-        if (firstImage) {
-            const imageName = images[0].customImageName;
-            console.log('Image file name:', imageName || 'Unknown');
-
-            const shadow_image = firstImage.customImageName.replace('flat', 'shadow');
-            const directions = ['back', 'top', 'left', 'right'];
-            const segments = ['hair', 'face', 'cloth', 'arm', 'object'];
-
-            const shadow_images = directions.flatMap(direction => {
-              const baseName = shadow_image.replace(/_(.*?)_/, `_${direction}_`).replace('.png', '');
-              const newNames = segments.map(segment => {
-                const newName = baseName + `_${segment}.png`;
-                names_shadow_segment.push(newName);
-                return newName;
-              });
-              return newNames;
             });
 
-            console.log('Shadow image file names:', shadow_images);
+            console.log('Base shadow names', names_shadow);
+            console.log('Shadow segment names', names_shadow_segment);
+
+            fetch_Shadow_files(names_shadow);
             fetch_Shadow_files(names_shadow_segment);
-          } else {
+        } 
+        else {
             console.log('No image on the canvas or the first image is not loaded.');
-          }
-  }
+        }
+    } 
+    else {
+        console.log('Shadows already loaded.');
+    }
 
-  else {
-    console.log('Shadows already loaded.');
-  }
-
-
-});
+}
 
 
-// function fetch_Shadow_files(names_shadow_segment){
-//     const relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
+  function fetch_Shadow_files(shadow_arr){
+      if(shadow_arr == names_shadow_segment)
+      {
+        let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
+        names_shadow_segment.forEach(name => {
+          let fullPath = relativePath + name;
+          fabric.Image.fromURL(fullPath, function (img) {
+                const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                img.scale(scaleFactor);
+                img.customImageName=name;
+                img.selectable = false;
+                img.visible = false;
+                canvas.add(img);
+                shadow_segment_images.push(img);
+          }); 
+        });
 
-//     names_shadow_segment.forEach(name => {
-//         const fullPath = relativePath + name;
-//         fetch(fullPath)
-//             .then(response => response.blob())
-//             .then(blob => {
-//                 const reader = new FileReader();
-//                 reader.onload = function() {
-//                     const img = new fabric.Image();
-//                     img.setElement(document.createElement('img'));
-//                     img.getElement().src = reader.result;
-//                     img.getElement().onload = function() {
-//                         const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-//                         img.scale(scaleFactor);
-//                         img.customImageName = name;
-//                         img.selectable = false;
-//                         img.visible = false;
-//                         canvas.add(img);
-//                         shadow_segment_images.push(img);
-//                     };
-//                 };
-//                 reader.readAsDataURL(blob);
-//             });
-//     });
-// }
+      console.log("Loaded shadow_segment_images", shadow_segment_images);
+      }
 
+      else
+      { 
+        let relativePath = 'Shadows/'; // Adjust this relative path based on your directory structure
+        names_shadow.forEach(name => {
+          let fullPath = relativePath + name;
+          fabric.Image.fromURL(fullPath, function (img) {
+                const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                img.scale(scaleFactor);
+                img.customImageName=name;
+                img.selectable = false;
+                img.visible = false;
+                base_shadow_images.push(img);
+          }); 
+        });
+      console.log("Loaded base_shadow_images", base_shadow_images);
+      }
 
-
-  function fetch_Shadow_files(names_shadow_segment){
-      const relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
-
-      names_shadow_segment.forEach(name => {
-        const fullPath = relativePath + name;
-        fabric.Image.fromURL(fullPath, function (img) {
-              const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-              img.scale(scaleFactor);
-              img.customImageName=name;
-              img.selectable = false;
-              img.visible = false;
-              canvas.add(img);
-              shadow_segment_images.push(img);
-        }); 
-
-      });
   }
 
 
 const checkboxIds = ['hairCheckbox', 'faceCheckbox', 'clothCheckbox', 'armCheckbox', 'objectCheckbox', 'allCheckbox'];
-
 const buttonIds = ['btnTop', 'btnLeft', 'btnRight', 'btnBack'];
 
-let selectedDirection = null; 
 let direction = null; 
 
 
 buttonIds.forEach(buttonId => {
+      
+      const current_button = document.getElementById(buttonId);
+      const carousel = document.getElementById('Carousel_id');
 
-      const button = document.getElementById(buttonId);
-     
-      button.addEventListener('click', function () {
-
-              const directionName = directions[buttonId]; 
-              // addShadowButton(directionName); 
-              addShadowButton();
-
-              buttonIds.forEach(id => {
-                const btn = document.getElementById(id);
-                btn.classList.remove('active-button');
-              });
-
-              button.classList.add('active-button');
-
-              if (selectedDirection) {
-                checkboxIds.forEach(checkboxId => {
-                  const segment = checkboxId.replace('Checkbox', '');
-                  toggleVisibilityByDirectionAndSegment(selectedDirection, segment, false);
-                  const checkbox = document.getElementById(checkboxId);
-                  checkbox.checked = false;
+      current_button.addEventListener('click', function () 
+      {
+            addShadowButton();
+            if (current_button.classList.contains('active-button')) 
+            {
+                current_button.classList.remove('active-button');
+                Hide_allshadows();
+                segments.forEach(seg => {
+                    toggleVisibilityByDirectionAndSegment(direction, seg, 0, false);
                 });
-              }
 
-              selectedDirection = buttonId.replace('btn', '').toLowerCase(); // Store the selected direction
-              direction = selectedDirection; // Set the global direction
-              console.log('Selected Direction:', selectedDirection);
+                carousel.style.display = 'none';
 
-              // Toggle visibility for the new direction
-              checkboxIds.forEach(checkboxId => {
-                const segment = checkboxId.replace('Checkbox', '');
-                toggleVisibilityByDirectionAndSegment(selectedDirection, segment, true);
-                const checkbox = document.getElementById(checkboxId);
-                checkbox.disabled = false;
-                checkbox.checked = true;
+
+                let opacityDiv = document.getElementById('opacitydiv_id');
+                let partDiv = document.getElementById('partdiv_id');              
+
+                opacityDiv.style.display = 'none';
+                partDiv.style.display = 'none';
+            } 
+            else 
+            {
+              carousel.style.display = 'block';
+
+              buttonIds.forEach(id => 
+              {
+                 const btn = document.getElementById(id);
+                  btn.classList.remove('active-button');
+                  Hide_allshadows();
               });
+              current_button.classList.add('active-button');
+
+              direction = buttonId.replace('btn', '').toLowerCase(); // Store the selected direction
+              console.log('Selected Direction:', direction);
+
+              segments.forEach(seg => {
+                    toggleVisibilityByDirectionAndSegment(direction, seg, 0, true);
+              });
+
+              setCardBackgroundImages(direction)
+              checkVisibleObjects();
+            } 
+              
       });
 });
 
 
-function toggleVisibilityByDirectionAndSegment(direction, segment, isVisible) {
+function toggleVisibilityByDirectionAndSegment(direction, segment, index, isVisible) {
+
+  console.log(direction, segment, index, isVisible);
   if (isErasing) {
           const eraserBtn_1 = document.getElementById("eraserBtn");
           eraserBtn_1.click();
   }
-  // Iterate through shadow image names
+  
   names_shadow_segment.forEach(name => {
     const isDirectionMatch = name.includes(`_${direction}_`);
     const isSegmentMatch = name.endsWith(`_${segment}.png`);
-    
-    if (isDirectionMatch && isSegmentMatch) 
+    const isIndexMatch = name.includes(`shadow${index}`);
+
+    if (isDirectionMatch && isSegmentMatch && isIndexMatch) 
           {
+                console.log("match");
                 const image = canvas.getObjects().find(obj => obj.customImageName === name);
                 if (image) {
                   image.erasable = true;
@@ -466,146 +567,99 @@ function toggleVisibilityByDirectionAndSegment(direction, segment, isVisible) {
 
 }
 
-// Attach event listeners to checkboxes
-checkboxIds.forEach(checkboxId => {
-  const checkbox = document.getElementById(checkboxId);
-  checkbox.addEventListener('change', function () {
-    if (selectedDirection) {
-      const segment = checkboxId.replace('Checkbox', '');
-      toggleVisibilityByDirectionAndSegment(selectedDirection, segment, this.checked);
-    } else {
-      alert('Select a direction first');
+//============================= Part selector checkboxes ========================
+
+
+function checkVisibleObjects() {
+  canvas.getObjects().forEach(obj => {
+    if (obj.visible) {
+      const lowercaseImageName = obj.customImageName;
+      if (lowercaseImageName.includes('hair')) {
+        document.getElementById('hairCheckbox').checked = true;
+      }
+      if (lowercaseImageName.includes('face')) {
+        document.getElementById('faceCheckbox').checked = true;
+      }
+      if (lowercaseImageName.includes('cloth')) {
+        document.getElementById('clothCheckbox').checked = true;
+      }
+      if (lowercaseImageName.includes('arm')) {
+        document.getElementById('armCheckbox').checked = true;
+      }
+      if (lowercaseImageName.includes('object')) {
+        document.getElementById('objectCheckbox').checked = true;
+      }
     }
   });
-  checkbox.disabled = true;
+}
+
+
+
+// Function to toggle the visibility of canvas objects based on checkbox state
+function toggleVisibilityByCheckbox(label) {
+    let number=0;
+
+    canvas.getObjects().forEach(obj => {
+            if (obj.visible){
+                let imageName = obj.customImageName;
+                let match = imageName.match(/shadow(\d+)/);
+                if (match) {
+                  number = match[1];
+                } 
+            }
+            let checkbox = document.getElementById(`${label}Checkbox`);
+            toggleVisibilityByDirectionAndSegment(direction, label, number, checkbox.checked);
+    });
+    canvas.renderAll();
+}
+
+// Add click event listeners to each checkbox
+document.getElementById('hairCheckbox').addEventListener('click', function() {
+    toggleVisibilityByCheckbox('hair');
+});
+
+document.getElementById('faceCheckbox').addEventListener('click', function() {
+    toggleVisibilityByCheckbox('face');
+});
+
+document.getElementById('clothCheckbox').addEventListener('click', function() {
+    toggleVisibilityByCheckbox('cloth');
+});
+
+document.getElementById('armCheckbox').addEventListener('click', function() {
+    toggleVisibilityByCheckbox('arm');
+});
+
+document.getElementById('objectCheckbox').addEventListener('click', function() {
+    toggleVisibilityByCheckbox('object');
 });
 
 
+const cursorInfo = document.getElementById('cursorInfo');
 const allCheckbox = document.getElementById('allCheckbox');
-allCheckbox.addEventListener('change', function () {
-  checkboxIds.forEach(checkboxId => {
-    const checkbox = document.getElementById(checkboxId);
-    checkbox.checked = this.checked;
 
-    if (selectedDirection || checkboxId === 'allCheckbox') {
-      const segment = checkboxId.replace('Checkbox', '');
-      toggleVisibilityByDirectionAndSegment(selectedDirection, segment, this.checked);
-    }
+allCheckbox.addEventListener('change', function () {
+      if (this.checked) 
+      {
+        cursorInfo.style.display = 'block';
+        getOutline(this.checked);
+      } 
+      else {
+        cursorInfo.style.display = 'none';
+        getOutline(this.checked);
+      }
+
   });
 
-  canvas.renderAll();
-});
 
 //===================adding shadow layers====================
-const directions = {
-    "btnLeft": "Left",
-    "btnRight": "Right",
-    "btnTop": "Top",
-    "btnBack": "Back"
-};
+// const directions = {
+//     "btnLeft": "Left",
+//     "btnRight": "Right",
+//     "btnTop": "Top",
+//     "btnBack": "Back"
+// };
 
-
-// Function to add shadow button for a given direction
-// function addShadowButton(directionName) {
-//     const buttonName = `${directionName} Shadow`;
-    
-//     // Check if button for this direction already exists
-//     if (!document.getElementById(`${directionName}ShadowButton`)) {
-
-//         const hasObjectsWithDirection = canvas.getObjects().some(obj => obj.type === 'image' && obj.customImageName && obj.customImageName.includes(directionName.toLowerCase()) && names_shadow_segment.includes(obj.customImageName));
-        
-//         if (hasObjectsWithDirection) {
-//               const shadowButton = document.createElement("button");
-//               shadowButton.id = `${directionName}ShadowButton`;
-
-//               shadowButton.className = "btn btn-block";
-//               shadowButton.style.textAlign = "left";
-//               shadowButton.style.backgroundColor = "#6c757d";
-//               shadowButton.style.color = "#ffffff";
-
-//               // Create an image element for the icon
-//               const ShadEyeIcon = document.createElement("i");
-//               ShadEyeIcon.className = "fa fa-eye";
-//               ShadEyeIcon.style.fontSize = "10px";
-//               ShadEyeIcon.style.marginRight = "8px";
-
-
-//               // Create a span for the direction name
-//               const directionNameSpan = document.createElement("span");
-//               directionNameSpan.innerText = buttonName;
-
-
-//               // Create a cross icon
-//               const crossIcon = document.createElement("i");
-//               crossIcon.className = "fa fa-times cross-icon";
-//               crossIcon.style.float = "right";
-//               crossIcon.style.marginTop = "5px";
-//               crossIcon.style.marginRight = "5px";
-
-//               const tickIcon= document.createElement("i");
-//               tickIcon.className="fa fa-check";
-//               tickIcon.style.float= "right";
-//               tickIcon.style.marginTop = "5px";
-
-//               // Append the components to the shadowButton
-//               shadowButton.appendChild(ShadEyeIcon);
-//               shadowButton.appendChild(directionNameSpan);
-//               shadowButton.appendChild(tickIcon);
-//               shadowButton.appendChild(crossIcon);
-
-//               ShadEyeIcon.addEventListener("click", function (event) {
-//                   console.log("Toggling visibility for", directionName);
-
-//                                       // Toggle the icon class
-//                     if (ShadEyeIcon.classList.contains('fa-eye')) {
-//                         ShadEyeIcon.classList.remove('fa-eye');
-//                         ShadEyeIcon.classList.add('fa-eye-slash');
-//                     } else {
-//                         ShadEyeIcon.classList.remove('fa-eye-slash');
-//                         ShadEyeIcon.classList.add('fa-eye');
-//                     }
-
-//                     const allCheckbox = document.getElementById('allCheckbox');
-//                     allCheckbox.checked = !allCheckbox.checked;
-
-//                     const event1 = new Event('change');
-//                     allCheckbox.dispatchEvent(event1);
-
-//               });
-
-
-//               crossIcon.addEventListener("click", function (event) {
-//                   console.log("Removing shadow button for", directionName);
-
-//                   const confirmRemove = confirm("Are you sure you want to remove the image?");
-//                   if (confirmRemove) {
-//                       canvas.getObjects().forEach(obj => {
-                          
-//                           if (obj.type === 'image' && obj.customImageName && obj.customImageName.includes(directionName.toLowerCase()) && names_shadow_segment.includes(obj.customImageName)) {
-//                               console.log("removing image", obj.customImageName);
-//                               canvas.remove(obj);
-//                               canvas.renderAll();
-//                           }
-//                       });
-//                        shadowButton.remove();
-//                    }
-
-//               });
-
-
-//               tickIcon.addEventListener("click", function (event) {
-//                   // Remove the tick and cross icons
-//                   crossIcon.remove();
-//                   tickIcon.remove();
-
-//                   // Change the button background color to black
-//                   shadowButton.style.backgroundColor = "black";
-//               });
-              
-//               shadowList.appendChild(shadowButton); // Append shadow button to shadowList
-//           }
-//         }
-// }
 
 
 let savedCounter=1;
@@ -632,13 +686,13 @@ function addShadowButton() {
     ShadEyeIcon.style.marginRight = "8px";
 
     const tickIcon = document.createElement("i");
-    tickIcon.className = "fa fa-check";
+    tickIcon.className = "fa fa-bookmark-o";
     tickIcon.style.float = "right";
     tickIcon.style.marginTop = "5px";
 
 
     const downloadIcon = document.createElement("i");
-    downloadIcon.className = "fa fa-download";
+    downloadIcon.className = "fa fa-bookmark";
     downloadIcon.style.float = "right";
     downloadIcon.style.marginTop = "5px";
 
@@ -646,7 +700,7 @@ function addShadowButton() {
     const NameSpan = document.createElement("span");
     NameSpan.innerText = 'Shadow Layer';  
 
-    shadowButton.appendChild(ShadEyeIcon);
+    // shadowButton.appendChild(ShadEyeIcon);
     shadowButton.appendChild(NameSpan);
     shadowButton.appendChild(tickIcon);
 
@@ -670,44 +724,74 @@ function addShadowButton() {
 
   });
     
+    const BMshadowList = document.getElementById('BM_shadowList');
     tickIcon.addEventListener("click", function (event) {
+
         const canvasStatus = JSON.stringify(canvas.toJSON());
         savedLayers.push(canvasStatus);
         console.log(canvasStatus);
+
+
         shadowButton.id = `saved_${savedCounter}`; // Change the button id
         console.log(shadowButton.id);
-        shadowButton.style.backgroundColor = "black"; // Change the background color
+
+        shadowButton.style.backgroundColor = "#494949"; // Change the background color
         savedCounter++; // Increment the counter for the next button
+
         tickIcon.remove();
         ShadEyeIcon.remove();
         shadowButton.appendChild(downloadIcon);
+        NameSpan.innerText = 'Saved Shadow';
+        tempbtn=shadowButton;
+        shadowButton.remove();
+        BMshadowList.appendChild(tempbtn);
     });
-
-    // Add click event listener to the download icon
-    // downloadIcon.addEventListener("click", function (event) {
-    //     // Convert canvas to data URL and download it
-    //     const canvasDataUrl = canvas.toDataURL({ format: 'png' });
-    //     const a = document.createElement('a');
-    //     a.href = canvasDataUrl;
-    //     a.download = 'canvas.png';
-    //     document.body.appendChild(a);
-    //     a.click();
-    //     document.body.removeChild(a);
-    // });
 
 
 // Add click event listener to the download icon
 downloadIcon.addEventListener("click", function (event) {
-    // Convert canvas to data URL and download it
-    const canvasDataUrl = canvas.toDataURL({ format: 'png', withAncestors: true });
-    const a = document.createElement('a');
-    a.href = canvasDataUrl;
-    a.download = 'canvas.png';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-});
 
+    const savedCanvasData = JSON.parse(savedLayers[0]);
+    const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
+   
+
+    tempCanvas.loadFromJSON(savedCanvasData, function() {
+        
+        const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
+        const backgroundImage = tempCanvas.backgroundImage;
+        tempCanvas.backgroundImage = null;
+
+        // Scale up the canvas
+        const originalWidth = tempCanvas.getWidth();
+        const originalHeight = tempCanvas.getHeight();
+        tempCanvas.setWidth(originalWidth * scaleFactor);
+        tempCanvas.setHeight(originalHeight * scaleFactor);
+        tempCanvas.setZoom(scaleFactor);
+
+        tempCanvas.renderAll();
+
+        const dataUrl = tempCanvas.toDataURL({
+            format: 'png',
+            multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
+        });
+
+
+        tempCanvas.backgroundImage = backgroundImage;
+        tempCanvas.setWidth(originalWidth);
+        tempCanvas.setHeight(originalHeight);
+        tempCanvas.setZoom(1);
+
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'canvas.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    });
+
+
+});
 
     //   // Add click event listener to the shadow button to fetch and render the saved canvas state
     // shadowButton.addEventListener("click", function (event) {
@@ -721,10 +805,6 @@ downloadIcon.addEventListener("click", function (event) {
 
 
 }
-
-
-
-
 
 
 
@@ -751,8 +831,10 @@ downloadIcon.addEventListener("click", function (event) {
         let isDataFetched = false;
         let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
-        document.getElementById('btn_segment').addEventListener('change', function () {
-            const isChecked = this.checked;
+
+          function getOutline(checkval){
+
+            const isChecked = checkval;
 
             if (isChecked) {
                 if (!isDataFetched||images[0].customImageName !== jsonFileName) {
@@ -773,7 +855,7 @@ downloadIcon.addEventListener("click", function (event) {
                                 }));
 
                                 // Draw the polygon on the canvas and set its initial visibility
-                                drawPolygon(scaledCoordinates, color);
+                                drawPolygon(scaledCoordinates, region.label);
                             });
                         })
                         .catch(error => console.error('Error fetching JSON file:', error));
@@ -789,24 +871,49 @@ downloadIcon.addEventListener("click", function (event) {
                     polygonVisible = false;
                     togglePolygonVisibility(polygonVisible);
             }
-        });
+          }
+      
 
 
-        function drawPolygon(points, color) {
-            const rgbColor = `rgb(${color.red}, ${color.green}, ${color.blue})`;
+        const colors = {
+            hair: '#66c2a5',
+            face: '#8da0cb',
+            cloth: '#fc8d62',
+            arm: '#e78ac3',
+            object: '#a6d854'
+        };
+
+        function drawPolygon(points, label) {
+            const color = colors[label] || 'black'; // Default to black if label not found in colors array
+            const rgbColor = hexToRgb(color);
             const polygon = new fabric.Polygon(points, {
                 fill: 'transparent',
-                stroke: rgbColor, // Assign color to stroke
+                stroke: `rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`, // Assign color to stroke
                 strokeWidth: 2,
                 selectable: false,
                 isPolygon: true,
                 smooth: true,
+                erasable: false,
                 strokeUniform: true
             });
 
             canvas.add(polygon);
             canvas.renderAll();
         }
+
+        function hexToRgb(hex) {
+            // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+            const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
         function togglePolygonVisibility(isVisible) {
             console.log("here", isVisible);
             canvas.forEachObject(function (obj) {
@@ -826,7 +933,8 @@ downloadIcon.addEventListener("click", function (event) {
 
         zoomInButton.addEventListener("click", zoomIn);
         zoomOutButton.addEventListener("click", zoomOut);
-
+        
+        
         function zoomIn() {
             const zoom = canvas.getZoom();
             const center = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -837,10 +945,7 @@ downloadIcon.addEventListener("click", function (event) {
         function zoomOut() {
             const zoom = canvas.getZoom();
             const center = { x: canvas.width / 2, y: canvas.height / 2 };
-            console.log("center",center);
             canvas.zoomToPoint(center, zoom / 1.1);
-
-            console.log(canvas.width,",",canvas.height);
             updateZoomPercentage();
         }
 
@@ -934,6 +1039,7 @@ canvas.on("mouse:up", function () {
   }
 });
 
+
 //===============eraser code========================//
 
 const eraserBtn = document.getElementById("eraserBtn");
@@ -950,9 +1056,14 @@ function toggleErasing() {
         canvas.isDrawingMode = true;
       
         canvas.forEachObject(function(obj) {
-                    if (obj.type === 'image' && obj.customImageName && obj.customImageName.includes('flat')) 
+                    if (obj.type === 'image') 
                     {
-                        obj.erasable = false;
+                        for (let i = 0; i < images.length; i++) {
+                            if (images[i].customImageName === obj.customImageName) {
+                                obj.erasable = false;
+                                break;
+                            }
+                        }
                     } 
                     if (!obj.visible) {
                         obj.erasable = false;
@@ -1017,166 +1128,41 @@ function UndoErase() {
     //     eel.run_python_file();
     // });
 
+
 //===================save image=====================//
 
 const saveBtn = document.getElementById("save_id");
 saveBtn.addEventListener('click', saveCanvasImage);
 
 function saveCanvasImage() {
-
-    const scaleFactor = calculateScaleFactor(actual_w, actual_h, 600, 750)*10;
-    // const scaleFactor = 5;
-
-    // Scale up all objects on the canvas
-    canvas.getObjects().forEach(obj => {
-        obj.scaleX *= scaleFactor;
-        obj.scaleY *= scaleFactor;
-        canvas.width *=scaleFactor;
-        canvas.height *=scaleFactor;
-        // obj.setCoords(); // Update object's coordinates
-    });
-
+    const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
     const backgroundImage = canvas.backgroundImage;
     canvas.backgroundImage = null;
+
+    // Scale up the canvas
+    const originalWidth = canvas.getWidth();
+    const originalHeight = canvas.getHeight();
+    canvas.setWidth(originalWidth * scaleFactor);
+    canvas.setHeight(originalHeight * scaleFactor);
+    canvas.setZoom(scaleFactor);
+
     canvas.renderAll();
 
     const dataURL = canvas.toDataURL('image/png', 1.0);
+
     canvas.backgroundImage = backgroundImage;
-    canvas.renderAll();
+    canvas.setWidth(originalWidth);
+    canvas.setHeight(originalHeight);
+    canvas.setZoom(1);
+
     const link = document.createElement('a');
-    link.download = 'canvas-image.png'; 
-    link.href = dataURL; 
+    link.download = 'canvas-image.png';
+    link.href = dataURL;
 
     link.click();
-
-    canvas.getObjects().forEach(obj => {
-        obj.scaleX /= scaleFactor;
-        obj.scaleY /= scaleFactor;
-        canvas.width /=scaleFactor;
-        canvas.height /=scaleFactor;
-        obj.setCoords(); // Update object's coordinates
-
-    });
-
-    canvas.renderAll();
 }
 
-// function saveCanvasImage() {
-//     const visibleObjects = canvas.getObjects().filter(obj => obj.visible);
-//     console.log("actual_w",actual_w)
-//     visibleObjects.forEach(obj => {
-//         const dataURL = obj.toDataURL({
-//             format: 'png',
-//             multiplier: 1.0,
-//             width: actual_w,
-//             height: actual_h
-//         });
 
-//         const imageFile = base64ToImage(dataURL);
-//         const imageUrl = URL.createObjectURL(imageFile);
-
-//         // Do something with the image URL, such as displaying it on the page or saving it to a list
-//         const a = document.createElement('a');
-//         a.href = imageUrl;
-//         a.download = 'image.png';
-//         document.body.appendChild(a);
-//         a.click();
-//         document.body.removeChild(a);
-//     });
-// }
-
-// function base64ToBlob(base64String, contentType) {
-//   const byteCharacters = atob(base64String.replace(/^data:image\/(png|jpeg);base64,/, ''));
-//   const byteArrays = [];
-//   for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-//     const slice = byteCharacters.slice(offset, offset + 512);
-//     const byteNumbers = new Array(slice.length);
-//     for (let i = 0; i < slice.length; i++) {
-//       byteNumbers[i] = slice.charCodeAt(i);
-//     }
-//     const byteArray = new Uint8Array(byteNumbers);
-//     byteArrays.push(byteArray);
-//   }
-//   return new Blob(byteArrays, { type: contentType });
-// }
-
-// function saveCanvasImage() {
-//       // Scale factor (e.g., scale up by 2)
-//     const scaleFactor = 5;
-
-//     // Scale up all objects on the canvas
-//     canvas.getObjects().forEach(obj => {
-//         obj.scaleX *= scaleFactor;
-//         obj.scaleY *= scaleFactor;
-//         canvas.width *=scaleFactor;
-//         canvas.height *=scaleFactor;
-//         obj.setCoords(); // Update object's coordinates
-//     });
-
-//     // Render the canvas to apply the changes
-//     canvas.renderAll();
-
-//         // // const dataURL = images[0].customBase64;
-//         // const dataURL = canvas.toDataURL({
-//         //     format: 'jpeg',
-//         //     quality: 1.0,// Set the quality to maximum (1.0)
-//         // });
-
-//         // const imageFile = base64ToBlob(dataURL, 'image/png');
-//         // const imageUrl = URL.createObjectURL(imageFile);
-
-//         // const a = document.createElement('a');
-//         // a.href = imageUrl;
-//         // a.download = 'image.png';
-//         // a.click();
-//         // URL.revokeObjectURL(dataURL);
-
-//         const visibleObjects = canvas.getObjects().filter(obj => obj.visible);
-
-//         visibleObjects.forEach((obj, index) => {
-//             const dataURL = obj.toDataURL({
-//                 format: 'png',
-//                 quality: 1.0,
-//                 //without transform
-//             });
-
-//             const imageFile = base64ToBlob(dataURL, 'image/jpeg');
-//             const imageUrl = URL.createObjectURL(imageFile);
-
-//             const a = document.createElement('a');
-//             a.href = imageUrl;
-//             a.download = `image_${index}.jpg`;
-//             a.click();
-
-//             URL.revokeObjectURL(imageUrl);
-//         });
-
-
-//             // Reset the scale of all objects (optional)
-//     canvas.getObjects().forEach(obj => {
-//         obj.scaleX /= scaleFactor;
-//         obj.scaleY /= scaleFactor;
-//         canvas.width /=scaleFactor;
-//         canvas.height /=scaleFactor;
-//         obj.setCoords(); // Update object's coordinates
-
-//     });
-
-//     canvas.renderAll();
-// }
-
-
-
-
-// function saveBase64ImageToFile(base64String, fileName) {
-//   const blob = base64ToBlob(base64String, 'image/png'); // Change the content type based on your image format
-//   const url = URL.createObjectURL(blob);
-//   const a = document.createElement('a');
-//   a.href = url;
-//   a.download = fileName;
-//   a.click();
-//   URL.revokeObjectURL(url);
-// }
 
 //========================paint brush functions==========================//
 
@@ -1196,10 +1182,13 @@ function saveCanvasImage() {
         isDrawingMode = !isDrawingMode;
 
         if (isDrawingMode) {
+           if (isPanning) {
+              togglePanning();
+           }
             
-            canvas.defaultCursor = `url("${cursorUrl}"), auto`;
-            canvas.hoverCursor = `url("${cursorUrl}"), auto`;
-            canvas.moveCursor = `url("${cursorUrl}"), auto`;
+            // canvas.defaultCursor = `url("${cursorUrl}"), auto`;
+            // canvas.hoverCursor = `url("${cursorUrl}"), auto`;
+            // canvas.moveCursor = `url("${cursorUrl}"), auto`;
 
             canvas.freeDrawingBrush.color = 'rgba(0,0,0,0.5)';
             canvas.isDrawingMode = true;
@@ -1272,6 +1261,152 @@ function redo() {
 // Event listeners for undo and redo buttons
 document.getElementById('UndoBtn').addEventListener('click', undo);
 document.getElementById('RedoBtn').addEventListener('click', redo);
+
+
+//==========================carousel functions=====================================//
+
+const prev = document.querySelector(".prev");
+const next = document.querySelector(".next");
+const carousel = document.querySelector(".carousel-container");
+const track = document.querySelector(".track");
+
+let width = 300; // Assuming each card-container has a width of 120px and padding-right of 10px
+let index = 0;
+
+window.addEventListener("resize", function () {
+  width = carousel.offsetWidth;
+});
+
+
+next.addEventListener("click", function (e) {
+  e.preventDefault();
+  if (index < track.children.length - 2 && -index * width > -250) { // Adjusted to ensure there are always two cards visible and limit translateX to -250
+    index = index + 1;
+    prev.classList.add("show");
+    // Limit the translateX value to -250
+    let translateX = -index * width;
+    if (translateX < -250) {
+      translateX = -250;
+    }
+    track.style.transform = "translateX(" + translateX + "px)";
+    if (index === track.children.length - 2) {
+      next.classList.add("hide");
+    }
+  }
+});
+
+prev.addEventListener("click", function () {
+  if (index > 0) {
+    index = index - 1;
+    next.classList.remove("hide");
+    if (index === 0) {
+      prev.classList.remove("show");
+    }
+    track.style.transform = "translateX(" + -index * width + "px)";
+  }
+});
+
+
+function Hide_allshadows(){
+    canvas.getObjects().forEach(obj => {
+                  if (obj.customImageName && obj.customImageName.includes('shadow')) {
+                      obj.visible = false;
+                  }
+    });
+}
+
+function goTo(index) {
+  let translateX = -index * width;
+  if (translateX < -250) {
+    translateX = -250;
+  }
+  track.style.transform = "translateX(" + translateX + "px)";
+
+  // Update index and manage next/prev button visibility
+  if (index === 0) {
+    prev.classList.remove("show");
+  } else {
+    prev.classList.add("show");
+  }
+
+  if (index === track.children.length - 2) {
+    next.classList.add("hide");
+  } else {
+    next.classList.remove("hide");
+  }
+}
+
+
+
+let clicked_index= null;
+function setCardBackgroundImages(direction) {
+    
+    goTo(0);
+    
+    let opacityDiv = document.getElementById('opacitydiv_id');
+    let partDiv = document.getElementById('partdiv_id');
+    let carnav = document.querySelector('#Carousel_id .nav');
+   
+    carnav.style.display = 'block';
+    opacityDiv.style.display = 'block';
+    partDiv.style.display = 'block';
+
+    let card_images = base_shadow_images.filter(img => img.customImageName.includes(direction));
+    console.log("Filtered base_shadow_images", card_images);
+
+    let cards = document.querySelectorAll('.card-container');
+    let imagePath = null;
+
+    cards.forEach((card, index) => {
+          
+          clicked_index = null;
+          
+          imagePath = `Shadows/${card_images[index].customImageName}`;
+
+          card.querySelector('.card').style.background = `#e6e6e6 url(${imagePath}) no-repeat center center`;
+          card.querySelector('.card').style.backgroundSize = 'cover';
+          card.querySelector('.card').style.border = '1px solid #4d4d4d';
+
+
+                  // Highlight the first card
+          if (index === 0) {
+              card.querySelector('.card').style.border = '3px solid black';
+              card.querySelector('.card').style.background = `white url(${imagePath}) no-repeat center center`;
+              card.querySelector('.card').style.backgroundSize = 'cover';
+          }
+
+          card.addEventListener("click", function () {
+              
+              Hide_allshadows();
+              addShadowButton();
+              
+              clicked_index = index;
+              console.log("clicked_index", clicked_index);
+              
+              segments.forEach(seg => {
+                  toggleVisibilityByDirectionAndSegment(direction, seg, clicked_index, true);
+              });
+
+              canvas.getObjects().forEach(obj => {
+                  if (obj.customImageName && obj.customImageName.includes('shadow')) {
+                      console.log(obj.customImageName, obj.visible);
+                  }
+              });
+
+              cards.forEach(card => {
+                  card.querySelector('.card').style.border = '1px solid #4d4d4d';
+                  card.querySelector('.card').style.backgroundColor = '#e6e6e6';
+              });
+
+              card.querySelector('.card').style.border = '3px solid black';
+              card.querySelector('.card').style.backgroundColor = 'white';
+              clicked_index = null;
+          });
+    });
+
+
+}
+
 
 
 });

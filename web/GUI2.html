@@ -37,8 +37,12 @@
                             <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">File <span class="caret"></span></a>
                               <ul class="dropdown-menu">
                                 <!-- <li id="new_doc_id"><a href="#">New</a></li> -->
-                                <li><a href="#"><label for="fileInput">
+<!--                                 <li><a href="#"><label for="fileInput">
                                 Open Images</label><input type="file" id="fileInput" accept="image/*" multiple></a>
+                                </li> -->
+
+                                <li><a href="#"><label for="fileInput">
+                                Open Images</label><input type="file" id="fileInput" accept="image/*, .psd" multiple></a>
                                 </li>
                                 <li id="save_id"><a href="#">Save</a></li>
                                 <li><a href="#">Save As</a></li>
@@ -60,12 +64,12 @@
 
 
           
-  <div id="tabbar_id">
-<!--           <ul class="nav nav-tabs">
+<!--   <div id="tabbar_id">
+          <ul class="nav nav-tabs">
             <li class="active"><a data-toggle="tab" href="#Editor_id">document1</a></li>
-          </ul> -->
+          </ul>
           <h> Image_filename.png </h>
-  </div>
+  </div> -->
 
   <div class="tab-content">
   <div id="Editor_id" class="tab-pane fade in active">
@@ -90,8 +94,6 @@
                                               <span id='30' class='circle-30'><i class='fas fa-circle'></i></span>
                                           </div>
                                           <div>
-                                          <input type='range' id='brushSizeRange' min='10' max='30' step='5' value='10'>
-                                          <span id='rangeValue'>10</span>
                                       </div>
                                       "></i>
                                   </button>
@@ -149,8 +151,10 @@
                   </div>
 
                   <div class="col-sm-8">
+                    <div id="loader" class="loader"></div>
+
                       <div id="canvas_id" class="draggable">
-                          <canvas id="canvas" width="750" height="600"></canvas>
+                          <canvas id="canvas"></canvas>
                               
                               <div id="zoomControls">
                                   <button class="btn btn-outline-dark btn-block" id="zoomInButton"><i class="fa fa-plus"></i></button>
@@ -167,61 +171,12 @@
                           <!-- operation code here -->
                                     <div class="panel-group">
 
-<!--                                             <div class="panel panel-default">
-                                              <div class="panel-heading">
-                                                <h4 class="panel-title">
-                                                  <a data-toggle="collapse" href="#collapse1">Information</a>
-                                                </h4>
-                                              </div>
-                                              <div id="collapse1" class="panel-collapse collapse in">
-
-                                                  <div id="cursorInfo" class="panel-body">
-                                                      View segments
-                                                      <label class="switch">
-                                                        <input id="btn_segment" type="checkbox">
-                                                        <span class="slider round"></span>
-                                                      </label> <br>
-                                                    <div class="form-check">
-                                                      <input class="form-check-input" type="checkbox" id="hairCheckbox">
-                                                      <label class="form-check-label" for="hairCheckbox">Hair
-                                                      </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                      <input class="form-check-input" type="checkbox" id="faceCheckbox">
-                                                      <label class="form-check-label" for="faceCheckbox">Face
-                                                      </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                      <input class="form-check-input" type="checkbox" id="clothCheckbox">
-                                                      <label class="form-check-label" for="clothCheckbox">Cloth
-                                                      </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                      <input class="form-check-input" type="checkbox" id="armCheckbox">
-                                                      <label class="form-check-label" for="armCheckbox">Arm
-                                                      </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                      <input class="form-check-input" type="checkbox" id="objectCheckbox">
-                                                      <label class="form-check-label" for="objectCheckbox">Object
-                                                      </label>
-                                                    </div>
-                                                    <div class="form-check">
-                                                      <input class="form-check-input" type="checkbox" id="allCheckbox">
-                                                      <label class="form-check-label" for="allCheckbox">All
-                                                      </label>
-                                                    </div>
-                                                  </div>
-
-                                              </div>
-                                            </div> -->
-
                                             <div class="panel panel-default">
                                               <div class="panel-heading">
                                                 <h4 class="panel-title">
                                                   <a data-toggle="collapse" href="#collapse2">Shadow Control
                                                   </a>
-                                                    <label class="switch">
+                                                    <label class="switch" style="display: none;">
                                                       <input id="btn_shadow" type="checkbox">
                                                       <span class="slider round"></span>
                                                     </label>
@@ -232,97 +187,113 @@
                                                 <div class="panel-body">
 
                                                   <span style="display: inline-block;">Light Control </span> <br>
-                                                    
-                                                  <div class="btn-group" role="group">
-                                                      <button id="btnTop" type="button" class="btn btn-secondary">
-                                                          <i class="fas fa-arrow-down" aria-hidden="true"></i>
-                                                      </button>
+
+                                                    <div class="btn-group" role="group">
                                                       <button id="btnLeft" type="button" class="btn btn-secondary">
-                                                          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                                                     <img src="assets/direction_left.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
                                                       <button id="btnRight" type="button" class="btn btn-secondary">
-                                                          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                                     <img src="assets/direction_right.png" alt="Arrow Down" style="width: 22px; height: 22px;">
+                                                      </button>
+                                                      <button id="btnTop" type="button" class="btn btn-secondary">
+                                                     <img src="assets/direction_top.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
                                                       <button id="btnBack" type="button" class="btn btn-secondary">
-                                                          <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                                                     <img src="assets/direction_back.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
-                                                  </div>
+                                                    </div>
+
+
+                                                    <div id="Carousel_id" class="carousel-container">
+                                                        <div class="inner-carousel">
+                                                          <div class="track">
+                                                            <div class="card-container">
+                                                              <div class="card card1"></div>
+                                                            </div>
+                                                            <div class="card-container">
+                                                              <div class="card card2"></div>
+                                                            </div>
+                                                            <div class="card-container">
+                                                              <div class="card card3"></div>
+                                                            </div>
+                                                            <div class="card-container">
+                                                              <div class="card card4"></div>
+                                                            </div>
+                                                          </div>
+                                                          <div id="carouselNavid" class="nav">
+                                                            <button class="prev"><i class="fas fa-arrow-left"></i></button>
+                                                            <button class="next"><i class="fas fa-arrow-right"></i></button>
+                                                          </div>
+                                                        </div>
+                                                    </div>
+
 
                                                   <div id="collapse1">
 
-                                                                <div class="form-check">
-                                                                 <span style="display: inline-block;">Show Everything</span>
-                                                                  <label class="switch">
-                                                                    <input id="allCheckbox" type="checkbox">
-                                                                    <span class="slider round"></span>
-                                                                  </label> <br>
-                                                                </div>
 
-
-                                                        <div id="cursorInfo" class="panel-body">
-
-<!--                                                                 <div class="form-check">
-                                                                 <span style="display: inline-block;">Show Everything</span>
-                                                                  <label class="switch">
-                                                                    <input id="allCheckbox" type="checkbox">
-                                                                    <span class="slider round"></span>
-                                                                  </label> <br>
-                                                                </div> -->
-
-                                                                <div class="form-check">
-                                                                  <input class="form-check-input" type="checkbox" id="hairCheckbox" style="accent-color: red;" >
-                                                                  <label class="form-check-label" for="hairCheckbox">Hair
-
-                                                                  </label>
-                                                                  <span class="checkmark"></span>
-                                                                </div>
-                                                                <div class="form-check">
-                                                                  <input class="form-check-input" type="checkbox" id="faceCheckbox" style="accent-color: #66fa52;">
-                                                                  <label class="form-check-label" for="faceCheckbox">Face
-                                                                  </label>
-                                                                </div>
-                                                                <div class="form-check">
-                                                                  <input class="form-check-input" type="checkbox" id="clothCheckbox" style="accent-color: blue;">
-                                                                  <label class="form-check-label" for="clothCheckbox">Cloth
-                                                                  </label>
-                                                                </div>
-                                                                <div class="form-check">
-                                                                  <input class="form-check-input" type="checkbox" id="armCheckbox" style="accent-color: #1bf5f5;">
-                                                                  <label class="form-check-label" for="armCheckbox">Arm
-                                                                  </label>
-                                                                </div>
-                                                                <div class="form-check">
-                                                                  <input class="form-check-input" type="checkbox" id="objectCheckbox" style="accent-color: #f2fa02;">
-                                                                  <label class="form-check-label" for="objectCheckbox">Object
-                                                                  </label>
-                                                                </div>
-            <!--                                                     <div class="form-check">
-                                                                  <input class="form-check-input" type="checkbox" id="allCheckbox">
-                                                                  <label class="form-check-label" for="allCheckbox">All
-                                                                  </label>
-                                                                </div> -->
-
-                                                        </div>
-
-
-                                              <div>
-                                                  <span style="display: inline-block;">Show Outline</span>
-                                                  <label class="switch">
-                                                      <input id="btn_segment" type="checkbox">
-                                                      <span class="slider round"></span>
-                                                  </label>
-                                                  <br>
-                                              </div>
-
-                                              </div>
-
-                                                  <div class="form-group" style="margin-top: 5px;">
+                                                  <div id="opacitydiv_id" class="form-group" style="margin-top: 5px;">
                                                       <span>Opacity: 
                                                         <span id="opacityValue" style="float:right; margin-bottom: 5px;">1</span>
                                                       </span>
                                                       <input type="range" class="custom-range" id="opacityRange" min="0" max="1" step="0.1" value="1">
                                                       <!-- <span id="opacityValue">1</span> -->
                                                   </div>
+
+
+                                                   <div id="partdiv_id" class="form-check">
+                                                       <span style="display: inline-block;">Part Selector</span>
+                                                          <label class="switch">
+                                                              <input id="allCheckbox" type="checkbox"> 
+                                                               <span class="slider"></span>
+                                                           </label> <br>
+                                                    </div>
+
+
+
+                                                        <div id="cursorInfo" class="panel-body" style="display:none">
+
+                                                                <div class="form-check">
+                                                                  <input class="form-check-input" type="checkbox" id="hairCheckbox" style="accent-color: #66C2A5;" >
+                                                                  <label class="form-check-label" for="hairCheckbox">Hair
+
+                                                                  </label>
+                                                                  <span class="checkmark"></span>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                  <input class="form-check-input" type="checkbox" id="faceCheckbox" style="accent-color: #98ADDB;">
+                                                                  <label class="form-check-label" for="faceCheckbox">Face
+                                                                  </label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                  <input class="form-check-input" type="checkbox" id="clothCheckbox" style="accent-color: #FC8D62;">
+                                                                  <label class="form-check-label" for="clothCheckbox">Cloth
+                                                                  </label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                  <input class="form-check-input" type="checkbox" id="armCheckbox" style="accent-color: #E78AC3;">
+                                                                  <label class="form-check-label" for="armCheckbox">Arm
+                                                                  </label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                  <input class="form-check-input" type="checkbox" id="objectCheckbox" style="accent-color: #A6D854;">
+                                                                  <label class="form-check-label" for="objectCheckbox">Object
+                                                                  </label>
+                                                                </div>
+
+                                                        </div>
+
+
+<!--                                               <div>
+                                                  <span style="display: inline-block;">Show Outline</span>
+                                                  <label class="switch">
+                                                      <input id="btn_segment" type="checkbox">
+                                                      <span class="slider"></span>
+                                                  </label>
+                                                  <br>
+                                              </div> -->
+
+                                              </div>
+
 
 
 
@@ -352,8 +323,12 @@
                                               </div>
                                               <div id="collapse4" class="panel-collapse collapse in">
                                                 <div class="panel-body">
-                                                      <span>Shadow Layers <hr></span>
+                                                      <span>Current Shadow<hr></span>
                                                       <div id="shadowList">
+                                                      </div>
+
+                                                      <span>Bookmarked Shadow<hr></span>
+                                                      <div id="BM_shadowList">
                                                       </div>
                                                       
                                                       <span>Base Layers</span><hr>
@@ -371,151 +346,6 @@
               </div> <!-- row div  -->
   </div> <!-- Editor_id div -->
 
-
-
-
-
-    <div id="Editor_id2" class="tab-pane fade" style="margin: 1%;">
-              <div class="row">
-
-                  <div class="col-sm-1">
-                      <div id="tool_id">
-                        <!--  tools code here -->
-                            <div class="row">
-                                <div class="col-sm-6 text-right">
-                                    <button>
-                                      <i class="fa fa-mouse-pointer" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fa fa-paint-brush" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fa fa-search" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fas fa-magic" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fa fa-palette" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fas fa-draw-polygon" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                                
-                                <div class="col-sm-6">
-                                    <button>
-                                      <i class="fa fa-hand-stop-o" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fa fa-eraser" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fa fa-pencil" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fa fa-eyedropper" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="fas fa-sync" aria-hidden="true"></i>
-                                    </button>
-                                    <button>
-                                      <i class="far fa-clone" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button>
-                                Shadow
-                            </button>
-
-                      </div>
-                  </div>
-
-                  <div class="col-sm-8">
-                      <div id="canvas_id">
-                          <canvas id="canvas" width="750" height="600"></canvas>
-                      </div>
-                  </div>
-
-                  <div class="col-sm-3">
-                      <div id="operation_id">
-                          <!-- operation code here -->
-                                    <div class="panel-group">
-                                            <div class="panel panel-default">
-                                              <div class="panel-heading">
-                                                <h4 class="panel-title">
-                                                  <a data-toggle="collapse" href="#collapse1">Information</a>
-                                                </h4>
-                                              </div>
-                                              <div id="collapse1" class="panel-collapse collapse in">
-                                                <div class="panel-body">
-                                                  X: 125 px <br>
-                                                  Y: 600 px <br>
-                                                  RGB: (0, 255, 245) <br>
-                                                </div>
-                                              </div>
-                                            </div>
-
-                                            <div class="panel panel-default">
-                                              <div class="panel-heading">
-                                                <h4 class="panel-title">
-                                                  <a data-toggle="collapse" href="#collapse2">Shadow Setting</a>
-                                                </h4>
-                                              </div>
-                                              <div id="collapse2" class="panel-collapse collapse in">
-                                                <div class="panel-body">
-                                                    
-                                                    <div class="btn-group" role="group">
-                                                      <button type="button" class="btn btn-secondary">
-                                                        <i class="fas fa-arrow-down" aria-hidden="true"></i>
-                                                      </button>
-                                                      <button type="button" class="btn btn-secondary">
-                                                        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                                                      </button>
-                                                      <button type="button" class="btn btn-secondary">
-                                                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                                                      </button>
-                                                      <button type="button" class="btn btn-secondary">
-                                                        <i class="fas fa-arrow-up" aria-hidden="true"></i>
-                                                      </button>
-                                                    </div>
-
-                                                </div>
-                                              </div>
-                                            </div>
-
-                                            <div class="panel panel-default">
-                                              <div class="panel-heading">
-                                                <h4 class="panel-title">
-                                                  <a data-toggle="collapse" href="#collapse3">Shadow Layers</a>
-                                                </h4>
-                                              </div>
-                                              <div id="collapse3" class="panel-collapse collapse in">
-                                                <div class="panel-body">
-                                                </div>
-                                              </div>
-                                            </div>
-
-                                            <div class="panel panel-default">
-                                              <div class="panel-heading">
-                                                <h4 class="panel-title">
-                                                  <a data-toggle="collapse" href="#collapse4">Base Layers</a>
-                                                </h4>
-                                              </div>
-                                              <div id="collapse4" class="panel-collapse collapse in">
-                                                <div class="panel-body">
-                                                </div>
-                                              </div>
-                                            </div>
-
-                                    </div>
-                      </div>
-                  </div>
-
-
-              </div> <!-- row div  -->
-  </div> <!-- Editor_id div -->
 
 
 
