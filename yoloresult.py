@@ -14,7 +14,6 @@ def auto_merge(image_folder, json_folder):
             command = f"python AutoMerge.py {image_path} {json_path}"
             os.system(command)
 
-
 def create_directories_if_not_exist(image_path):
     # Get the parent directory of the image path
     parent_directory = os.path.dirname(image_path)
