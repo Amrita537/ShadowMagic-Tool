@@ -247,7 +247,7 @@ def segment_single(img_name):
     # init parameters
     infere_size = 320
     weights_path = "./yolov5/runs/train-seg/exp10/weights/best.pt"
-    source_path = os.path.join(PATH_TO_PREPROCESS, img_name+"_flat.png")
+    source_path = os.path.join(PATH_TO_FLAT, img_name+"_flat.png")
     assert os.path.exists(source_path)
 
     # segment flat layer
