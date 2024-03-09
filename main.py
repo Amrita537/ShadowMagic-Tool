@@ -110,40 +110,41 @@ Helper functions
 '''
 def preprocess(path_to_psd, name, var):
     # test if this image has been processed
-    open_psd(path_to_psd, PATH_TO_PREPROCESS)
-    # open extracted pngs
-    flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
-    # add white backgournd if flat has alpha channel
-    if flat.shape[-1] == 4:
-        bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
-        alpha = flat[..., -1][..., np.newaxis] / 255
-        rgb = flat[..., 0:3]
-        flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
-        Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
-    line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
-    if line.shape[-1] == 4:
-        if len(np.unique(line[..., -1])) == 1:
-            line = 255 - line[..., -1]
-        else:
-            line = line[..., 0:3]
-    color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
+    
+    # open_psd(path_to_psd, PATH_TO_PREPROCESS)
+    # # open extracted pngs
+    # flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
+    # # add white backgournd if flat has alpha channel
+    # if flat.shape[-1] == 4:
+    #     bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
+    #     alpha = flat[..., -1][..., np.newaxis] / 255
+    #     rgb = flat[..., 0:3]
+    #     flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
+    #     Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
+    # line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
+    # if line.shape[-1] == 4:
+    #     if len(np.unique(line[..., -1])) != 1:
+    #         line = np.repeat((255 - line[..., -1])[..., np.newaxis], 3, axis = -1)
+    #     else:
+    #         line = line[..., 0:3]
+    # color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
 
-    # get shadows
-    for direction in DIRS:
-        url = "http://164.90.158.133:8080/shadowsingle"
-        data_send = {}
-        data_send['user'] = 'userA'
-        data_send['direction'] = direction
-        data_send['name'] = name
-        data_send['flat'] = array_to_base64(flat)
-        data_send['line'] = array_to_base64(line)
-        data_send['color'] = array_to_base64(color.astype(np.uint8))
+    # # get shadows
+    # for direction in DIRS:
+    #     url = "http://164.90.158.133:8080/shadowsingle"
+    #     data_send = {}
+    #     data_send['user'] = 'userA'
+    #     data_send['direction'] = direction
+    #     data_send['name'] = name
+    #     data_send['flat'] = array_to_base64(flat)
+    #     data_send['line'] = array_to_base64(line)
+    #     data_send['color'] = array_to_base64(color.astype(np.uint8))
         
-        for i in range(var):
-            resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
-            resp = resp.json()
-            shadow = to_pil(resp['shadow_0'])
-            shadow.save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
+    #     for i in range(var):
+    #         resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
+    #         resp = resp.json()
+    #         shadow = to_pil(resp['shadow_0'])
+    #         shadow.save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
 
     # get the segmentation result
     segment_single(name)
@@ -205,7 +206,7 @@ def segment_single(img_name):
     assert os.path.exists(source_path)
 
     # segment flat layer
-    seg(
+    path_to_label = seg(
         weights=weights_path,  # model.pt path(s)
         source=source_path,  # file/dir/URL/glob/screen/0(webcam)
         imgsz=(infere_size, infere_size),  # inference size (height, width)
@@ -216,8 +217,8 @@ def segment_single(img_name):
     # predict label to json file
     # but this function may not correct, need debug
     to_json(
-        image_path = PATH_TO_FLAT, 
-        yolo_txt_path = "./yolov5/runs/predict-seg/exp/labels"
+        image_path = PATH_TO_PREPROCESS, 
+        yolo_txt_path = path_to_label
         )
 
 def array_to_base64(array):

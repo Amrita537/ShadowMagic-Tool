@@ -4,7 +4,7 @@ import os
 import sys
 import numpy as np
 
-
+# why..............orz
 def create_json(image_folder, text_folder, output_folder):
     # Get the list of image files in the folder
     image_files = os.listdir(image_folder)
