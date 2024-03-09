@@ -156,7 +156,7 @@ Helper functions
 def preprocess(path_to_psd, name, var):
     # test if this image has been processed
     
-    # open_psd(path_to_psd, PATH_TO_PREPROCESS)
+    open_psd(path_to_psd, PATH_TO_PREPROCESS)
     # # open extracted pngs
     # flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
     # # add white backgournd if flat has alpha channel
@@ -165,7 +165,6 @@ def preprocess(path_to_psd, name, var):
     #     alpha = flat[..., -1][..., np.newaxis] / 255
     #     rgb = flat[..., 0:3]
     #     flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
-    #     Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
     # line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
     # if line.shape[-1] == 4:
     #     if len(np.unique(line[..., -1])) != 1:
