@@ -21,10 +21,13 @@ from tqdm import tqdm
 PATH_TO_PREPROCESS = './preprocessed/'
 
 # path to save files that under processing
-PATH_TO_FLAT = './InputFlats/'
-PATH_TO_LINE = './InputLines/'
+PATH_TO_FLAT = './InputFlats'
+PATH_TO_LINE = './InputLines'
 PATH_TO_SHADOW = './web/Shadows'
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
+PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
+PATH_TO_JSON_ = "./YoloOutput/json"
+PATH_TO_JSON = None
 DIRS = ['left', 'right', "top", "back"]
 
 
@@ -154,46 +157,50 @@ def shadow_decrease():
 Helper functions
 '''
 def preprocess(path_to_psd, name, var):
+    print("log:\tpredicting shadowing and segmentation result for %s"%path_to_psd)
     # test if this image has been processed
-    
+    global PATH_TO_JSON
+    PATH_TO_JSON = None
     open_psd(path_to_psd, PATH_TO_PREPROCESS)
-    # # open extracted pngs
-    # flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
-    # # add white backgournd if flat has alpha channel
-    # if flat.shape[-1] == 4:
-    #     bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
-    #     alpha = flat[..., -1][..., np.newaxis] / 255
-    #     rgb = flat[..., 0:3]
-    #     flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
-    # line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
-    # if line.shape[-1] == 4:
-    #     if len(np.unique(line[..., -1])) != 1:
-    #         line = np.repeat((255 - line[..., -1])[..., np.newaxis], 3, axis = -1)
-    #     else:
-    #         line = line[..., 0:3]
-    # color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
+    # open extracted pngs
+    flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
+    # add white backgournd if flat has alpha channel
+    if flat.shape[-1] == 4:
+        bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
+        alpha = flat[..., -1][..., np.newaxis] / 255
+        rgb = flat[..., 0:3]
+        flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
+        Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
+    line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
+    if line.shape[-1] == 4:
+        if len(np.unique(line[..., -1])) != 1:
+            line = np.repeat((255 - line[..., -1])[..., np.newaxis], 3, axis = -1)
+        else:
+            line = line[..., 0:3]
+    color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
 
-    # # get shadows
-    # for direction in DIRS:
-    #     url = "http://164.90.158.133:8080/shadowsingle"
-    #     data_send = {}
-    #     data_send['user'] = 'userA'
-    #     data_send['direction'] = direction
-    #     data_send['name'] = name
-    #     data_send['flat'] = array_to_base64(flat)
-    #     data_send['line'] = array_to_base64(line)
-    #     data_send['color'] = array_to_base64(color.astype(np.uint8))
+    # get shadows
+    for direction in DIRS:
+        url = "http://164.90.158.133:8080/shadowsingle"
+        data_send = {}
+        data_send['user'] = 'userA'
+        data_send['direction'] = direction
+        data_send['name'] = name
+        data_send['flat'] = array_to_base64(flat)
+        data_send['line'] = array_to_base64(line)
+        data_send['color'] = array_to_base64(color.astype(np.uint8))
         
-    #     for i in range(var):
-    #         resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
-    #         resp = resp.json()
-    #         shadow = to_pil(resp['shadow_0'])
-    #         shadow.save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
+        for i in range(var):
+            resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
+            resp = resp.json()
+            shadow = to_pil(resp['shadow_0'])
+            shadow.save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
 
     # get the segmentation result
     segment_single(name)
 
 def preprocess_to_work(fname):
+    print("log:\tpreparing shadowing result for %s"%fname)
     # clean up all files in the working folder
     for f in os.listdir(PATH_TO_FLAT):
         delete_item(os.path.join(PATH_TO_FLAT, f))
@@ -212,13 +219,14 @@ def preprocess_to_work(fname):
     shadows_right = []
     for s in os.listdir(PATH_TO_PREPROCESS):
         # DIRS = ['left', 'right', "top", "back"]
-        if 'fname' in s and 'shadow' in s and DIRS[2] in s:
+        if '.png' not in s: continue
+        if fname in s and 'shadow' in s and DIRS[2] in s:
             shadows_top.append(s)
-        if 'fname' in s and 'shadow' in s and DIRS[3] in s:
+        if fname in s and 'shadow' in s and DIRS[3] in s:
             shadows_back.append(s)
-        if 'fname' in s and 'shadow' in s and DIRS[0] in s:
+        if fname in s and 'shadow' in s and DIRS[0] in s:
             shadows_left.append(s)
-        if 'fname' in s and 'shadow' in s and DIRS[1] in s:
+        if fname in s and 'shadow' in s and DIRS[1] in s:
             shadows_right.append(s)
     assert len(shadows_top) >= 4
     assert len(shadows_back) >= 4
@@ -229,10 +237,10 @@ def preprocess_to_work(fname):
     random.shuffle(shadows_left)
     random.shuffle(shadows_right)
     for i in range(4): 
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d"%(DIRS[2], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d"%(DIRS[3], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d"%(DIRS[0], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d"%(DIRS[1], i)))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[2], i)))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[3], i)))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[0], i)))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[1], i)))
 
 def delete_item(path_to_item):
     if os.path.isdir(path_to_item):
@@ -242,8 +250,9 @@ def delete_item(path_to_item):
     else:
         raise ValueError("can't delete file %s"%path_to_item)
 
-def segment_single(img_name): 
+def segment_single(img_name):
     # init parameters
+    global PATH_TO_JSON
     infere_size = 320
     weights_path = "./yolov5/runs/train-seg/exp10/weights/best.pt"
     source_path = os.path.join(PATH_TO_FLAT, img_name+"_flat.png")
@@ -259,11 +268,12 @@ def segment_single(img_name):
         )
 
     # predict label to json file
-    # but this function may not correct, need debug
     to_json(
         image_path = PATH_TO_FLAT, 
         yolo_txt_path = path_to_label
         )
+    PATH_TO_JSON = os.path.join(PATH_TO_JSON_, img_name+"_flat.json")
+
 
 def array_to_base64(array):
     '''
@@ -287,7 +297,7 @@ def to_pil(byte):
 
 if __name__ == "__main__":
     # for debug
-    open_psd_py("./test/image59.psd")
+    # open_psd_py("./test/image59.psd")
     # batch_process()
 
     # start main GUI
