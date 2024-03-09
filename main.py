@@ -31,8 +31,6 @@ DIRS = ['left', 'right', "top", "back"]
 '''
 exposed functions
 '''
-
-
 @eel.expose
 def Crop_Shadow(image_path, json_path, output_folder):
     # Load JSON data
@@ -201,7 +199,7 @@ def preprocess_to_work(fname):
     for f in os.listdir(PATH_TO_FLAT):
         delete_item(os.path.join(PATH_TO_FLAT, f))
     for f in os.listdir(PATH_TO_LINE):
-        delete_item(os.path.join(PATH_TO_FLAT, f))
+        delete_item(os.path.join(PATH_TO_LINE, f))
     for f in os.listdir(PATH_TO_SHADOW):
         delete_item(os.path.join(PATH_TO_SHADOW, f))
 
@@ -264,7 +262,7 @@ def segment_single(img_name):
     # predict label to json file
     # but this function may not correct, need debug
     to_json(
-        image_path = PATH_TO_PREPROCESS, 
+        image_path = PATH_TO_FLAT, 
         yolo_txt_path = path_to_label
         )
 
