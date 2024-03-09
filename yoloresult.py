@@ -87,8 +87,6 @@ def main(image_path, yolo_txt_path):
     
     
     # Convert raw yolo txt label file to json file and map json annotation on the image
-    import pdb
-    pdb.set_trace()
     poly_to_json_command = f"python polyTojson.py {image_path} {yolo_txt_path} {yolo_json_path}"
     os.system(poly_to_json_command)
     
