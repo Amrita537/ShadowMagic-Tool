@@ -31,6 +31,53 @@ DIRS = ['left', 'right', "top", "back"]
 '''
 exposed functions
 '''
+
+
+@eel.expose
+def Crop_Shadow(image_path, json_path, output_folder):
+    # Load JSON data
+    with open(json_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    img = Image.open(image_path)
+    image_mode = img.mode
+
+    # Group regions by label
+    regions_by_label = {}
+    for region in data['regions']:
+        label = region['label']
+        if label in regions_by_label:
+            regions_by_label[label].append(region)
+        else:
+            regions_by_label[label] = [region]
+
+    # Loop through each label and its regions
+    for label, regions in regions_by_label.items():
+        # Create a list to store masked regions
+        masked_regions = []
+
+        # Loop through each region in the label group
+        for region in regions:
+            coordinates = flatten_coordinates(region['coordinates'])
+
+            mask = Image.new('L', img.size, 0)
+            draw = ImageDraw.Draw(mask)
+            draw.polygon(coordinates, outline=1, fill=1)
+            mask_array = np.array(mask)
+
+            masked_region = Image.fromarray(np.asarray(img) * mask_array[:, :, None], image_mode)
+            masked_regions.append(masked_region)
+
+        # Merge all masked regions belonging to the same label into one image
+        if len(masked_regions) > 0:
+            merged_image = masked_regions[0]
+            for i in range(1, len(masked_regions)):
+                merged_image = Image.alpha_composite(merged_image.convert('RGBA'), masked_regions[i].convert('RGBA'))
+            file_name = os.path.basename(image_path)
+            output_name = f"{os.path.splitext(file_name)[0]}_{label}.png"
+            output_path = os.path.join(output_folder, output_name)
+            merged_image.save(output_path, format=img.format)
+            
 @eel.expose
 def save_image_from_base64(base64_string, imageName):
     exp_path = "yolov5/runs/predict-seg/exp"
