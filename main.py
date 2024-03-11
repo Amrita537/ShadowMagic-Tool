@@ -34,8 +34,7 @@ PATH_TO_JSON = False
 DIRS = ['left', 'right', "top", "back"]
 
 # intermediate shadows
-DECREASE_COUNT = 0
-SHADOWS = []
+SHADOWS = {}
 
 '''
 exposed functions
@@ -81,8 +80,51 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
         open_psd_py(os.path.join(path_to_psds, psd), var = var)
 
 @eel.expose
-def shadow_decrease(shadow):
-    pass
+def shadow_decrease(shadow, line, region_label, reset = False):
+    # open shadow
+    img_binary = base64.b64decode(shadow)
+    shadow = np.array(Image.open(io.BytesIO(img_binary)))
+    if len(shadow.shape == 3):
+        shadow = shadow.mean(axis = -1)
+    
+    # convert shadow image to shadow map (reverse the color)
+    shadow = (shadow == 0)
+    bg_mask = ~shadow
+    
+    # covner line
+    if len(line.shape == 3):
+        line = line.mean(axis = -1)
+    line = line == 0
+    line = line & shadow
+    line_skel = skeletonize(line)
+    line_skel[0,:] = True
+    line_skel[-1,:] = True
+    line_skel[:, 0] = True
+    line_skel[:, -1] = True
+
+    # decrease line
+    shadow_conv = decrease_shadow_gaussian(shadow.astype(float), line_skel, bg_mask)
+    shadow_res = to_shadow_img(shadow_conv)
+    if region_label in SHADOWS:
+        if reset:
+            SHADOWS[region_label] = [shadow, shadow_res]
+        else:
+            SHADOWS[region_label].append(shadow_res)
+    else:
+        SHADOWS[region_label] = [shadow, shadow_res]
+    return shadow_res
+
+@eel.expose
+def shadow_increase(shadow, region_label):
+    # open shadow
+    img_binary = base64.b64decode(shadow)
+    shadow_np = np.array(Image.open(io.BytesIO(img_binary)))
+
+    if region_label in SHADOWS:
+        if len(SHADOWS[region_label]) > 0:
+            return SHADOWS[region_label].pop()
+    # return the input shadow if nothing could be poped
+    return to_shadow_img(shadow)
 
 @eel.expose
 def get_subshadow_by_label(img, label, name):
@@ -288,6 +330,12 @@ def CallCropShadow_py(filename):
     print('%s'%JSON_FILE_PATH)
     command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS}"
     subprocess.run(command, shell=True)
+
+def to_shadow_img(shadow):
+    shadow = (~(shadow >= 0.9)).astype(int) * 255
+    shadow = add_alpha_line(shadow)
+    shadow = Image.fromarray(shadow)
+    return base64.encodebytes(shadow).decode("utf-8")
 
 if __name__ == "__main__":
     # for debug
