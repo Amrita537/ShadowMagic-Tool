@@ -157,7 +157,7 @@ def shadow_decrease():
 Helper functions
 '''
 def preprocess(path_to_psd, name, var):
-    print("log:\tpredicting shadowing and segmentation result for %s"%path_to_psd)
+    # print("log:\tpredicting shadowing and segmentation result for %s"%path_to_psd)
     # test if this image has been processed
     global PATH_TO_JSON
     PATH_TO_JSON = None
@@ -201,7 +201,9 @@ def preprocess(path_to_psd, name, var):
     color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
 
     # get shadows
+    pbar = tqdm(total=len(DIRS) * var)
     for direction in DIRS:
+        pbar.set_description("Predicting shadow for %s" %name)
         url = "http://164.90.158.133:8080/shadowsingle"
         data_send = {}
         data_send['user'] = 'userA'
@@ -221,6 +223,8 @@ def preprocess(path_to_psd, name, var):
             alpha[shadow[..., 0] == 0] = 255
             shadow = np.concatenate((shadow, alpha[..., np.newaxis]), axis = -1)
             Image.fromarray(shadow.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
+            pbar.update(1)
+    pbar.close()
 
     # get the segmentation result
     segment_single(name)
@@ -323,12 +327,11 @@ def to_pil(byte):
 
 if __name__ == "__main__":
     # for debug
-    open_psd_py("./test/image59.psd")
+    # open_psd_py("./test/image59.psd")
     # batch_process()
 
-    # # start main GUI
-    # eel.init("web") 
-    # # let's run this code remotely for now
-    # # print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
-    # eel.start("GUI2.html", size = (1400, 800))
-
+    # start main GUI
+    eel.init("web") 
+    # let's run this code remotely for now
+    # print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
+    eel.start("GUI2.html", size = (1400, 800))
