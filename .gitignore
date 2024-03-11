@@ -1,1 +1,11 @@
 back_end
+yolov5/runs
+*.pyc
+web/RefinedOutput
+web/Shadows
+AnnotOutput
+InputFlats
+InputLines
+YoloOutput
+__pycache__
+batch_input

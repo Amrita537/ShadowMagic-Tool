@@ -327,7 +327,7 @@ def to_pil(byte):
 
 if __name__ == "__main__":
     # for debug
-    open_psd_py("./test/image59.psd")
+    # open_psd_py("./test/image59.psd")
     # batch_process()
 
     # start main GUI
