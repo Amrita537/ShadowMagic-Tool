@@ -129,7 +129,7 @@ def shadow_increase(shadow, region_label):
 
     if region_label in SHADOWS:
         if len(SHADOWS[region_label]) > 0:
-            return SHADOWS[region_label].pop()
+            return to_shadow_img(shadow)(SHADOWS[region_label].pop())
     # return the input shadow if nothing could be poped
     return to_shadow_img(shadow)
 
