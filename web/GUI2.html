@@ -42,7 +42,7 @@
                                 </li> -->
 
                                 <li><a href="#"><label for="fileInput">
-                                Open Images</label><input type="file" id="fileInput" accept="image/*, .psd" multiple></a>
+                                Open PSD</label><input type="file" id="fileInput" accept="image/*, .psd" multiple></a>
                                 </li>
                                 <li id="save_id"><a href="#">Save</a></li>
                                 <li><a href="#">Save As</a></li>
@@ -84,18 +84,8 @@
                                         <i class="fa fa-mouse-pointer" aria-hidden="true" ></i>
                                     </button>
 
-                                   <button id="paintBrushBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Paint">
-                                      <i class="fa fa-paint-brush" aria-hidden="true" data-toggle="popover" data-content="
-                                          <div id='brushSize' class='circle-container'>
-                                              <span id='10' class='circle-10'><i class='fas fa-circle'></i></span>
-                                              <span id='15' class='circle-15'><i class='fas fa-circle'></i></span>
-                                              <span id='20' class='circle-20'><i class='fas fa-circle'></i></span>
-                                              <span id='25' class='circle-25'><i class='fas fa-circle'></i></span>
-                                              <span id='30' class='circle-30'><i class='fas fa-circle'></i></span>
-                                          </div>
-                                          <div>
-                                      </div>
-                                      "></i>
+                                  <button id="paintBrushBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Paint">
+                                      <i class="fa fa-paint-brush" aria-hidden="true"></i>
                                   </button>
 
                                     <button id="searchButton" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Zoom">
@@ -112,7 +102,7 @@
                                     <button id="panBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="pan">
                                         <i class="fa fa-hand-stop-o" aria-hidden="true"></i>
                                     </button>
-
+<!-- 
                                   <button id="eraserBtn" class="toggle-btn" data-toggle="popover" title="Erase" data-content="
                                       <div id='eraseSize' class='circle-container'>
                                           <span id='11' class='circle-10'><i class='fas fa-circle'></i></span>
@@ -122,6 +112,11 @@
                                           <span id='31' class='circle-30'><i class='fas fa-circle'></i></span>
                                       </div>">
                                       <i data-toggle="tooltip" data-placement="top" title="Eraser" class="fa fa-eraser"></i>
+                                  </button> -->
+
+
+                                   <button id="eraserBtn" class="toggle-btn" data-toggle="tooltip" title="Erase" data-placement="top">
+                                      <i class="fa fa-eraser" aria-hidden="true"></i>
                                   </button>
                                     <button id="magicBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Shadow">
                                         <i class="fas fa-magic" aria-hidden="true"></i>
@@ -133,19 +128,24 @@
                             </div>
 
 
-                            <div>
+<!--                             <div>
                               <button id="mybutton">backend</button>
-                            </div>
+                            </div> -->
 
 
                  
-                            <div class="panel panel-default" style="display: none;">
-                                <div class="panel-body">
-                                    <label for="brushSize">Brush Size:</label>
-                                    <input id="brushSize" type="range" min="1" max="10" value="5">
-                                </div>
+                            <div id="ToolSize" style="display: none;">
+                                      <div id="drawSizeRange" class="form-group">
+                                        <input type="range" orient="vertical" class="custom-range" id="BrushRange" min="5" max="100" step="1" value="1">
+                                      </div>
+                                      <div id='drawSizeCircle' class='circle-container'>
+                                          <span id='41' class='circle-30'><i class='fas fa-circle'></i></span>
+                                          <span id='28' class='circle-25'><i class='fas fa-circle'></i></span>
+                                          <span id='21' class='circle-20'><i class='fas fa-circle'></i></span>
+                                          <span id='16' class='circle-15'><i class='fas fa-circle'></i></span>
+                                          <span id='10' class='circle-10'><i class='fas fa-circle'></i></span>
+                                      </div>
                             </div>
-
 
                       </div>
                   </div>
@@ -236,7 +236,6 @@
                                                         <span id="opacityValue" style="float:right; margin-bottom: 5px;">1</span>
                                                       </span>
                                                       <input type="range" class="custom-range" id="opacityRange" min="0" max="1" step="0.1" value="1">
-                                                      <!-- <span id="opacityValue">1</span> -->
                                                   </div>
 
 
