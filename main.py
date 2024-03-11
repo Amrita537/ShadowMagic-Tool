@@ -81,6 +81,13 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
 
 @eel.expose
 def shadow_decrease(shadow, line, region_label, reset = False):
+    '''
+    Given,
+        shadow, shadow image, it could be a segmented shadow or a full shadow
+        line, line drawing layer
+        region_label, the name of current shadow region
+        reset, empty the cached previous shadows if enabled
+    '''
     # open shadow
     img_binary = base64.b64decode(shadow)
     shadow = np.array(Image.open(io.BytesIO(img_binary)))
