@@ -34,7 +34,7 @@
 
     //Variables//
     let isErasing = false;
-
+    let global_opacity = 0.5;
 
 
 
@@ -142,8 +142,8 @@ function handleImageSelect(event) {
           
           updateLayerList(images);
           displayImages();
-          Save_Image_backend(img.customBase64, img.customImageName);
-          Semantic_segmentation(img.customImageName);
+          // Save_Image_backend(img.customBase64, img.customImageName);
+          // Semantic_segmentation(img.customImageName);
           GenerateShadow();
 
         });
@@ -169,14 +169,15 @@ psd_layer_names=[];
 function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
-    eel.open_psd_py("./web/D4_01_L_M.psd");
+    // eel.open_psd_py("./web/D4_01_L_M.psd");
 
     loader.style.display = 'block';
 
     for (let i = 0; i < files.length; i++) {
             const fileName = files[i].name;
-            const baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
-
+            let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
+            // Remove "flat" if it exists in the base name
+            baseName = baseName.replace("flat", "");
             // Add _flat.png and _line.png to the base name
             const flatName = baseName + "_flat.png";
             const lineName = baseName + "_line.png";
@@ -188,7 +189,7 @@ function handlePSDSelect(event) {
             console.log("Line name:", lineName);
         }
 
-      const rel_path = "PsdToPng/"; 
+      const rel_path = "InputFlats/"; 
         
       psd_layer_names.forEach(psdlayername => {
         folderPath = rel_path+psdlayername;
@@ -209,10 +210,10 @@ function handlePSDSelect(event) {
                         
                         img.scale(scaleFactor);
                         img.customSelected = false; // Custom property to indicate selected state
-                        img.customImageName = "D4_01_L_M_flat.png";
+                        img.customImageName = psdlayername;
                         img.customBase64 = imgData; // Set custom base64 data
                         img.selectable = false;
-                        console.log("adding", img.customImageName);
+                        // console.log("adding", img.customImageName);
 
                         images.push(img);
                         initialSizes.push({ width: img.width, height: img.height });
@@ -249,6 +250,7 @@ function handlePSDSelect(event) {
                             });
 
                         displayImages();
+                        GenerateShadow();
                     });
                 };
                 reader.readAsDataURL(blob);
@@ -292,13 +294,11 @@ function updateLayerList(images) {
   console.log("img_length", images.length);
   layerList.innerHTML = "";
 
-  // console.log(images[0].customBase64);
   for (let i = 0; i < images.length; i++) {
     let layerButton = document.createElement("button");
     layerButton.id = `layerButton_${i}`;
     layerButton.className = "btn btn-secondary btn-block";
 
-    // Create an image element for the icon
     const eyeIcon = document.createElement("i");
 
     eyeIcon.className = images[i].visible ? "fa fa-eye" : "fa fa-eye-slash";
@@ -318,17 +318,14 @@ function updateLayerList(images) {
     iconImage.src = URL.createObjectURL(imageFile);
 
 
-    // Create a span for the image name
     const imageNameSpan = document.createElement("span");
     imageNameSpan.innerText = images[i].customImageName;
 
-    // Create a cross icon
     const crossIcon = document.createElement("i");
     crossIcon.className = "fa fa-times cross-icon";
     crossIcon.style.float = "right";
     crossIcon.style.marginTop="5px";
 
-    // Append the components to the layerButton
     layerButton.appendChild(eyeIcon);
     layerButton.appendChild(iconImage);
     layerButton.appendChild(imageNameSpan);
@@ -347,20 +344,20 @@ function updateLayerList(images) {
       displayImages();
     });
 
+
     crossIcon.addEventListener("click", function (event) {
-      console.log("val of i", i);
-      const removedImage = images.splice(i, 1)[0];
-      canvas.remove(removedImage);
-      layerButton.remove();
-      console.log("Removing image at index:", i);
-
-      canvas.getObjects().forEach(function(object) {
-              canvas.remove(object);
-      });
-
-      canvas.renderAll();
-      updateLayerList(images);
-      displayImages();
+        console.log("val of i", i);
+        const removedImage = images.splice(i, 1)[0];
+        if (removedImage.customImageName.includes('flat')) {
+            location.reload();
+        } else {
+            canvas.remove(removedImage);
+            layerButton.remove();
+            console.log("Removing image at index:", i);
+            canvas.renderAll();
+            updateLayerList(images);
+            displayImages();
+        }
     });
 
     layerList.appendChild(layerButton);
@@ -394,15 +391,16 @@ const segments = ['hair', 'face', 'cloth', 'arm', 'object'];
 function GenerateShadow() {
     if (names_shadow_segment.length === 0) 
     {
-        const firstImage = images[0];
+        const firstImage = images.find(image => image.customImageName.includes('flat'))
         if (firstImage) 
         {
             const imageName = firstImage.customImageName;
-            const shadow_image = imageName.replace('flat', 'color');
-            
+            // const shadow_image = imageName.replace('flat', 'color');
+            const shadow_image = imageName.replace('_flat', '');
+
             directions.flatMap(direction => {
                
-                const baseName = shadow_image.replace('.png', `_${direction}_shadow`).replace('color_', 'color_');
+                const baseName = shadow_image.replace('.png', `_${direction}_shadow_`).replace('color_', 'color_');
                 
                 for (let i = 0; i <= 3; i++) 
                   {
@@ -441,7 +439,7 @@ function GenerateShadow() {
   function fetch_Shadow_files(shadow_arr){
       if(shadow_arr == names_shadow_segment)
       {
-        let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
+        let relativePath = 'Shadows/sub-shadows/'; // Adjust this relative path based on your directory structure
         names_shadow_segment.forEach(name => {
           let fullPath = relativePath + name;
           fabric.Image.fromURL(fullPath, function (img) {
@@ -454,7 +452,7 @@ function GenerateShadow() {
                 shadow_segment_images.push(img);
           }); 
         });
-
+      setShadowOpacity(global_opacity)
       console.log("Loaded shadow_segment_images", shadow_segment_images);
       }
 
@@ -473,6 +471,9 @@ function GenerateShadow() {
           }); 
         });
       console.log("Loaded base_shadow_images", base_shadow_images);
+      setShadowOpacity(global_opacity)
+
+
       }
 
   }
@@ -547,7 +548,7 @@ function toggleVisibilityByDirectionAndSegment(direction, segment, index, isVisi
   names_shadow_segment.forEach(name => {
     const isDirectionMatch = name.includes(`_${direction}_`);
     const isSegmentMatch = name.endsWith(`_${segment}.png`);
-    const isIndexMatch = name.includes(`shadow${index}`);
+    const isIndexMatch = name.includes(`shadow_${index}`);
 
     if (isDirectionMatch && isSegmentMatch && isIndexMatch) 
           {
@@ -679,6 +680,29 @@ function addShadowButton() {
     shadowButton.style.backgroundColor = "#6c757d";
     shadowButton.style.color = "#ffffff";
 
+
+    // Create an image element for the icon
+    const iconImageS = document.createElement("img");
+    iconImageS.className = "icon-image"; // Add a class for styling if needed
+    iconImageS.style.marginRight = "2px";
+    iconImageS.style.width = "30px"; // Adjust the width of the icon
+    iconImageS.style.height = "30px";
+    iconImageS.style.border ="1px solid black";
+    iconImageS.style.backgroundColor="white";
+    iconImageS.style.objectFit = "cover";
+    // const imageFile = shadow_segment_images[0];
+    // iconImageS.src = URL.createObjectURL(imageFile);
+
+        // Create a temporary canvas to hold a snapshot of the current canvas state
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+
+    // Set the src of the image element to the data URL of the temporary canvas
+    iconImageS.src = tempCanvas.toDataURL();
+
     // Create an image element for the icon
     const ShadEyeIcon = document.createElement("i");
     ShadEyeIcon.className = "fa fa-eye";
@@ -701,6 +725,7 @@ function addShadowButton() {
     NameSpan.innerText = 'Shadow Layer';  
 
     // shadowButton.appendChild(ShadEyeIcon);
+    shadowButton.appendChild(iconImageS);
     shadowButton.appendChild(NameSpan);
     shadowButton.appendChild(tickIcon);
 
@@ -726,7 +751,7 @@ function addShadowButton() {
     
     const BMshadowList = document.getElementById('BM_shadowList');
     tickIcon.addEventListener("click", function (event) {
-
+        togglePolygonVisibility(false) 
         const canvasStatus = JSON.stringify(canvas.toJSON());
         savedLayers.push(canvasStatus);
         console.log(canvasStatus);
@@ -750,10 +775,8 @@ function addShadowButton() {
 
 // Add click event listener to the download icon
 downloadIcon.addEventListener("click", function (event) {
-
     const savedCanvasData = JSON.parse(savedLayers[0]);
     const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
-   
 
     tempCanvas.loadFromJSON(savedCanvasData, function() {
         
@@ -780,6 +803,7 @@ downloadIcon.addEventListener("click", function (event) {
         tempCanvas.setWidth(originalWidth);
         tempCanvas.setHeight(originalHeight);
         tempCanvas.setZoom(1);
+
 
         const link = document.createElement('a');
         link.href = dataUrl;
@@ -810,20 +834,22 @@ downloadIcon.addEventListener("click", function (event) {
 
 //===================shadow opacity function====================//
       document.getElementById('opacityRange').addEventListener('input', function () {
-          const opacityValue = parseFloat(this.value);
-          console.log("opacityValue", opacityValue);
-          document.getElementById('opacityValue').textContent = opacityValue;
-          setShadowOpacity(opacityValue);
+          // const opacityValue = parseFloat(this.value);
+          global_opacity=parseFloat(this.value);
+          console.log("opacityValue", global_opacity);
+          document.getElementById('opacityValue').textContent = global_opacity;
+          setShadowOpacity(global_opacity);
+          document.getElementById('opacityRange').value = global_opacity;
       });
             
 
       function setShadowOpacity(opacity) {
+          canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
           shadow_segment_images.forEach((shadow) => {
               shadow.set('opacity', opacity);
           });
           displayImages();
       }
-
 
 //========================draw segments=========================//
 
@@ -832,13 +858,14 @@ downloadIcon.addEventListener("click", function (event) {
         let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
 
-          function getOutline(checkval){
+        function getOutline(checkval){
 
             const isChecked = checkval;
 
             if (isChecked) {
-                if (!isDataFetched||images[0].customImageName !== jsonFileName) {
-                    jsonFileName = images[0].customImageName.replace('.png', '.json');
+                const FlatImage = images.find(image => image.customImageName.includes('flat'))
+                if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
+                    jsonFileName = FlatImage.customImageName.replace('_flat.png', '.json');
                     console.log(jsonFileName);
                     fetch(`http://localhost:8000/RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
@@ -848,7 +875,7 @@ downloadIcon.addEventListener("click", function (event) {
                             data.regions.forEach(region => {
                                 const originalCoordinates = region.coordinates;
                                 const color = region.color; // Get color from JSON
-                                const scaleFactor = calculateScaleFactor(images[0].width, images[0].height, canvas.width, canvas.height);
+                                const scaleFactor = calculateScaleFactor(FlatImage.width, FlatImage.height, canvas.width, canvas.height);
                                 const scaledCoordinates = originalCoordinates.map(point => ({
                                     x: point[0] * scaleFactor,
                                     y: point[1] * scaleFactor
@@ -1041,62 +1068,56 @@ canvas.on("mouse:up", function () {
 
 
 //===============eraser code========================//
-
+var isPainting = false;
 const eraserBtn = document.getElementById("eraserBtn");
 
 eraserBtn.addEventListener("click", toggleErasing);
 
+let global_brush_width=10;
+
 function toggleErasing() {
+    var toolSize = document.getElementById('ToolSize');
     isErasing = !isErasing;
+    isPainting=false;
+    deactivatePainting();
     if (isErasing)
-     {
-        eraserBtn.style.backgroundColor = "black";
-        eraserBtn.style.color = "white";
-        canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
-        canvas.isDrawingMode = true;
-      
-        canvas.forEachObject(function(obj) {
-                    if (obj.type === 'image') 
-                    {
-                        for (let i = 0; i < images.length; i++) {
-                            if (images[i].customImageName === obj.customImageName) {
-                                obj.erasable = false;
-                                break;
-                            }
+      {   
+         toolSize.style.display = 'flex'
+         canvas.isDrawingMode = true;
+         eraserBtn.style.backgroundColor = "black";
+         eraserBtn.style.color = "white";
+         canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
+         canvas.freeDrawingBrush.width = global_brush_width;
+
+         canvas.forEachObject(function(obj) {
+            if (obj.type === 'image') 
+              {
+                for (let i = 0; i < images.length; i++) {
+                    if (images[i].customImageName === obj.customImageName) {
+                          obj.erasable = false;
+                          break;
                         }
+                      }
                     } 
                     if (!obj.visible) {
                         obj.erasable = false;
                     }
-                });
+              });
 
-
-        document.querySelectorAll('#eraseSize span').forEach(function(circle_id) {
-                circle_id.style.color = 'black';
-                circle_id.addEventListener('click', function(event) {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    var eraser_size = this.getAttribute('id');
-                    canvas.freeDrawingBrush.width = parseInt(eraser_size);
-                    document.querySelectorAll('#eraseSize span').forEach(function(span) {
-                              span.style.color = 'black';
-                              span.style.backgroundColor= 'white';
-                    });
-                    this.style.color = 'white';
-                    this.style.backgroundColor= 'black';
-                });
-        });
-
-        canvas.backgroundImage.erasable = false;
-    } 
+         canvas.backgroundImage.erasable = false;
+      }
     else {
+      isErasing = false;
+      toolSize.style.display = 'none'
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
       canvas.isDrawingMode = false;
       eraserBtn.style.backgroundColor = "";
       eraserBtn.style.color = "";
     }
 
+
 }
+
 
 
 let undoErasing = false;
@@ -1166,77 +1187,127 @@ function saveCanvasImage() {
 
 //========================paint brush functions==========================//
 
-    var isDrawingMode = false;
     const cursorUrl = 'circle_icon.png';
     var mousecursor; 
     var undoStack = [];
     var redoStack = [];
 
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
+          var toolSize = document.getElementById('ToolSize');
+          isPainting= !isPainting;
+          isErasing=false
+          deactivateEraser();
 
-        if (isErasing) {
-          const eraserBtn_1 = document.getElementById("eraserBtn");
-          eraserBtn_1.click();
-        }
+          if (isPainting) {
+              canvas.isDrawingMode = true;
+              if (isPanning) {
+                  togglePanning();
+              }
 
-        isDrawingMode = !isDrawingMode;
+              toolSize.style.display = 'flex';
+              canvas.freeDrawingBrush.width = global_brush_width;
+              this.style.backgroundColor = 'black';
+              this.style.color = 'white';
 
-        if (isDrawingMode) {
-           if (isPanning) {
-              togglePanning();
-           }
-            
-            // canvas.defaultCursor = `url("${cursorUrl}"), auto`;
-            // canvas.hoverCursor = `url("${cursorUrl}"), auto`;
-            // canvas.moveCursor = `url("${cursorUrl}"), auto`;
+              canvas.on('object:added', function(e) {
+                  e.target.selectable = false;
+                  undoStack.push(e.target);
+                  redoStack = [];
+              });
 
-            canvas.freeDrawingBrush.color = 'rgba(0,0,0,0.5)';
-            canvas.isDrawingMode = true;
+          } else {
+              toolSize.style.display = 'none'
+              canvas.isDrawingMode = false;
+              this.style.backgroundColor = '';
+              this.style.color = '';
+          }
 
-            this.style.backgroundColor = 'black';
-            this.style.color = 'white';
+      });
 
-            document.querySelectorAll('#brushSize span').forEach(function(circle_id) {
-                circle_id.style.color = 'black';
-                circle_id.addEventListener('click', function(event) {
-                    event.stopPropagation();
-                    event.preventDefault();
 
-                    var paint_brush_size = this.getAttribute('id');
-                    canvas.freeDrawingBrush.width = parseInt(paint_brush_size);
+      let selectedCircleId = null;
 
-                    document.querySelectorAll('#brushSize span').forEach(function(span) {
-                              span.style.color = 'black';
-                              span.style.backgroundColor= 'white';
-                    });
-                    this.style.color = 'white';
-                    this.style.backgroundColor= 'black';
-                });
+      document.querySelectorAll('#drawSizeCircle span').forEach(function(circle_id) {
+          circle_id.style.color = 'black';
+          
+          circle_id.addEventListener('click', function(event) {
+              if (selectedCircleId === circle_id.id) {
+                  canvas.freeDrawingBrush.width = 1;
+                  selectedCircleId = null;
+                  this.style.color = 'black';
+                  this.style.backgroundColor= '';
+                  document.getElementById('BrushRange').value = 1;
+                  Drawing_Cursor(10);
+              } else {
+                  console.log('Circle span clicked: ', circle_id.id);
+                  canvas.freeDrawingBrush.width = parseInt(circle_id.id);
+                  selectedCircleId = circle_id.id;
+                  global_brush_width= parseInt(circle_id.id);
+                          
+                  document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
+                      span.style.color = 'black';
+                      span.style.backgroundColor= '';
+                  });
+
+                  this.style.color = 'white';
+                  this.style.backgroundColor= 'black';
+
+                  document.getElementById('BrushRange').value = circle_id.id;
+                  Drawing_Cursor(circle_id.id);
+              }
+          });
+      });
+
+      document.getElementById('BrushRange').addEventListener('input', function () {
+            document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
+                      span.style.color = 'black';
+                      span.style.backgroundColor= '';
             });
-
-        canvas.on('object:added', function(e) {
-            e.target.selectable = false;
-            undoStack.push(e.target);
-            redoStack = [];
-        });
-
-
-        } else {
-            canvas.isDrawingMode = false;
-            this.style.backgroundColor = '';
-            this.style.color = '';
-        }
+            var rangeValue = parseFloat(this.value);
+            console.log(rangeValue);
+            canvas.freeDrawingBrush.width = parseInt(rangeValue);
+            global_brush_width=parseInt(rangeValue);
+            Drawing_Cursor(rangeValue);
+      });
+            
 
 
-    });
+      function Drawing_Cursor(cursor_Size){
+              canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+              canvas.isDrawingMode = true;
 
-    // var isDrawingMode = false;
-    // document.getElementById('paintBrushBtn').addEventListener('click', function() {
-    // isDrawingMode = !isDrawingMode;
-    // canvas.defaultCursor = "url(circle_icon.png), auto";
-    // canvas.hoverCursor = "url(circle_icon.png), auto";
-    // canvas.isDrawingMode = true;
-    // });
+              var cursorCanvas = document.createElement('canvas');
+              var cursorCtx = cursorCanvas.getContext('2d');
+              var cursorSize = cursor_Size; // Set the size of the cursor circle
+              cursorCanvas.width = cursorSize;
+              cursorCanvas.height = cursorSize;
+
+              cursorCtx.beginPath();
+              cursorCtx.arc(cursorSize / 2, cursorSize / 2, cursorSize / 2, 0, 2 * Math.PI);
+              cursorCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+              cursorCtx.fill();
+
+              canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 2 + ' ' + cursorSize / 2 + ', auto';
+            }
+
+
+function deactivateEraser() {
+    isErasing = false;
+    var eraserBtn = document.getElementById('eraserBtn');
+    eraserBtn.style.backgroundColor = '';
+    eraserBtn.style.color = '';
+    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+    canvas.isDrawingMode = false;
+}
+
+function deactivatePainting() {
+    isPainting = false;
+    var paintBrushBtn = document.getElementById('paintBrushBtn');
+    paintBrushBtn.style.backgroundColor = '';
+    paintBrushBtn.style.color = '';
+    canvas.isDrawingMode = false;
+}
+
 
 // Function to undo the last action
 function undo() {
@@ -1336,8 +1407,6 @@ function goTo(index) {
   }
 }
 
-
-
 let clicked_index= null;
 function setCardBackgroundImages(direction) {
     
@@ -1404,8 +1473,17 @@ function setCardBackgroundImages(direction) {
           });
     });
 
-
 }
+
+
+//===================== Pointer Click=========================//
+document.getElementById("pointerBtn").addEventListener("click", function(event) {
+    document.body.style.cursor = "pointer"; // Change cursor style to pointer
+    deactivateEraser();
+    deactivatePainting();
+    var toolSize = document.getElementById('ToolSize');
+    toolSize.style.display = 'none';
+});
 
 
 

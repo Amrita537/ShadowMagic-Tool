@@ -76,24 +76,46 @@ def group_regions_by_label(data):
             regions_by_label[label] = [region]
     return regions_by_label
 
+# if __name__ == "__main__":
+#     # Get the input parameters from the cell input
+#     args = sys.argv[1:]
+#     if len(args) != 3:
+#         print("Usage: python process_images.py input_folder_path json_file_path output_folder_path")
+#         sys.exit(1)
+
+#     input_folder_path, json_folder_path, output_folder_path = args
+
+#     # List all files in the input folder
+#     files = os.listdir(input_folder_path)
+
+#     # Iterate over each file in the input folder
+#     for file_name in files:
+#         if file_name.endswith('.png'):
+#             # Construct the full file paths
+#             image_file_path = os.path.join(input_folder_path, file_name)
+#             json_file_path = os.path.join(json_folder_path)
+
+#             # Call the function for each image
+#             mask_and_save_regions(image_file_path, json_file_path, output_folder_path)
+
 if __name__ == "__main__":
     # Get the input parameters from the cell input
     args = sys.argv[1:]
-    if len(args) != 3:
-        print("Usage: python process_images.py input_folder_path json_file_path output_folder_path")
+    if len(args) != 4:
+        print("Usage: python process_images.py input_folder_path json_file_path output_folder_path filename")
         sys.exit(1)
 
-    input_folder_path, json_folder_path, output_folder_path = args
+    input_folder_path, json_folder_path, output_folder_path, filename = args
 
     # List all files in the input folder
     files = os.listdir(input_folder_path)
 
     # Iterate over each file in the input folder
     for file_name in files:
-        if file_name.endswith('.png'):
+        if file_name.endswith('.png') and filename in file_name:
             # Construct the full file paths
             image_file_path = os.path.join(input_folder_path, file_name)
             json_file_path = os.path.join(json_folder_path)
 
             # Call the function for each image
-            mask_and_save_regions(image_file_path, json_file_path, output_folder_path)
+            mask_and_save_regions(image_file_path, json_file_path, output_folder_path, filename)
