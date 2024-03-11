@@ -214,7 +214,7 @@ def preprocess(path_to_psd, name, var):
         data_send['color'] = array_to_base64(color.astype(np.uint8))
         
         for i in range(var):
-            print("log:\tpredicting #%d shadow from direction %s"%(i, direction))
+            # print("log:\tpredicting #%d shadow from direction %s"%(i, direction))
             resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
             resp = resp.json()
             shadow = np.array(to_pil(resp['shadow_0']))
@@ -327,7 +327,7 @@ def to_pil(byte):
 
 if __name__ == "__main__":
     # for debug
-    # open_psd_py("./test/image59.psd")
+    open_psd_py("./test/image59.psd")
     # batch_process()
 
     # start main GUI
