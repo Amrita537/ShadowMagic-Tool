@@ -36,13 +36,12 @@ DIRS = ['left', 'right', "top", "back"]
 exposed functions
 '''
 @eel.expose
-@eel.expose
 def CallCropShadow_py(psd_path):
     filename = get_file_name(psd_path)
-    PATH_TO_REFINEDJSON= "/web/RefinedOutput/json/"
-    JSON_FILE_PATH= PATH_TO_REFINEDJSON+filename+'_flat.json'
+    PATH_TO_REFINEDJSON= "web/RefinedOutput/json/"
+    JSON_FILE_PATH= PATH_TO_REFINEDJSON+filename+'.json'
     print('%s'%JSON_FILE_PATH)
-    command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS}"
+    command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS} {filename}"
     subprocess.run(command, shell=True)
     
 @eel.expose
