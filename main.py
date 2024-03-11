@@ -11,69 +11,35 @@ import json
 import shutil
 import random
 from random import randint
-from tools.files import open_psd, get_file_name
+from tools.files import open_psd, get_file_name, add_alpha_all, add_alpha_flat, add_alpha_line, decrease_shadow_gaussian
 from yolov5.segment.predict import run as seg
 from yoloresult import main as to_json
 from PIL import Image
+from CropShadow import get_sub_shadow
 from tqdm import tqdm
 import subprocess
 
 # path that saves preprocessed files
 PATH_TO_PREPROCESS = './preprocessed/'
+PATH_TO_PSD = './batch_input/'
 
 # path to save files that under processing
 PATH_TO_FLAT = './InputFlats'
 PATH_TO_LINE = './InputLines'
 PATH_TO_SHADOW = './web/Shadows'
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
-PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
-PATH_TO_JSON_ = "./YoloOutput/json"
-PATH_TO_JSON = None
+PATH_TO_JSON_FLODER = "./web/RefinedOutput/json/"
+PATH_TO_REFINEDJSON= "./web/RefinedOutput/json"
+PATH_TO_JSON = False
 DIRS = ['left', 'right', "top", "back"]
 
+# intermediate shadows
+DECREASE_COUNT = 0
+SHADOWS = []
 
 '''
 exposed functions
 '''
-@eel.expose
-@eel.expose
-def CallCropShadow_py(psd_path):
-    filename = get_file_name(psd_path)
-    PATH_TO_REFINEDJSON= "/web/RefinedOutput/json/"
-    JSON_FILE_PATH= PATH_TO_REFINEDJSON+filename+'_flat.json'
-    print('%s'%JSON_FILE_PATH)
-    command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS}"
-    subprocess.run(command, shell=True)
-    
-@eel.expose
-def save_image_from_base64(base64_string, imageName):
-    exp_path = "yolov5/runs/predict-seg/exp"
-    Annot_path = "AnnotOutput"
-    YoloOutput_path = "YoloOutput"
-    Refined_path= "web/RefinedOutput"
-    
-    byte_data = base64.b64decode(base64_string.split(",")[1])
-    image = Image.open(BytesIO(byte_data))
-
-    # Define the directory to save images
-    if "flat" in imageName:
-        image_path = "InputImages/"+imageName;
-        shutil.rmtree(exp_path, ignore_errors=True)
-        shutil.rmtree(Annot_path, ignore_errors=True)
-        shutil.rmtree(YoloOutput_path, ignore_errors=True)
-        shutil.rmtree(Refined_path, ignore_errors=True)
-
-        for file_name in os.listdir("InputImages"):
-            if imageName not in file_name:
-                os.remove(os.path.join("InputImages", file_name))
-    else:
-        image_path  = "InputLines/"+imageName;
-        
-
-    image.save(image_path, "PNG")
-
-    return "Image saved successfully"
-
 @eel.expose
 def open_psd_py(path_to_psd, var = 4):
     # extract png images from psd files
@@ -90,7 +56,7 @@ def open_psd_py(path_to_psd, var = 4):
         preprocess_to_work(name)
                 
 @eel.expose
-def batch_process(path_to_psds = './batch_input', var = 20):
+def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
     for psd in tqdm(os.listdir(path_to_psds)):
         if ".psd" not in psd: continue
         print("log:\topen %s"%psd)
@@ -115,19 +81,40 @@ def batch_process(path_to_psds = './batch_input', var = 20):
         open_psd_py(os.path.join(path_to_psds, psd), var = var)
 
 @eel.expose
-def shadow_decrease():
-    # todo
+def shadow_decrease(shadow):
     pass
+
+@eel.expose
+def get_subshadow_by_label(img, label, name):
+    '''
+    Given, 
+        img, a image in base64 coding format
+        lable, a string indicates the region label
+        name, a string of the openned image name (without extensions) 
+    Return,
+        res, subshadow in base64 coding format.
+    '''
+    # Load JSON data
+    path_to_json = os.path.join(PATH_TO_REFINEDJSON, name+'_flat.json')
+    with open(path_to_json, 'r') as json_file:
+        data = json.load(json_file)
+
+    # load image
+    img_binary = base64.b64decode(img)
+    img = Image.open(io.BytesIO(img_binary))
+    regions_by_label = group_regions_by_label(data)
+    return array_to_base64(get_sub_shadow(img, label, regions_by_label, to_png = False))
 
 '''
 Helper functions
-'''
+''' 
 def preprocess(path_to_psd, name, var):
     # print("log:\tpredicting shadowing and segmentation result for %s"%path_to_psd)
     # test if this image has been processed
     global PATH_TO_JSON
     PATH_TO_JSON = None
     open_psd(path_to_psd, PATH_TO_PREPROCESS)
+    
     # open extracted pngs
     flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
     # add white backgournd if flat has alpha channel
@@ -137,12 +124,7 @@ def preprocess(path_to_psd, name, var):
         rgb = flat[..., 0:3]
         flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
     else:
-        assert len(flat.shape) == 3 and flat.shape[-1] == 3
-        # add alpha channel... 
-        flat_alpha_mask = flat.mean(axis = -1) == 255
-        flat_alpha = np.ones(flat_alpha_mask.shape) * 255
-        flat_alpha[flat_alpha_mask] =  0
-        Image.fromarray(np.concatenate(flat, flat_alpha[..., np.newaxis])).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
+        Image.fromarray(add_alpha_flat(flat)).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
 
     line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
     line_to_save = line.copy()
@@ -158,11 +140,7 @@ def preprocess(path_to_psd, name, var):
         need_add_alpha = True
     
     if need_add_alpha:
-        # add alpha channel to the line drawing layer
-        if len(line_to_save.shape) == 3:
-            line_to_save = line_to_save.mean(axis = -1)
-        line_to_save = np.concatenate((np.zeros((line_to_save.shape[0],line_to_save.shape[1],3)), (255 - line_to_save)[..., np.newaxis]), axis = -1)
-        Image.fromarray(line_to_save.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name+"_line.png"))
+        Image.fromarray(add_alpha_line(line_to_save)).save(os.path.join(PATH_TO_PREPROCESS, name+"_line.png"))
 
     color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
 
@@ -193,6 +171,10 @@ def preprocess(path_to_psd, name, var):
     pbar.close()
 
     # get the segmentation result
+    # a dirty fix for the path issue...
+    for f in os.listdir(PATH_TO_FLAT):
+        delete_item(os.path.join(PATH_TO_FLAT, f))
+    shutil.copy(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"), os.path.join(PATH_TO_FLAT, name+"_flat.png"))
     segment_single(name)
 
 def preprocess_to_work(fname):
@@ -203,6 +185,7 @@ def preprocess_to_work(fname):
     for f in os.listdir(PATH_TO_LINE):
         delete_item(os.path.join(PATH_TO_LINE, f))
     for f in os.listdir(PATH_TO_SHADOW):
+        if "sub" in f: continue
         delete_item(os.path.join(PATH_TO_SHADOW, f))
 
     # copy the preprocessed result to 
@@ -246,15 +229,22 @@ def delete_item(path_to_item):
     else:
         raise ValueError("can't delete file %s"%path_to_item)
 
-def segment_single(img_name):
+def segment_single(img_name, sub_shadow = True):
     # init parameters
     global PATH_TO_JSON
     infere_size = 320
     weights_path = "./yolov5/runs/train-seg/exp10/weights/best.pt"
-    source_path = os.path.join(PATH_TO_FLAT, img_name+"_flat.png")
+    source_path = os.path.join(PATH_TO_PREPROCESS, img_name+"_flat.png")
     assert os.path.exists(source_path)
 
     # segment flat layer
+    # a dirty fix for clean all existing prediction results
+    # really don't understand why put so many files and folders...
+    predict_path = "./yolov5/runs/predict-seg"
+    delete_item(predict_path)
+    delete_item("./YoloOutput")
+    delete_item("./AnnotOutput")
+    delete_item("./web/RefinedOutput")
     path_to_label = seg(
         weights=weights_path,  # model.pt path(s)
         source=source_path,  # file/dir/URL/glob/screen/0(webcam)
@@ -268,8 +258,10 @@ def segment_single(img_name):
         image_path = PATH_TO_FLAT, 
         yolo_txt_path = path_to_label
         )
-    PATH_TO_JSON = os.path.join(PATH_TO_JSON_, img_name+"_flat.json")
 
+    # generate sub-shadows
+    if sub_shadow:
+        CallCropShadow_py(img_name)
 
 def array_to_base64(array):
     '''
@@ -291,11 +283,25 @@ def to_pil(byte):
     byte = base64.b64decode(byte)
     return Image.open(io.BytesIO(byte)).convert("RGB")
 
+def CallCropShadow_py(filename):
+    JSON_FILE_PATH= PATH_TO_REFINEDJSON+"/"+filename+'_flat.json'
+    print('%s'%JSON_FILE_PATH)
+    command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS}"
+    subprocess.run(command, shell=True)
+
 if __name__ == "__main__":
     # for debug
-    # open_psd_py("./test/image59.psd")
+    # open_psd_py("./test/image7.psd")
     # batch_process()
-    # CallCropShadow_py('./test/image59.psd');
+    
+    # for png in os.listdir(PATH_TO_PREPROCESS):
+    #     if "flat" not in png: continue
+    #     flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, png)))
+    #     line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, png.replace("flat", "line"))))
+    #     flat, line = add_alpha_all(flat, line)
+    #     Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, png))
+    #     Image.fromarray(line).save(os.path.join(PATH_TO_PREPROCESS, png.replace("flat", "line")))
+    
     # start main GUI
     eel.init("web") 
     # let's run this code remotely for now
