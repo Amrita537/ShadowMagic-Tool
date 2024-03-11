@@ -170,13 +170,34 @@ def preprocess(path_to_psd, name, var):
         alpha = flat[..., -1][..., np.newaxis] / 255
         rgb = flat[..., 0:3]
         flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
-        Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
+    else:
+        assert len(flat.shape) == 3 and flat.shape[-1] == 3
+        # add alpha channel... 
+        flat_alpha_mask = flat.mean(axis = -1) == 255
+        flat_alpha = np.ones(flat_alpha_mask.shape) * 255
+        flat_alpha[flat_alpha_mask] =  0
+        Image.fromarray(np.concatenate(flat, flat_alpha[..., np.newaxis])).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
+
     line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
+    line_to_save = line.copy()
+    need_add_alpha = False
     if line.shape[-1] == 4:
         if len(np.unique(line[..., -1])) != 1:
             line = np.repeat((255 - line[..., -1])[..., np.newaxis], 3, axis = -1)
         else:
             line = line[..., 0:3]
+            line_to_save = line.copy()
+            need_add_alpha = True
+    else:
+        need_add_alpha = True
+    
+    if need_add_alpha:
+        # add alpha channel to the line drawing layer
+        if len(line_to_save.shape) == 3:
+            line_to_save = line_to_save.mean(axis = -1)
+        line_to_save = np.concatenate((np.zeros((line_to_save.shape[0],line_to_save.shape[1],3)), (255 - line_to_save)[..., np.newaxis]), axis = -1)
+        Image.fromarray(line_to_save.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name+"_line.png"))
+
     color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
 
     # get shadows
@@ -191,10 +212,15 @@ def preprocess(path_to_psd, name, var):
         data_send['color'] = array_to_base64(color.astype(np.uint8))
         
         for i in range(var):
+            print("log:\tpredicting #%d shadow from direction %s"%(i, direction))
             resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
             resp = resp.json()
-            shadow = to_pil(resp['shadow_0'])
-            shadow.save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
+            shadow = np.array(to_pil(resp['shadow_0']))
+            # add alpha channel to shadow output
+            alpha = np.zeros((shadow.shape[0], shadow.shape[1]))
+            alpha[shadow[..., 0] == 0] = 255
+            shadow = np.concatenate((shadow, alpha[..., np.newaxis]), axis = -1)
+            Image.fromarray(shadow.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
 
     # get the segmentation result
     segment_single(name)
@@ -293,16 +319,16 @@ def to_pil(byte):
     A helper function to convert byte png to PIL.Image
     '''
     byte = base64.b64decode(byte)
-    return Image.open(io.BytesIO(byte))
+    return Image.open(io.BytesIO(byte)).convert("RGB")
 
 if __name__ == "__main__":
     # for debug
-    # open_psd_py("./test/image59.psd")
+    open_psd_py("./test/image59.psd")
     # batch_process()
 
-    # start main GUI
-    eel.init("web") 
-    # let's run this code remotely for now
-    # print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
-    eel.start("GUI2.html", size = (1400, 800))
+    # # start main GUI
+    # eel.init("web") 
+    # # let's run this code remotely for now
+    # # print("log:\tOpen a web browser to: http://localhost:8000/GUI2.html")
+    # eel.start("GUI2.html", size = (1400, 800))
 
