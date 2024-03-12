@@ -81,6 +81,8 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
                 pass    
         if processed:continue
         open_psd_py(os.path.join(path_to_psds, psd), var = var)
+        # import pdb
+        # pdb.set_trace()
 
 @eel.expose
 def shadow_decrease(shadow, line, region_label, reset = False):
@@ -90,6 +92,8 @@ def shadow_decrease(shadow, line, region_label, reset = False):
         line, line drawing layer
         region_label, the name of current shadow region
         reset, empty the cached previous shadows if enabled
+    Return,
+        updated shadow
     '''
     # open shadow
     img_binary = base64.b64decode(shadow)
@@ -229,8 +233,17 @@ def preprocess(path_to_psd, name, var):
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"), os.path.join(PATH_TO_FLAT, name+"_flat.png"))
     
     # a dirty fix for clean all existing prediction results
-    # really don't understand why put so many files and folders...
+    # really don't understand why need to put so many files and folders...
+    for f in os.listdir(PATH_TO_SHADOW):
+        delete_item(os.path.join(PATH_TO_SHADOW, f))
     seg_path_cleanup()
+    # find all shadowing results
+    shadows = []
+    for img in os.listdir(PATH_TO_PREPROCESS):
+        if name not in img or 'shadow' not in img: continue
+        shadows.append(img)
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, img), os.path.join(PATH_TO_SHADOW, img))
+    assert len(shadows) == len(DIRS) * var
     segment_single(name)
 
     # copy segmentation result to preprocess folder
@@ -287,11 +300,11 @@ def preprocess_to_work(fname):
     assert len(shadows_back) >= 4
     assert len(shadows_left) >= 4
     assert len(shadows_right) >= 4
-    random.shuffle(shadows_top)
-    random.shuffle(shadows_back)
-    random.shuffle(shadows_left)
-    random.shuffle(shadows_right)
-    for i in range(4): 
+    # random.shuffle(shadows_top)
+    # random.shuffle(shadows_back)
+    # random.shuffle(shadows_left)
+    # random.shuffle(shadows_right)
+    for i in range(len(shadows_right)): 
         # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[2], i)))
         # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[3], i)))
         # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[0], i)))
@@ -382,8 +395,6 @@ def to_shadow_img(shadow):
 if __name__ == "__main__":
     # for debug
     # open_psd_py("./test/image7.psd")
-    # import pdb
-    # pdb.set_trace()
     # batch_process()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
