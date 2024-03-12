@@ -18,7 +18,7 @@ from yoloresult import main as to_json
 from PIL import Image
 from CropShadow import get_sub_shadow
 from tqdm import tqdm
-
+from zipfile import ZipFile
 
 
 # path that saves preprocessed files
@@ -81,8 +81,6 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
                 pass    
         if processed:continue
         open_psd_py(os.path.join(path_to_psds, psd), var = var)
-        # import pdb
-        # pdb.set_trace()
 
 @eel.expose
 def shadow_decrease(shadow, line, region_label, reset = False):
@@ -240,9 +238,14 @@ def preprocess(path_to_psd, name, var):
     # find all shadowing results
     shadows = []
     for img in os.listdir(PATH_TO_PREPROCESS):
-        if name not in img or 'shadow' not in img: continue
+        if name not in img or 'shadow' not in img or 'png' not in img: continue
         shadows.append(img)
         shutil.copy(os.path.join(PATH_TO_PREPROCESS, img), os.path.join(PATH_TO_SHADOW, img))
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_shadows"),
+        'zip',
+        PATH_TO_SHADOW)
+    for img in shadows:
+        os.remove(os.path.join(PATH_TO_PREPROCESS, img))
     assert len(shadows) == len(DIRS) * var
     segment_single(name)
 
@@ -276,43 +279,11 @@ def preprocess_to_work(fname):
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_YoloOutput.zip"), "./YoloOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_RefinedOutput.zip"), "./web/RefinedOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), "./web/Shadows/sub_shadows")
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_shadows.zip"), "./web/Shadows")
 
     # copy the preprocessed result to 
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_flat.png"), os.path.join(PATH_TO_FLAT, fname+"_flat.png"))
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_line.png"), os.path.join(PATH_TO_LINE, fname+"_line.png"))
-    # search all shadow files
-    shadows_top = []
-    shadows_back = []
-    shadows_left = []
-    shadows_right = []
-    for s in os.listdir(PATH_TO_PREPROCESS):
-        # DIRS = ['left', 'right', "top", "back"]
-        if '.png' not in s: continue
-        if fname in s and 'shadow' in s and DIRS[2] in s:
-            shadows_top.append(s)
-        if fname in s and 'shadow' in s and DIRS[3] in s:
-            shadows_back.append(s)
-        if fname in s and 'shadow' in s and DIRS[0] in s:
-            shadows_left.append(s)
-        if fname in s and 'shadow' in s and DIRS[1] in s:
-            shadows_right.append(s)
-    assert len(shadows_top) >= 4
-    assert len(shadows_back) >= 4
-    assert len(shadows_left) >= 4
-    assert len(shadows_right) >= 4
-    # random.shuffle(shadows_top)
-    # random.shuffle(shadows_back)
-    # random.shuffle(shadows_left)
-    # random.shuffle(shadows_right)
-    for i in range(len(shadows_right)): 
-        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[2], i)))
-        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[3], i)))
-        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[0], i)))
-        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[1], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, shadows_top[i]))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, shadows_back[i]))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, shadows_left[i]))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, shadows_right[i]))
 
 def delete_item(path_to_item):
     try:
