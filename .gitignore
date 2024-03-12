@@ -9,3 +9,5 @@ InputLines
 YoloOutput
 __pycache__
 batch_input
+preprocessed
+test

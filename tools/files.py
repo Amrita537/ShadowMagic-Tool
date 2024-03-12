@@ -52,6 +52,9 @@ def open_psd(path_to_psd, path_to_png):
 
     # read psd file
     psd = PSDImage.open(path_to_psd)
+    h, w = psd.size
+    if h > 2000 or w > 2000:
+        print("warning:\tinput resolution (%d, %d) greater than 2000, this may not get shadow prediction correctly"%(h, w))
     name = get_file_name(path_to_psd)
     
     w, h = psd.width, psd.height

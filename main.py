@@ -10,6 +10,7 @@ import requests
 import json
 import shutil
 import random
+import subprocess
 from random import randint
 from tools.files import open_psd, get_file_name, add_alpha_all, add_alpha_flat, add_alpha_line, decrease_shadow_gaussian
 from yolov5.segment.predict import run as seg
@@ -17,7 +18,8 @@ from yoloresult import main as to_json
 from PIL import Image
 from CropShadow import get_sub_shadow
 from tqdm import tqdm
-import subprocess
+
+
 
 # path that saves preprocessed files
 PATH_TO_PREPROCESS = './preprocessed/'
@@ -30,6 +32,7 @@ PATH_TO_SHADOW = './web/Shadows'
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
 PATH_TO_JSON_FLODER = "./web/RefinedOutput/json/"
 PATH_TO_REFINEDJSON= "./web/RefinedOutput/json"
+PATH_TO_SEGS = []
 PATH_TO_JSON = False
 DIRS = ['left', 'right', "top", "back"]
 
@@ -224,7 +227,25 @@ def preprocess(path_to_psd, name, var):
     for f in os.listdir(PATH_TO_FLAT):
         delete_item(os.path.join(PATH_TO_FLAT, f))
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"), os.path.join(PATH_TO_FLAT, name+"_flat.png"))
+    
+    # a dirty fix for clean all existing prediction results
+    # really don't understand why put so many files and folders...
+    seg_path_cleanup()
     segment_single(name)
+
+    # copy segmentation result to preprocess folder
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_AnnotOutput"), 
+        'zip', 
+        './AnnotOutput')
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_YoloOutput"), 
+        'zip', 
+        './YoloOutput')
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_RefinedOutput"), 
+        'zip', 
+        './web/RefinedOutput')
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_sub_shadow"), 
+        'zip', 
+        PATH_TO_SHADOWS)
 
 def preprocess_to_work(fname):
     print("log:\tpreparing shadowing result for %s"%fname)
@@ -236,6 +257,13 @@ def preprocess_to_work(fname):
     for f in os.listdir(PATH_TO_SHADOW):
         if "sub" in f: continue
         delete_item(os.path.join(PATH_TO_SHADOW, f))
+    
+    # unzip the segementation result to working folder
+    seg_path_cleanup()
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_AnnotOutput.zip"), "./AnnotOutput")
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_YoloOutput.zip"), "./YoloOutput")
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_RefinedOutput.zip"), "./web/RefinedOutput")
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadow.zip"), "./web/Shadows/sub_shadow")
 
     # copy the preprocessed result to 
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_flat.png"), os.path.join(PATH_TO_FLAT, fname+"_flat.png"))
@@ -265,18 +293,33 @@ def preprocess_to_work(fname):
     random.shuffle(shadows_left)
     random.shuffle(shadows_right)
     for i in range(4): 
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[2], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[3], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[0], i)))
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[1], i)))
+        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[2], i)))
+        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[3], i)))
+        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[0], i)))
+        # shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, fname+"_%s_shadow_%d.png"%(DIRS[1], i)))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_top[i]), os.path.join(PATH_TO_SHADOW, shadows_top[i]))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_back[i]), os.path.join(PATH_TO_SHADOW, shadows_back[i]))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_left[i]), os.path.join(PATH_TO_SHADOW, shadows_left[i]))
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, shadows_right[i]), os.path.join(PATH_TO_SHADOW, shadows_right[i]))
 
 def delete_item(path_to_item):
-    if os.path.isdir(path_to_item):
-        shutil.rmtree(path_to_item)
-    elif os.path.isfile(path_to_item):
-        os.remove(path_to_item)
-    else:
-        raise ValueError("can't delete file %s"%path_to_item)
+    try:
+        if os.path.isdir(path_to_item):
+            shutil.rmtree(path_to_item)
+        elif os.path.isfile(path_to_item):
+            os.remove(path_to_item)
+        else:
+            print("warning:\tcan't delete %s"%path_to_item)
+    except:
+        pass
+
+def seg_path_cleanup():
+    predict_path = "./yolov5/runs/predict-seg"
+    delete_item(predict_path)
+    delete_item("./YoloOutput")
+    delete_item("./AnnotOutput")
+    delete_item("./web/RefinedOutput")
+    delete_item(PATH_TO_SHADOWS)
 
 def segment_single(img_name, sub_shadow = True):
     # init parameters
@@ -287,13 +330,6 @@ def segment_single(img_name, sub_shadow = True):
     assert os.path.exists(source_path)
 
     # segment flat layer
-    # a dirty fix for clean all existing prediction results
-    # really don't understand why put so many files and folders...
-    predict_path = "./yolov5/runs/predict-seg"
-    delete_item(predict_path)
-    delete_item("./YoloOutput")
-    delete_item("./AnnotOutput")
-    delete_item("./web/RefinedOutput")
     path_to_label = seg(
         weights=weights_path,  # model.pt path(s)
         source=source_path,  # file/dir/URL/glob/screen/0(webcam)
@@ -307,6 +343,9 @@ def segment_single(img_name, sub_shadow = True):
         image_path = PATH_TO_FLAT, 
         yolo_txt_path = path_to_label
         )
+
+    # another dirty fix to shadow cropping...
+
 
     # generate sub-shadows
     if sub_shadow:
@@ -334,8 +373,8 @@ def to_pil(byte):
 
 def CallCropShadow_py(filename):
     JSON_FILE_PATH= PATH_TO_REFINEDJSON+"/"+filename+'_flat.json'
-    print('%s'%JSON_FILE_PATH)
-    command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS}"
+    command = f"python CropShadow.py {PATH_TO_SHADOW} {JSON_FILE_PATH} {PATH_TO_SHADOWS} {filename}"
+    print('%s'%command)
     subprocess.run(command, shell=True)
 
 def to_shadow_img(shadow):
@@ -347,6 +386,8 @@ def to_shadow_img(shadow):
 if __name__ == "__main__":
     # for debug
     # open_psd_py("./test/image7.psd")
+    # import pdb
+    # pdb.set_trace()
     # batch_process()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
