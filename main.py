@@ -243,7 +243,7 @@ def preprocess(path_to_psd, name, var):
     shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_RefinedOutput"), 
         'zip', 
         './web/RefinedOutput')
-    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_sub_shadow"), 
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_sub_shadows"), 
         'zip', 
         PATH_TO_SHADOWS)
 
@@ -255,7 +255,6 @@ def preprocess_to_work(fname):
     for f in os.listdir(PATH_TO_LINE):
         delete_item(os.path.join(PATH_TO_LINE, f))
     for f in os.listdir(PATH_TO_SHADOW):
-        if "sub" in f: continue
         delete_item(os.path.join(PATH_TO_SHADOW, f))
     
     # unzip the segementation result to working folder
@@ -263,7 +262,7 @@ def preprocess_to_work(fname):
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_AnnotOutput.zip"), "./AnnotOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_YoloOutput.zip"), "./YoloOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_RefinedOutput.zip"), "./web/RefinedOutput")
-    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadow.zip"), "./web/Shadows/sub_shadow")
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), "./web/Shadows/sub_shadows")
 
     # copy the preprocessed result to 
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_flat.png"), os.path.join(PATH_TO_FLAT, fname+"_flat.png"))
@@ -343,9 +342,6 @@ def segment_single(img_name, sub_shadow = True):
         image_path = PATH_TO_FLAT, 
         yolo_txt_path = path_to_label
         )
-
-    # another dirty fix to shadow cropping...
-
 
     # generate sub-shadows
     if sub_shadow:
