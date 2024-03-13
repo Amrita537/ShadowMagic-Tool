@@ -517,6 +517,8 @@ function fetch_Shadow_files(shadow_arr) {
                             img.selectable = false;
                             img.visible = false;
                             img.opacity = global_opacity; 
+                            img.customBase64 = img.toDataURL({ format: 'png' });
+
                             canvas.add(img);
                             shadow_segment_images.push(img);
                         });
@@ -1643,28 +1645,38 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
       const decrementButton = document.querySelector('.decrement');
 
 
-      incrementButton.addEventListener('click', function() {
+      // incrementButton.addEventListener('click', function() {
 
-            //When we are clicking the increment button, 
-            //its fetching the current segmented shadow layers as an array.
-            //current labels of the image, as an array.
+      //       //When we are clicking the increment button, 
+      //       //its fetching the current segmented shadow layers as an array.
+      //       //current labels of the image, as an array.
 
-            console.log('Increment button clicked');
+      //       console.log('Increment button clicked');
 
-            let CurrentShadow_arr= []
-            const NumberRegExp = new RegExp(`shadow_${global_number}`);
+      //       let CurrentShadow_arr= []
+      //       const NumberRegExp = new RegExp(`shadow_${global_number}`);
 
-            canvas.getObjects().forEach(obj => {
-                if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
-                    CurrentShadow_arr.push(obj);
-                }
-            });
+      //       canvas.getObjects().forEach(obj => {
+      //           if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
+      //               CurrentShadow_arr.push(obj);
+      //           }
+      //       });
             
-            const labels_arr = getSegmentNames();
-            console.log(CurrentShadow_arr);
-            console.log(labels_arr);
+      //       const labels_arr = getSegmentNames();
+      //       console.log(CurrentShadow_arr);
+      //       console.log(labels_arr);
 
+      // });
+
+
+      incrementButton.addEventListener('click', function() {
+            shadow=shadow_segment_images[0].customBase64;
+            region_label="cloth"
+            eel.shadow_increase(shadow, region_label)((response) => {
+                console.log(response); // Log the response from the Python function
+              });
       });
+
 
       decrementButton.addEventListener('click', function() {
             console.log('decrement button clicked');
