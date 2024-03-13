@@ -30,6 +30,9 @@ body{
     cursor: url('circle_icon.png'), auto;
 }
 
+.upper-canvas: hover{
+  cursor: url('circle_icon.png'), auto;
+}
 /*================Style for topbar_id================*/
 #topbar_id nav
 {
@@ -113,6 +116,37 @@ padding: 10px 5px 10px 5px;
 #tool_id .fas {
 padding: 10px 5px 10px 5px;
 }
+
+#ToolSize{
+  margin-top: 10%;
+  padding-top: 10%;
+  padding-bottom: 10%;
+  background-color: var(--white-grey);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+#drawSizeRange{
+  margin-bottom: 0px;
+}
+#tool_id input[type=range][orient=vertical] {
+    appearance: slider-vertical;
+    width: 5px;
+    height: 175px;
+    margin-left: 10px;
+    margin-right: 5px;
+}
+
+#BrushRange::-webkit-slider-thumb {
+    margin-right: -5px;
+    }
+
+   /* Change the color of the slider track */
+#BrushRange::-webkit-slider-runnable-track {
+        background-color: black; /* Gray color */
+        width: 5px;
+}
 /*================Style for Editor_id================*/
 #Editor_id
 {
@@ -126,6 +160,16 @@ padding: 10px 5px 10px 5px;
   color: #ffffff; /* Change the text color to indicate selection */
 }
 
+#UndoBtn:hover {
+    color: white; /* Change to the desired color */
+    background-color: black;
+}
+
+#RedoBtn:hover {
+    color: white; /* Change to the desired color */
+    background-color: black;
+}
+
 /*================Style for canvas_id================*/
 #canvas_id{
 /*		padding-top: 2%;*/
@@ -136,18 +180,19 @@ canvas {
 }
 
 #canvas_id {
-/*    border:  1px solid black;*/
-/*    background-image: url('background.png');*/
     background-size: cover; /* Adjust as needed */
     position: relative;
-/*    width: 750px; 
-    height: 600px;*/ 
-
     display: flex;
     justify-content: center;
-/*    top: 50%;
-    height: 100%;*/ /* Ensure the container takes up the full height of its parent */
+
 }
+
+
+#canvas_id2 {
+    background-size: cover; 
+    position: relative;
+    display: flex; /* Display as flex container */
+    justify-content: center; /* Center horizontally */}
 /*================Style for operation_id================*/
 
 
@@ -176,10 +221,7 @@ canvas {
     color: white;
 }
 
-/*#operation_id .panel-group button
-{
-	border: 1px solid black;
-}*/
+
 
 .layerbutton{
 	text-align:  "left";
@@ -187,48 +229,18 @@ canvas {
      color:  "#ffffff";
 }
 
-/*#collapse3 .btn-block{
-	text-align:  "left";
-     background-color: "#6c757d";
-     color:  "#ffffff";
-}*/
-
-/*#opacityRange {
-    background-color: black;
-}
 
 #opacityRange::-webkit-slider-thumb {
-        background-color: black;
-        border: 1px solid #ddd; 
-}
-#opacityRange::-moz-range-thumb {
-        background-color: black;
-        border: 1px solid #ddd; 
-    }
-
-    #opacityRange::-ms-thumb {
-        background-color: black;
-        border: 1px solid #ddd; 
-    }*/
-
-
-    #opacityRange::-webkit-slider-thumb {
     margin-top: -5px;
     }
 
    /* Change the color of the slider track */
-    #opacityRange::-webkit-slider-runnable-track {
+#opacityRange::-webkit-slider-runnable-track {
         background-color: black; /* Gray color */
         height: 5px; /* Set the height of the track */
     }
 
-/*#opacitydiv_id{
-  display: none;
-}
 
-#partdiv_id{
-  display: none;
-}*/
 
 #collapse4 {
   max-height: 250px; /* Set a maximum height for the panel */
@@ -393,6 +405,31 @@ hr{
   border:1px solid #B8B8B8;
 }
 
+/*========================= Shadow Size ===========================*/
+#ChangeSize span{
+  margin-right: 5px;
+}
+#ChangeSize .increment,
+    .decrement {
+        border-radius: 5px; 
+/*        padding: 5px 10px; */
+        margin-right: 5px; 
+        height: 20px;
+        background-color: var(--grey-color); 
+        color: white;
+        border: 1px solid #ccc; 
+        cursor: pointer; 
+    }
+
+
+
+    /* Change button background color on hover */
+#ChangeSize .increment:hover,
+    .decrement:hover {
+        background-color: var(--light-grey);
+    }
+
+
 /*====================Zoom Control============================*/
 #zoomControls{
   position: absolute;
@@ -411,7 +448,7 @@ input[type=checkbox] {
 /*=========================paint brush popover===========================*/
     .circle-container {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
     }
@@ -425,23 +462,23 @@ input[type=checkbox] {
     }
 
     .circle-10 {
-        font-size: 10px;
+        font-size: 3px;
     }
 
     .circle-15 {
-        font-size: 15px;
+        font-size: 8px;
     }
 
     .circle-20 {
-        font-size: 20px;
+        font-size: 14px;
     }
 
     .circle-25 {
-        font-size: 25px;
+        font-size: 18px;
     }
 
     .circle-30 {
-        font-size: 30px;
+        font-size: 25px;
     }
 
 /* ========================= image carousel========================*/
@@ -554,7 +591,7 @@ input[type=checkbox] {
 }
 
 #opacitydiv_id,
-#partdiv_id {
+#partdiv_id, #ChangeSize{
   display: none;
 }
 
