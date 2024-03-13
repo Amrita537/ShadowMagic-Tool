@@ -2,6 +2,7 @@ back_end
 yolov5/runs
 *.pyc
 web/RefinedOutput
+web/InputFlats
 web/Shadows
 AnnotOutput
 InputFlats

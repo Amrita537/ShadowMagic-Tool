@@ -30,11 +30,13 @@ PATH_TO_FLAT = './InputFlats'
 PATH_TO_LINE = './InputLines'
 PATH_TO_SHADOW = './web/Shadows'
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
-PATH_TO_JSON_FLODER = "./web/RefinedOutput/json/"
 PATH_TO_REFINEDJSON= "./web/RefinedOutput/json"
 PATH_TO_SEGS = []
 PATH_TO_JSON = False
 DIRS = ['left', 'right', "top", "back"]
+
+# nice...working folder for front end changed but the preprocesse work folder isn't...
+PATH_TO_LAYERS = './web/InputFlats'
 
 # intermediate shadows
 SHADOWS = {}
@@ -266,10 +268,10 @@ def preprocess(path_to_psd, name, var):
 def preprocess_to_work(fname):
     print("log:\tpreparing shadowing result for %s"%fname)
     # clean up all files in the working folder
-    for f in os.listdir(PATH_TO_FLAT):
-        delete_item(os.path.join(PATH_TO_FLAT, f))
-    for f in os.listdir(PATH_TO_LINE):
-        delete_item(os.path.join(PATH_TO_LINE, f))
+    for f in os.listdir(PATH_TO_LAYERS):
+        delete_item(os.path.join(PATH_TO_LAYERS, f))
+    # for f in os.listdir(PATH_TO_LINE):
+    #     delete_item(os.path.join(PATH_TO_LINE, f))
     for f in os.listdir(PATH_TO_SHADOW):
         delete_item(os.path.join(PATH_TO_SHADOW, f))
     
@@ -282,8 +284,8 @@ def preprocess_to_work(fname):
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_shadows.zip"), "./web/Shadows")
 
     # copy the preprocessed result to 
-    shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_flat.png"), os.path.join(PATH_TO_FLAT, fname+"_flat.png"))
-    shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_line.png"), os.path.join(PATH_TO_LINE, fname+"_line.png"))
+    shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_flat.png"), os.path.join(PATH_TO_LAYERS, fname+"_flat.png"))
+    shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_line.png"), os.path.join(PATH_TO_LAYERS, fname+"_line.png"))
 
 def delete_item(path_to_item):
     try:
@@ -366,6 +368,8 @@ def to_shadow_img(shadow):
 if __name__ == "__main__":
     # for debug
     # open_psd_py("./test/image7.psd")
+    # import pdb
+    # pdb.set_trace()
     # batch_process()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
