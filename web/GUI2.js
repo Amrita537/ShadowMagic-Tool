@@ -32,28 +32,23 @@
         html: true
     });
 
-    //Variables//
+    //Global Variables//
     let isErasing = false;
-    let global_opacity = 0.5;
-
-
+    let global_opacity = 0.6;
+    let Shadow_change = 0;
+    let global_number=0;
 
     //======================Run python function=================== 
-    // document.querySelector("#mybutton").onclick = function () {
+    
 
-    //   eel.random_python()(function(number){                       
+    // function Semantic_segmentation(imageName){
+
+    //   eel.random_python(imageName)(function(number){                       
     //     console.log("files loaded")
     //   }) 
       
     // }
 
-    function Semantic_segmentation(imageName){
-
-      eel.random_python(imageName)(function(number){                       
-        console.log("files loaded")
-      }) 
-      
-    }
 
 
 // ====================Open image functions================
@@ -424,6 +419,7 @@ function GenerateShadow() {
 
             fetch_Shadow_files(names_shadow);
             fetch_Shadow_files(names_shadow_segment);
+            setShadowOpacity();
         } 
         else {
             console.log('No image on the canvas or the first image is not loaded.');
@@ -435,48 +431,57 @@ function GenerateShadow() {
 
 }
 
-
-  function fetch_Shadow_files(shadow_arr){
-      if(shadow_arr == names_shadow_segment)
-      {
+function fetch_Shadow_files(shadow_arr) {
+    if (shadow_arr == names_shadow_segment) {
         let relativePath = 'Shadows/sub-shadows/'; // Adjust this relative path based on your directory structure
         names_shadow_segment.forEach(name => {
-          let fullPath = relativePath + name;
-          fabric.Image.fromURL(fullPath, function (img) {
-                const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                img.scale(scaleFactor);
-                img.customImageName=name;
-                img.selectable = false;
-                img.visible = false;
-                canvas.add(img);
-                shadow_segment_images.push(img);
-          }); 
+            let fullPath = relativePath + name;
+            fetch(fullPath)
+                .then(response => {
+                    if (response.ok) {
+                        fabric.Image.fromURL(fullPath, function (img) {
+                            const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                            img.scale(scaleFactor);
+                            img.customImageName = name;
+                            img.selectable = false;
+                            img.visible = false;
+                            img.opacity = global_opacity; 
+                            img.evented = false;
+                            canvas.add(img);
+                            shadow_segment_images.push(img);
+                        });
+                    } else {
+                        console.log(`Image ${fullPath} does not exist`);
+                    }
+                });
         });
-      setShadowOpacity(global_opacity)
-      console.log("Loaded shadow_segment_images", shadow_segment_images);
-      }
-
-      else
-      { 
+         console.log("Loaded shadow_segment_images", shadow_segment_images);
+    } 
+    else {
         let relativePath = 'Shadows/'; // Adjust this relative path based on your directory structure
         names_shadow.forEach(name => {
-          let fullPath = relativePath + name;
-          fabric.Image.fromURL(fullPath, function (img) {
-                const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                img.scale(scaleFactor);
-                img.customImageName=name;
-                img.selectable = false;
-                img.visible = false;
-                base_shadow_images.push(img);
-          }); 
+            let fullPath = relativePath + name;
+            fetch(fullPath)
+                .then(response => {
+                    if (response.ok) {
+                        fabric.Image.fromURL(fullPath, function (img) {
+                            const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                            img.scale(scaleFactor);
+                            img.customImageName = name;
+                            img.selectable = false;
+                            img.visible = false;
+                            base_shadow_images.push(img);
+                        });
+                    } else {
+                        console.log(`Image ${fullPath} does not exist`);
+                    }
+
+                });
         });
-      console.log("Loaded base_shadow_images", base_shadow_images);
-      setShadowOpacity(global_opacity)
+        console.log("Loaded base_shadow_images", base_shadow_images);
+    }
+}
 
-
-      }
-
-  }
 
 
 const checkboxIds = ['hairCheckbox', 'faceCheckbox', 'clothCheckbox', 'armCheckbox', 'objectCheckbox', 'allCheckbox'];
@@ -493,6 +498,7 @@ buttonIds.forEach(buttonId => {
       current_button.addEventListener('click', function () 
       {
             addShadowButton();
+            updateCheckboxes();
             if (current_button.classList.contains('active-button')) 
             {
                 current_button.classList.remove('active-button');
@@ -530,9 +536,8 @@ buttonIds.forEach(buttonId => {
               });
 
               setCardBackgroundImages(direction)
-              checkVisibleObjects();
-            } 
-              
+            }
+            // Example usage
       });
 });
 
@@ -570,49 +575,37 @@ function toggleVisibilityByDirectionAndSegment(direction, segment, index, isVisi
 
 //============================= Part selector checkboxes ========================
 
-
-function checkVisibleObjects() {
-  canvas.getObjects().forEach(obj => {
-    if (obj.visible) {
-      const lowercaseImageName = obj.customImageName;
-      if (lowercaseImageName.includes('hair')) {
-        document.getElementById('hairCheckbox').checked = true;
-      }
-      if (lowercaseImageName.includes('face')) {
-        document.getElementById('faceCheckbox').checked = true;
-      }
-      if (lowercaseImageName.includes('cloth')) {
-        document.getElementById('clothCheckbox').checked = true;
-      }
-      if (lowercaseImageName.includes('arm')) {
-        document.getElementById('armCheckbox').checked = true;
-      }
-      if (lowercaseImageName.includes('object')) {
-        document.getElementById('objectCheckbox').checked = true;
-      }
-    }
-  });
+function getSegmentNames() {
+    const segments_exist= {};
+    shadow_segment_images.forEach(img => {
+        const imageName = img.customImageName;
+        const segment = imageName.substring(imageName.lastIndexOf('_') + 1, imageName.lastIndexOf('.'));
+        segments_exist[segment] = true;
+    });
+    return Object.keys(segments_exist);
 }
 
 
+function updateCheckboxes() {
+    const segments_exist = getSegmentNames();
+    const checkboxes = document.querySelectorAll('[id$="Checkbox"]');
+    checkboxes.forEach(checkbox => {
+        const idSegments = checkbox.id.split('Checkbox')[0];
+        const isDisabled = !segments_exist.some(segment => idSegments.includes(segment));
+        checkbox.checked = !isDisabled && segments_exist.includes(idSegments);
+        checkbox.disabled = isDisabled;
+    });
+}
 
 // Function to toggle the visibility of canvas objects based on checkbox state
 function toggleVisibilityByCheckbox(label) {
-    let number=0;
-
-    canvas.getObjects().forEach(obj => {
-            if (obj.visible){
-                let imageName = obj.customImageName;
-                let match = imageName.match(/shadow(\d+)/);
-                if (match) {
-                  number = match[1];
-                } 
-            }
-            let checkbox = document.getElementById(`${label}Checkbox`);
-            toggleVisibilityByDirectionAndSegment(direction, label, number, checkbox.checked);
-    });
+    let number=global_number;
+    console.log("changing", label, "for", number);
+    let checkbox = document.getElementById(`${label}Checkbox`);
+    toggleVisibilityByDirectionAndSegment(direction, label, number, checkbox.checked);
     canvas.renderAll();
 }
+
 
 // Add click event listeners to each checkbox
 document.getElementById('hairCheckbox').addEventListener('click', function() {
@@ -637,7 +630,7 @@ document.getElementById('objectCheckbox').addEventListener('click', function() {
 
 
 const cursorInfo = document.getElementById('cursorInfo');
-const allCheckbox = document.getElementById('allCheckbox');
+const allCheckbox = document.getElementById('allswitch');
 
 allCheckbox.addEventListener('change', function () {
       if (this.checked) 
@@ -649,7 +642,6 @@ allCheckbox.addEventListener('change', function () {
         cursorInfo.style.display = 'none';
         getOutline(this.checked);
       }
-
   });
 
 
@@ -833,23 +825,42 @@ downloadIcon.addEventListener("click", function (event) {
 
 
 //===================shadow opacity function====================//
-      document.getElementById('opacityRange').addEventListener('input', function () {
-          // const opacityValue = parseFloat(this.value);
-          global_opacity=parseFloat(this.value);
-          console.log("opacityValue", global_opacity);
-          document.getElementById('opacityValue').textContent = global_opacity;
-          setShadowOpacity(global_opacity);
-          document.getElementById('opacityRange').value = global_opacity;
-      });
+      // document.getElementById('opacityRange').addEventListener('input', function () {
+      //     // const opacityValue = parseFloat(this.value);
+      //     global_opacity=parseFloat(this.value);
+      //     console.log("opacityValue", global_opacity);
+      //     document.getElementById('opacityValue').textContent = global_opacity;
+      //     setShadowOpacity(global_opacity);
+      //     document.getElementById('opacityRange').value = global_opacity;
+      // });
             
+      // function setShadowOpacity() {
+      //     canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+      //     shadow_segment_images.forEach((shadow) => {
+      //         shadow.set('opacity', global_opacity);
+      //     });
+      //     displayImages();
+      // }
 
-      function setShadowOpacity(opacity) {
+
+const opacityRange = document.getElementById('opacityRange');
+opacityRange.value = global_opacity;
+document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
+
+      function updateOpacity(value) {
+          global_opacity = parseFloat(value);
+          document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
           canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
           shadow_segment_images.forEach((shadow) => {
-              shadow.set('opacity', opacity);
+              shadow.set('opacity', global_opacity);
           });
           displayImages();
       }
+
+      document.getElementById('opacityRange').addEventListener('input', function() {
+          updateOpacity(this.value);
+      });
+
 
 //========================draw segments=========================//
 
@@ -1177,7 +1188,7 @@ function saveCanvasImage() {
     canvas.setZoom(1);
 
     const link = document.createElement('a');
-    link.download = 'canvas-image.png';
+    link.download = images[0].customImageName+'.png';
     link.href = dataURL;
 
     link.click();
@@ -1191,12 +1202,15 @@ function saveCanvasImage() {
     var mousecursor; 
     var undoStack = [];
     var redoStack = [];
+    // canvas.contextTop.globalCompositeOperation = 'source-over'; // Set the globalCompositeOperation
+    canvas.contextTop.globalCompositeOperation = 'destination-over';
 
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
           var toolSize = document.getElementById('ToolSize');
           isPainting= !isPainting;
           isErasing=false
           deactivateEraser();
+                
 
           if (isPainting) {
               canvas.isDrawingMode = true;
@@ -1206,6 +1220,8 @@ function saveCanvasImage() {
 
               toolSize.style.display = 'flex';
               canvas.freeDrawingBrush.width = global_brush_width;
+              canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+
               this.style.backgroundColor = 'black';
               this.style.color = 'white';
 
@@ -1233,6 +1249,7 @@ function saveCanvasImage() {
           circle_id.addEventListener('click', function(event) {
               if (selectedCircleId === circle_id.id) {
                   canvas.freeDrawingBrush.width = 1;
+                  canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
                   selectedCircleId = null;
                   this.style.color = 'black';
                   this.style.backgroundColor= '';
@@ -1241,6 +1258,7 @@ function saveCanvasImage() {
               } else {
                   console.log('Circle span clicked: ', circle_id.id);
                   canvas.freeDrawingBrush.width = parseInt(circle_id.id);
+                  canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
                   selectedCircleId = circle_id.id;
                   global_brush_width= parseInt(circle_id.id);
                           
@@ -1311,6 +1329,14 @@ function deactivatePainting() {
 
 // Function to undo the last action
 function undo() {
+    if (this.style.color === "white" && this.style.backgroundColor === "black") {
+        this.style.color = "";
+        this.style.backgroundColor = "";
+    } else {
+        this.style.color = "white";
+        this.style.backgroundColor = "black";
+    }
+
     if (undoStack.length > 0) {
         var obj = undoStack.pop();
         canvas.remove(obj);
@@ -1326,6 +1352,14 @@ function redo() {
         canvas.add(obj);
         undoStack.push(obj);
         canvas.renderAll();
+    }
+    // Toggle button style
+    if (this.style.color === "white" && this.style.backgroundColor === "black") {
+        this.style.color = "";
+        this.style.backgroundColor = "";
+    } else {
+        this.style.color = "white";
+        this.style.backgroundColor = "black";
     }
 }
 
@@ -1415,10 +1449,12 @@ function setCardBackgroundImages(direction) {
     let opacityDiv = document.getElementById('opacitydiv_id');
     let partDiv = document.getElementById('partdiv_id');
     let carnav = document.querySelector('#Carousel_id .nav');
+    let changeSizeDiv = document.getElementById('ChangeSize');
    
     carnav.style.display = 'block';
     opacityDiv.style.display = 'block';
     partDiv.style.display = 'block';
+    changeSizeDiv.style.display = 'block';
 
     let card_images = base_shadow_images.filter(img => img.customImageName.includes(direction));
     console.log("Filtered base_shadow_images", card_images);
@@ -1451,7 +1487,7 @@ function setCardBackgroundImages(direction) {
               
               clicked_index = index;
               console.log("clicked_index", clicked_index);
-              
+              global_number = clicked_index;
               segments.forEach(seg => {
                   toggleVisibilityByDirectionAndSegment(direction, seg, clicked_index, true);
               });
@@ -1485,6 +1521,53 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     toolSize.style.display = 'none';
 });
 
+//======================= Change Shadow Size =====================================//
+
+      const incrementButton = document.querySelector('.increment');
+      const decrementButton = document.querySelector('.decrement');
+
+
+      incrementButton.addEventListener('click', function() {
+
+            //When we are clicking the increment button, 
+            //its fetching the current segmented shadow layers as an array.
+            //current labels of the image, as an array.
+
+            console.log('Increment button clicked');
+
+            let CurrentShadow_arr= []
+            const NumberRegExp = new RegExp(`shadow_${global_number}`);
+
+            canvas.getObjects().forEach(obj => {
+                if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
+                    CurrentShadow_arr.push(obj);
+                }
+            });
+            
+            const labels_arr = getSegmentNames();
+            console.log(CurrentShadow_arr);
+            console.log(labels_arr);
+
+      });
+
+      decrementButton.addEventListener('click', function() {
+            console.log('decrement button clicked');
+
+            let CurrentShadow_arr= []
+            const NumberRegExp = new RegExp(`shadow_${global_number}`);
+
+            canvas.getObjects().forEach(obj => {
+                if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
+                    CurrentShadow_arr.push(obj);
+                }
+            });
+
+            const labels_arr = getSegmentNames();
+            const lineImage = images.filter(img => img.customImageName.includes('line'));
+            console.log(lineImage);
+            console.log(CurrentShadow_arr);
+            console.log(labels_arr);
+      });
 
 
 });
