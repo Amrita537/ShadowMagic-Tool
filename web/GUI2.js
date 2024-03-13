@@ -14,8 +14,6 @@
       });
 
     canvas.setDimensions({ width: 750, height: 600});
-
-    // canvas.setDimensions({ width: 500, height: 500 });
     fabric.Image.fromURL('background.png', function (img) {
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
             scaleX: canvas.width / img.width,
@@ -37,6 +35,72 @@
     let global_opacity = 0.6;
     let Shadow_change = 0;
     let global_number=0;
+
+    //======================Temporary Canvas ==========================
+
+    const canvas2 = new fabric.Canvas('canvas2', {
+         backgroundImageStretch: 'none',
+         selection: false // Disable Fabric.js default selection behavior
+      });
+
+      fabric.Object.prototype.set({
+        cornerSize: 6,
+        transparentCorners: false,
+        selectable: false
+      });
+
+    canvas2.setDimensions({ width: 750, height: 600});
+
+    fabric.Image.fromURL('background.png', function (img) {
+        canvas2.setBackgroundImage(img, canvas2.renderAll.bind(canvas2), {
+            scaleX: canvas2.width / img.width,
+            scaleY: canvas2.height / img.height
+        });
+    });
+
+//========================== Keyboard shortcuts ===========================
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === 'b') {
+        event.preventDefault(); // Prevent the default behavior
+        var paintBrushBtn = document.getElementById('paintBrushBtn');
+        paintBrushBtn.click();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === 'e') {
+        event.preventDefault(); // Prevent the default behavior
+        var paintBrushBtn = document.getElementById('paintBrushBtn');
+        eraserBtn.click();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.ctrlKey) {
+        event.preventDefault(); 
+        var ZoomBtn = document.getElementById('searchButton');
+        ZoomBtn.click();
+        if (event.key === "+" || event.key === "=") {
+            event.preventDefault();
+            zoomIn();
+
+        } else if (event.key === "-") {
+            event.preventDefault();
+            zoomOut();
+        }
+    }
+
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.code === 'Space') {
+        event.preventDefault(); // Prevent the default behavior
+        var panBtn = document.getElementById("panBtn");
+        panBtn.click();
+    }
+});
+
 
     //======================Run python function=================== 
     
@@ -221,6 +285,7 @@ function handlePSDSelect(event) {
                         const canvasWidth = Math.min(sc_imgwidth, img.width);
                         const canvasHeight = Math.min(sc_imgheight, img.height);
                         canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+                        canvas2.setDimensions({ width: canvasWidth, height: canvasHeight });
 
                         console.log(canvas.width, canvas.height);
 
@@ -240,6 +305,12 @@ function handlePSDSelect(event) {
                                       canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
                                           scaleX: canvas.width / backimg.width,
                                           scaleY: canvas.height / backimg.height
+
+                                      });
+
+                                      canvas2.setBackgroundImage(backimg, canvas2.renderAll.bind(canvas2), {
+                                          scaleX: canvas2.width / backimg.width,
+                                          scaleY: canvas2.height / backimg.height
 
                                       });
                             });
@@ -446,7 +517,6 @@ function fetch_Shadow_files(shadow_arr) {
                             img.selectable = false;
                             img.visible = false;
                             img.opacity = global_opacity; 
-                            img.evented = false;
                             canvas.add(img);
                             shadow_segment_images.push(img);
                         });
@@ -659,12 +729,12 @@ let savedCounter=1;
 let savedLayers = [];
 function addShadowButton() {
     // Check if shadowList already has a button with id "unsaved"
-    if (document.getElementById("unsaved")) {
+    if (document.getElementById("currentLayer")) {
         return; // Exit the function if "unsaved" button already exists
     }
 
     const shadowButton = document.createElement("button");
-    shadowButton.id = "unsaved"; // Set id to "unsaved"
+    shadowButton.id = "currentLayer"; 
     console.log(shadowButton.id);
 
     shadowButton.className = "btn btn-block";
@@ -753,94 +823,153 @@ function addShadowButton() {
         console.log(shadowButton.id);
 
         shadowButton.style.backgroundColor = "#494949"; // Change the background color
-        savedCounter++; // Increment the counter for the next button
 
         tickIcon.remove();
         ShadEyeIcon.remove();
         shadowButton.appendChild(downloadIcon);
-        NameSpan.innerText = 'Saved Shadow';
+        NameSpan.innerText = 'Shadow '+ savedCounter;
+        savedCounter++; // Increment the counter for the next button
         tempbtn=shadowButton;
         shadowButton.remove();
         BMshadowList.appendChild(tempbtn);
     });
 
 
-// Add click event listener to the download icon
-downloadIcon.addEventListener("click", function (event) {
-    const savedCanvasData = JSON.parse(savedLayers[0]);
-    const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
-
-    tempCanvas.loadFromJSON(savedCanvasData, function() {
+    // Add click event listener to the download icon
+    downloadIcon.addEventListener("click", function (event) {
         
-        const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
-        const backgroundImage = tempCanvas.backgroundImage;
-        tempCanvas.backgroundImage = null;
+        const Shadow_id = shadowButton.id;
+        const Shadow_index = parseInt(Shadow_id.split('_')[1]) - 1
 
-        // Scale up the canvas
-        const originalWidth = tempCanvas.getWidth();
-        const originalHeight = tempCanvas.getHeight();
-        tempCanvas.setWidth(originalWidth * scaleFactor);
-        tempCanvas.setHeight(originalHeight * scaleFactor);
-        tempCanvas.setZoom(scaleFactor);
+        const savedCanvasData = JSON.parse(savedLayers[Shadow_index]);
+        const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
 
-        tempCanvas.renderAll();
+        tempCanvas.loadFromJSON(savedCanvasData, function() {
+            
+            const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
+            const backgroundImage = tempCanvas.backgroundImage;
+            tempCanvas.backgroundImage = null;
 
-        const dataUrl = tempCanvas.toDataURL({
-            format: 'png',
-            multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
+            // Scale up the canvas
+            const originalWidth = tempCanvas.getWidth();
+            const originalHeight = tempCanvas.getHeight();
+            tempCanvas.setWidth(originalWidth * scaleFactor);
+            tempCanvas.setHeight(originalHeight * scaleFactor);
+            tempCanvas.setZoom(scaleFactor);
+
+            tempCanvas.renderAll();
+
+            const dataUrl = tempCanvas.toDataURL({
+                format: 'png',
+                multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
+            });
+
+
+            tempCanvas.backgroundImage = backgroundImage;
+            tempCanvas.setWidth(originalWidth);
+            tempCanvas.setHeight(originalHeight);
+            tempCanvas.setZoom(1);
+
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'canvas.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
         });
 
 
-        tempCanvas.backgroundImage = backgroundImage;
-        tempCanvas.setWidth(originalWidth);
-        tempCanvas.setHeight(originalHeight);
-        tempCanvas.setZoom(1);
-
-
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = 'canvas.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
     });
 
-
-});
-
-    //   // Add click event listener to the shadow button to fetch and render the saved canvas state
-    // shadowButton.addEventListener("click", function (event) {
-    //   const buttonId = shadowButton.id;
-    //   const buttonIndex = parseInt(buttonId.split('_')[1]) - 1; // Get the index of the saved canvas state in the array
-    //   if (buttonIndex >= 0 && buttonIndex < savedLayers.length) {
-    //     const canvasStatus = JSON.parse(savedLayers[buttonIndex]);
-    //     canvas.loadFromJSON(canvasStatus, canvas.renderAll.bind(canvas));
-    //   }
-    // });
+    AddSavedShadowListeners();
 
 
 }
 
+const canvasElement= document.getElementById('canvas_div')
+const canvasElement2= document.getElementById('Tempcanvas_div')
+let canvasVisibilityStates = {}; // Object to store visibility states for each button
+
+function AddSavedShadowListeners() {
+    const savedButtons = document.querySelectorAll('[id^="saved_"]');
+    
+    savedButtons.forEach(savedButton => {
+        canvasVisibilityStates[savedButton.id] = false; // Initialize visibility state for each button
+        savedButton.addEventListener("click", function (event) {
+            
+            const buttonId = savedButton.id;
+            console.log("clicked", buttonId);
+            const isCanvasVisible = canvasVisibilityStates[buttonId];
+            if (isCanvasVisible) {
+                canvasElement.style.display = 'block';
+                canvasElement2.style.display = 'none';
+            } else {
+                canvasElement.style.display = 'none';
+                canvasElement2.style.display = 'block';
+                const buttonIndex = parseInt(buttonId.split('_')[1]) - 1;
+                const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
+                canvas2.loadFromJSON(savedCanvasData, function() {
+                    canvas2.renderAll();
+                });
+            }
+            canvasVisibilityStates[buttonId] = !isCanvasVisible; // Toggle the state for the clicked button
+
+        });
+    });
+}
+
+
+
+// let isCanvas2Visible = false;
+
+
+// function AddSavedShadowListeners() {
+//     const savedButtons = document.querySelectorAll('[id^="saved_"]');
+
+//     savedButtons.forEach(savedButton => {
+//         savedButton.addEventListener("click", function (event) {
+//             console.log("clicked", savedButton.id);
+//             if (isCanvas2Visible) {
+//                 canvasElement.style.display = 'block';
+//                 canvasElement2.style.display = 'none';
+//             } else {
+//                 canvasElement.style.display = 'none';
+//                 canvasElement2.style.display = 'block';
+//                 const buttonIndex = parseInt(savedButton.id.split('_')[1]) - 1;
+//                 const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
+//                 canvas2.loadFromJSON(savedCanvasData, function() {
+//                     canvas2.renderAll();
+//                 });
+//             }
+//             isCanvas2Visible = !isCanvas2Visible; // Toggle the state
+//         });
+//     });
+// }
+
+
+// function createSavedButtonListener(savedButton, canvasIndex) {
+//     return function(event) {
+//         console.log("clicked", savedButton.id);
+//         if (isCanvas2Visible) {
+//             canvasElement.style.display = 'block';
+//             canvasElement2.style.display = 'none';
+//         } else {
+//             canvasElement.style.display = 'none';
+//             canvasElement2.style.display = 'block';
+//             const buttonIndex = canvasIndex - 1;
+//             const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
+//             canvas2.loadFromJSON(savedCanvasData, function() {
+//                 canvas2.renderAll();
+//             });
+//         }
+//         isCanvas2Visible = !isCanvas2Visible; // Toggle the state
+//     };
+// }
+
 
 
 //===================shadow opacity function====================//
-      // document.getElementById('opacityRange').addEventListener('input', function () {
-      //     // const opacityValue = parseFloat(this.value);
-      //     global_opacity=parseFloat(this.value);
-      //     console.log("opacityValue", global_opacity);
-      //     document.getElementById('opacityValue').textContent = global_opacity;
-      //     setShadowOpacity(global_opacity);
-      //     document.getElementById('opacityRange').value = global_opacity;
-      // });
-            
-      // function setShadowOpacity() {
-      //     canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-      //     shadow_segment_images.forEach((shadow) => {
-      //         shadow.set('opacity', global_opacity);
-      //     });
-      //     displayImages();
-      // }
 
 
 const opacityRange = document.getElementById('opacityRange');
@@ -1014,18 +1143,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
             }
           });
 
-document.addEventListener("keydown", function(event) {
-    if (event.ctrlKey) {
-        if (event.key === "+" || event.key === "=") {
-            zoomIn();
-            event.preventDefault();
-        } else if (event.key === "-") {
-            zoomOut();
-            event.preventDefault();
-        }
-    }
 
-});
 
 //======================panning===============================//
 const panBtn = document.getElementById("panBtn");
@@ -1202,8 +1320,6 @@ function saveCanvasImage() {
     var mousecursor; 
     var undoStack = [];
     var redoStack = [];
-    // canvas.contextTop.globalCompositeOperation = 'source-over'; // Set the globalCompositeOperation
-    canvas.contextTop.globalCompositeOperation = 'destination-over';
 
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
           var toolSize = document.getElementById('ToolSize');
