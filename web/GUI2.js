@@ -128,6 +128,7 @@ let actual_w=0;
 function handleFileSelect(event) {
     console.log("clicked");
     const files = event.target.files;
+    // why make this support multi-file openning? doesn't make sense at all...
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i].name;
         const extension = fileName.split('.').pop().toLowerCase(); // Get the file extension
@@ -228,10 +229,20 @@ psd_layer_names=[];
 function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
-    // eel.open_psd_py("./web/D4_01_L_M.psd");
-
+    
+    // from ChatGPT
+    // read file as binary and send it to python backend
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const arrayBuffer = reader.result;
+        // Use Eel to call the Python function `receive_file` and pass the file data and name
+        eel.open_psd_as_binary(arrayBuffer, files[0].name);
+    };
+    reader.readAsDataURL(files[0]); // Read the file as binary data
+    
     loader.style.display = 'block';
 
+    // and here even has a neasted for loop, why?
     for (let i = 0; i < files.length; i++) {
             const fileName = files[i].name;
             let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension

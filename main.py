@@ -11,6 +11,7 @@ import json
 import shutil
 import random
 import subprocess
+import re
 from random import randint
 from tools.files import open_psd, get_file_name, add_alpha_all, add_alpha_flat, add_alpha_line, decrease_shadow_gaussian
 from yolov5.segment.predict import run as seg
@@ -33,6 +34,7 @@ PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
 PATH_TO_REFINEDJSON= "./web/RefinedOutput/json"
 PATH_TO_SEGS = []
 PATH_TO_JSON = False
+PATH_TO_TEMP = "./temp"
 DIRS = ['left', 'right', "top", "back"]
 
 # nice...working folder for front end changed but the preprocesse work folder isn't...
@@ -45,20 +47,15 @@ SHADOWS = {}
 exposed functions
 '''
 @eel.expose
-def open_psd_py(path_to_psd, var = 4):
-    # extract png images from psd files
-    name = get_file_name(path_to_psd)
-    if (os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))):
-        try:
-            preprocess_to_work(name)
-        except Exception as e:
-            print(str(e))
-            preprocess(path_to_psd, name, var)
-            preprocess_to_work(name)
-    else:
-        preprocess(path_to_psd, name, var)
-        preprocess_to_work(name)
-                
+def open_psd_as_binary(psd_data, psd_name):
+    if os.path.exists(PATH_TO_TEMP) == False:
+        os.makedirs(PATH_TO_TEMP)
+    psd_dict = re.match("data:(?P<type>.*?);(?P<encoding>.*?),(?P<data>.*)", psd_data).groupdict()
+    psd_data_binary = base64.b64decode(psd_dict['data'])
+    with open(os.path.join(PATH_TO_TEMP, psd_name), 'wb') as f:
+        f.write(psd_data_binary)
+    open_psd(os.path.join(PATH_TO_TEMP, psd_name))
+
 @eel.expose
 def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
     for psd in tqdm(os.listdir(path_to_psds)):
@@ -82,7 +79,7 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
                 # check sub shadows
                 pass    
         if processed:continue
-        open_psd_py(os.path.join(path_to_psds, psd), var = var)
+        open_psd(os.path.join(path_to_psds, psd), var = var)
 
 @eel.expose
 def shadow_decrease(shadow, line, region_label, reset = False):
@@ -283,7 +280,9 @@ def preprocess_to_work(fname):
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), "./web/Shadows/sub_shadows")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_shadows.zip"), "./web/Shadows")
 
-    # copy the preprocessed result to 
+    # copy the preprocessed result to
+    if os.path.exists(PATH_TO_LAYERS) == False:
+        os.makedirs(PATH_TO_LAYERS)
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_flat.png"), os.path.join(PATH_TO_LAYERS, fname+"_flat.png"))
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, fname+"_line.png"), os.path.join(PATH_TO_LAYERS, fname+"_line.png"))
 
@@ -365,9 +364,23 @@ def to_shadow_img(shadow):
     shadow = Image.fromarray(shadow)
     return base64.encodebytes(shadow).decode("utf-8")
 
+def open_psd(path_to_psd, var = 4):
+    # extract png images from psd files
+    name = get_file_name(path_to_psd)
+    if (os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))):
+        try:
+            preprocess_to_work(name)
+        except Exception as e:
+            print(str(e))
+            preprocess(path_to_psd, name, var)
+            preprocess_to_work(name)
+    else:
+        preprocess(path_to_psd, name, var)
+        preprocess_to_work(name)
+
 if __name__ == "__main__":
     # for debug
-    # open_psd_py("./test/image7.psd")
+    # open_psd("./test/image7.psd")
     # import pdb
     # pdb.set_trace()
     # batch_process()
