@@ -136,21 +136,27 @@
                  
                             <div id="ToolSize" style="display: none;">
                                       <div id="drawSizeRange" class="form-group">
-                                        <input type="range" orient="vertical" class="custom-range" id="BrushRange" min="5" max="100" step="1" value="1">
+                                        <input type="range" orient="vertical" class="custom-range" id="BrushRange" min="8" max="41" step="1" value="1">
                                       </div>
                                       <div id='drawSizeCircle' class='circle-container'>
                                           <span id='41' class='circle-30'><i class='fas fa-circle'></i></span>
                                           <span id='28' class='circle-25'><i class='fas fa-circle'></i></span>
                                           <span id='21' class='circle-20'><i class='fas fa-circle'></i></span>
                                           <span id='16' class='circle-15'><i class='fas fa-circle'></i></span>
-                                          <span id='10' class='circle-10'><i class='fas fa-circle'></i></span>
+                                          <span id='8' class='circle-10'><i class='fas fa-circle'></i></span>
                                       </div>
                             </div>
 
                       </div>
                   </div>
 
-                  <div class="col-sm-8">
+                  <div id="Tempcanvas_div" class="col-sm-8" style="display:none" >
+                      <div id="canvas_id2">
+                          <canvas id="canvas2" ></canvas>
+                      </div>
+                  </div>
+
+                  <div class="col-sm-8" id="canvas_div">
                     <div id="loader" class="loader"></div>
 
                       <div id="canvas_id" class="draggable">
