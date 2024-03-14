@@ -230,34 +230,39 @@ function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
     
-    // from ChatGPT
-    // read file as binary and send it to python backend
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const arrayBuffer = reader.result;
-        // Use Eel to call the Python function `receive_file` and pass the file data and name
-        eel.open_psd_as_binary(arrayBuffer, files[0].name);
-    };
-    reader.readAsDataURL(files[0]); // Read the file as binary data
+    console.log(files[0].name);
+    eel.open_psd("./batch_input/"+files[0].name); 
+
+    // // from ChatGPT
+    // // read file as binary and send it to python backend
+
+    // const reader = new FileReader();
+    // reader.onload = function(e) {
+    //     const arrayBuffer = reader.result;
+    //     // Use Eel to call the Python function `receive_file` and pass the file data and name
+    //     eel.open_psd_as_binary(arrayBuffer, files[0].name);
+    // };
+    // reader.readAsDataURL(files[0]); // Read the file as binary data
     
     loader.style.display = 'block';
 
-    // and here even has a neasted for loop, why?
-    for (let i = 0; i < files.length; i++) {
-            const fileName = files[i].name;
-            let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
-            // Remove "flat" if it exists in the base name
-            baseName = baseName.replace("flat", "");
-            // Add _flat.png and _line.png to the base name
-            const flatName = baseName + "_flat.png";
-            const lineName = baseName + "_line.png";
+    if (files.length > 0) {
+        const fileName = files[0].name;
 
-            psd_layer_names.push(flatName);
-            psd_layer_names.push(lineName);
+        let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
 
-            console.log("Flat name:", flatName);
-            console.log("Line name:", lineName);
-        }
+        baseName = baseName.replace("flat", "");
+
+        const flatName = baseName + "_flat.png";
+        const lineName = baseName + "_line.png";
+
+        psd_layer_names.push(flatName);
+        psd_layer_names.push(lineName);
+
+        console.log("Flat name:", flatName);
+        console.log("Line name:", lineName);
+    }
+
 
       const rel_path = "InputFlats/"; 
         
@@ -1590,7 +1595,7 @@ function setCardBackgroundImages(direction) {
 
     let cards = document.querySelectorAll('.card-container');
     let imagePath = null;
-
+    let index=0;
     cards.forEach((card, index) => {
           
           clicked_index = null;
