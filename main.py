@@ -54,7 +54,7 @@ def open_psd_as_binary(psd_data, psd_name):
     with open(os.path.join(PATH_TO_TEMP, psd_name), 'wb') as f:
         f.write(psd_data_binary)
     open_psd(os.path.join(PATH_TO_TEMP, psd_name))
-    eel.updatePSDSelect([psd_name])
+    eel.updatePSDSelect(psd_name)
 
 @eel.expose
 def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
@@ -363,7 +363,6 @@ def to_shadow_img(shadow):
     shadow = Image.fromarray(shadow)
     return base64.encodebytes(shadow).decode("utf-8")
     
-@eel.expose
 def open_psd(path_to_psd, var = 4):
     # extract png images from psd files
     name = get_file_name(path_to_psd)

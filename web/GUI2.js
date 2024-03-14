@@ -135,90 +135,85 @@ let actual_w=0;
 function handleFileSelect(event) {
     console.log("clicked");
     const files = event.target.files;
-    // why make this support multi-file openning? doesn't make sense at all...
-    for (let i = 0; i < files.length; i++) {
-        const fileName = files[i].name;
-        const extension = fileName.split('.').pop().toLowerCase(); // Get the file extension
 
-        if (extension === 'png') {
-            console.log(fileName + ' is a PNG file');
-            handleImageSelect(event);
+    const fileName = files[0].name;
+    const extension = fileName.split('.').pop().toLowerCase(); // Get the file extension
 
-        } else if (extension === 'psd') {
-            console.log(fileName + ' is a PSD file');
-            handlePSDSelect(event);
-
-        } else {
-            console.log(fileName + ' has an unknown extension');
-        }
+    if (extension === 'psd'){
+        console.log(fileName + ' is a PSD file');
+        handlePSDSelect(event);
+    } 
+    else{
+        console.log(fileName + ' has an unknown extension');
     }
+    
 }
 
-function handleImageSelect(event) {
-  console.log("clicked");
-  const files = event.target.files;
+// function handleImageSelect(event) {
+//   console.log("clicked");
+//   const files = event.target.files;
 
-  if (files && files.length > 0) {
-    for (let i = 0; i <files.length; i++) 
-    {
-      const file = files[i];
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        fabric.Image.fromURL(e.target.result, function (img) {
+//   if (files && files.length > 0) {
+//     for (let i = 0; i <files.length; i++) 
+//     {
+//       const file = files[i];
+//       const reader = new FileReader();
+//       reader.onload = function (e) {
+//         fabric.Image.fromURL(e.target.result, function (img) {
 
-          actual_h=img.height;
-          actual_w=img.width;
-          const scaleFactor = calculateScaleFactor(img.width, img.height, 700, 600);
+//           actual_h=img.height;
+//           actual_w=img.width;
+//           const scaleFactor = calculateScaleFactor(img.width, img.height, 700, 600);
           
-          img.scale(scaleFactor);
-          img.customSelected = false; // Custom property to indicate selected state
-          img.customImageName = file.name;
-          img.customBase64 = e.target.result;
-          img.selectable = false;
-          console.log("adding", img.customImageName)
+//           img.scale(scaleFactor);
+//           img.customSelected = false; // Custom property to indicate selected state
+//           img.customImageName = file.name;
+//           img.customBase64 = e.target.result;
+//           img.selectable = false;
+//           console.log("adding", img.customImageName)
 
-          images.push(img);
-          initialSizes.push({ width: img.width, height: img.height });
-          canvas.add(img);
+//           images.push(img);
+//           initialSizes.push({ width: img.width, height: img.height });
+//           canvas.add(img);
 
-          sc_imgwidth = actual_w * scaleFactor;
-          sc_imgheight = actual_h * scaleFactor;
-          const canvasWidth = Math.min(sc_imgwidth);
-          const canvasHeight = Math.min(sc_imgheight);
-          canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+//           sc_imgwidth = actual_w * scaleFactor;
+//           sc_imgheight = actual_h * scaleFactor;
+//           const canvasWidth = Math.min(sc_imgwidth);
+//           const canvasHeight = Math.min(sc_imgheight);
+//           canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
 
-          let backimg_name='';
-          if (sc_imgwidth < 400){
-                backimg_name='backgroundVer.png';
-          }
-          else if(sc_imgwidth>400 && sc_imgwidth <600)
-          {
-                backimg_name='backgroundVer2.png';
-          }
-          else{
-                backimg_name='background.png';
-          }
-          console.log(backimg_name)
-          fabric.Image.fromURL(backimg_name, function (backimg) {
-                  canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
-                      scaleX: canvas.width / backimg.width,
-                      scaleY: canvas.height / backimg.height
-                  });
-          });
+//           let backimg_name='';
+//           if (sc_imgwidth < 400){
+//                 backimg_name='backgroundVer.png';
+//           }
+//           else if(sc_imgwidth>400 && sc_imgwidth <600)
+//           {
+//                 backimg_name='backgroundVer2.png';
+//           }
+//           else{
+//                 backimg_name='background.png';
+//           }
+//           console.log(backimg_name)
+//           fabric.Image.fromURL(backimg_name, function (backimg) {
+//                   canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
+//                       scaleX: canvas.width / backimg.width,
+//                       scaleY: canvas.height / backimg.height
+//                   });
+//           });
           
-          updateLayerList(images);
-          displayImages();
-          // Save_Image_backend(img.customBase64, img.customImageName);
-          // Semantic_segmentation(img.customImageName);
-          GenerateShadow();
+//           updateLayerList(images);
+//           displayImages();
+//           // Save_Image_backend(img.customBase64, img.customImageName);
+//           // Semantic_segmentation(img.customImageName);
+//           GenerateShadow();
 
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-    fileInput.value = "";
-  }
-}
+//         });
+//       };
+//       reader.readAsDataURL(file);
+//     }
+//     fileInput.value = "";
+//   }
+// }
 
 function calculateScaleFactor(originalWidth, originalHeight, targetWidth, targetHeight) {
   const widthRatio = targetWidth / originalWidth;
@@ -234,109 +229,105 @@ function displayImages() {
 psd_layer_names=[];
 function handlePSDSelect(event) {
     const files = event.target.files;
-    console.log("Selected files:");
-    
+    console.log("Selected files:");    
     console.log(files[0].name);
 
-    eel.open_psd("./batch_input/"+files[0].name); 
+    const reader = new FileReader();
+    reader.onload = async function() {
+        await eel.open_psd_as_binary(reader.result, files[0].name);    
+    };
+    reader.readAsDataURL(files[0]); // Read the file as binary data
 
-    
     loader.style.display = 'block';
+}
 
-    if (files.length > 0) {
-        const fileName = files[0].name;
+eel.expose(updatePSDSelect);
+function updatePSDSelect(fileName){
+    // prepare the full fileName
+    let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
+    global_filename=baseName;
+    baseName = baseName.replace("flat", "");
+    const flatName = baseName + "_flat.png";
+    const lineName = baseName + "_line.png";
+    psd_layer_names.push(flatName);
+    psd_layer_names.push(lineName);
+    console.log("Flat name:", flatName);
+    console.log("Line name:", lineName);
 
-        let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
-        global_filename=baseName;
+    const rel_path = "InputFlats/";         
+    psd_layer_names.forEach(psdlayername => {
+    folderPath = rel_path+psdlayername;
+    fetch(folderPath)
+        .then(response => response.blob())
+        .then(blob => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                loader.style.display = 'none';
+                const imgData = e.target.result;
+                fabric.Image.fromURL(imgData, function (img) {
+                    canvas.width= 750;
+                    canvas.height= 600;
 
-        baseName = baseName.replace("flat", "");
+                    actual_h = img.height;
+                    actual_w = img.width;
+                    const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                    
+                    img.scale(scaleFactor);
+                    img.customSelected = false; // Custom property to indicate selected state
+                    img.customImageName = psdlayername;
+                    img.customBase64 = imgData; // Set custom base64 data
+                    img.selectable = false;
+                    // console.log("adding", img.customImageName);
 
-        const flatName = baseName + "_flat.png";
-        const lineName = baseName + "_line.png";
+                    images.push(img);
+                    initialSizes.push({ width: img.width, height: img.height });
+                    canvas.add(img);
 
-        psd_layer_names.push(flatName);
-        psd_layer_names.push(lineName);
+                    updateLayerList(images);
+                    
+                    sc_imgwidth = actual_w * scaleFactor;
+                    sc_imgheight = actual_h * scaleFactor;
+                    const canvasWidth = Math.min(sc_imgwidth, img.width);
+                    const canvasHeight = Math.min(sc_imgheight, img.height);
+                    canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+                    canvas2.setDimensions({ width: canvasWidth, height: canvasHeight });
 
-        console.log("Flat name:", flatName);
-        console.log("Line name:", lineName);
-    }
+                    console.log(canvas.width, canvas.height);
 
+                       let backimg_name='';
+                        if (sc_imgwidth < 400){
+                          backimg_name='backgroundVer.png';
+                        }
+                        else if(sc_imgwidth>400 && sc_imgwidth <600)
+                        {
+                          backimg_name='backgroundVer2.png';
+                        }
+                        else{
+                          backimg_name='background.png';
+                        }
+                        console.log(backimg_name)
+                        fabric.Image.fromURL(backimg_name, function (backimg) {
+                                  canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
+                                      scaleX: canvas.width / backimg.width,
+                                      scaleY: canvas.height / backimg.height
 
-      const rel_path = "InputFlats/"; 
-        
-      psd_layer_names.forEach(psdlayername => {
-        folderPath = rel_path+psdlayername;
-        fetch(folderPath)
-            .then(response => response.blob())
-            .then(blob => {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    loader.style.display = 'none';
-                    const imgData = e.target.result;
-                    fabric.Image.fromURL(imgData, function (img) {
-                        canvas.width= 750;
-                        canvas.height= 600;
+                                  });
 
-                        actual_h = img.height;
-                        actual_w = img.width;
-                        const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                        
-                        img.scale(scaleFactor);
-                        img.customSelected = false; // Custom property to indicate selected state
-                        img.customImageName = psdlayername;
-                        img.customBase64 = imgData; // Set custom base64 data
-                        img.selectable = false;
-                        // console.log("adding", img.customImageName);
+                                  canvas2.setBackgroundImage(backimg, canvas2.renderAll.bind(canvas2), {
+                                      scaleX: canvas2.width / backimg.width,
+                                      scaleY: canvas2.height / backimg.height
 
-                        images.push(img);
-                        initialSizes.push({ width: img.width, height: img.height });
-                        canvas.add(img);
+                                  });
+                        });
 
-                        updateLayerList(images);
-                        
-                        sc_imgwidth = actual_w * scaleFactor;
-                        sc_imgheight = actual_h * scaleFactor;
-                        const canvasWidth = Math.min(sc_imgwidth, img.width);
-                        const canvasHeight = Math.min(sc_imgheight, img.height);
-                        canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
-                        canvas2.setDimensions({ width: canvasWidth, height: canvasHeight });
-
-                        console.log(canvas.width, canvas.height);
-
-                           let backimg_name='';
-                            if (sc_imgwidth < 400){
-                              backimg_name='backgroundVer.png';
-                            }
-                            else if(sc_imgwidth>400 && sc_imgwidth <600)
-                            {
-                              backimg_name='backgroundVer2.png';
-                            }
-                            else{
-                              backimg_name='background.png';
-                            }
-                            console.log(backimg_name)
-                            fabric.Image.fromURL(backimg_name, function (backimg) {
-                                      canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
-                                          scaleX: canvas.width / backimg.width,
-                                          scaleY: canvas.height / backimg.height
-
-                                      });
-
-                                      canvas2.setBackgroundImage(backimg, canvas2.renderAll.bind(canvas2), {
-                                          scaleX: canvas2.width / backimg.width,
-                                          scaleY: canvas2.height / backimg.height
-
-                                      });
-                            });
-
-                        displayImages();
-                        GenerateShadow();
-                    });
-                };
-                reader.readAsDataURL(blob);
-            })
-            .catch(error => console.error('Error fetching image:', error));
-          });
+                    displayImages();
+                    GenerateShadow();
+                });
+            };
+            reader.readAsDataURL(blob);
+        })
+        .catch(error => console.error('Error fetching image:', error));
+      });
 }
 
 
