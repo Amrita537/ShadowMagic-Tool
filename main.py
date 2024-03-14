@@ -55,6 +55,7 @@ def open_psd_as_binary(psd_data, psd_name):
     with open(os.path.join(PATH_TO_TEMP, psd_name), 'wb') as f:
         f.write(psd_data_binary)
     open_psd(os.path.join(PATH_TO_TEMP, psd_name))
+    eel.updatePSDSelect([psd_name])
 
 @eel.expose
 def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
