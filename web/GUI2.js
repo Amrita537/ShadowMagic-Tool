@@ -520,7 +520,7 @@ function GenerateShadow() {
 
 function fetch_Shadow_files(shadow_arr) {
     if (shadow_arr == names_shadow_segment) {
-        let relativePath = 'Shadows/sub-shadows/'; // Adjust this relative path based on your directory structure
+        let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
         names_shadow_segment.forEach(name => {
             let fullPath = relativePath + name;
             fetch(fullPath)
