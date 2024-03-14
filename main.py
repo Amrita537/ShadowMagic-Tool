@@ -37,7 +37,6 @@ PATH_TO_JSON = False
 PATH_TO_TEMP = "./temp"
 DIRS = ['left', 'right', "top", "back"]
 
-# nice...working folder for front end changed but the preprocesse work folder isn't...
 PATH_TO_LAYERS = './web/InputFlats'
 
 # intermediate shadows
@@ -231,7 +230,6 @@ def preprocess(path_to_psd, name, var):
     shutil.copy(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"), os.path.join(PATH_TO_FLAT, name+"_flat.png"))
     
     # a dirty fix for clean all existing prediction results
-    # really don't understand why need to put so many files and folders...
     for f in os.listdir(PATH_TO_SHADOW):
         delete_item(os.path.join(PATH_TO_SHADOW, f))
     seg_path_cleanup()
@@ -364,7 +362,8 @@ def to_shadow_img(shadow):
     shadow = add_alpha_line(shadow)
     shadow = Image.fromarray(shadow)
     return base64.encodebytes(shadow).decode("utf-8")
-
+    
+@eel.expose
 def open_psd(path_to_psd, var = 4):
     # extract png images from psd files
     name = get_file_name(path_to_psd)

@@ -226,6 +226,7 @@ function displayImages() {
 //======================load from psd=======================//
 
 psd_layer_names=[];
+
 function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
@@ -261,7 +262,6 @@ function updatePSDSelect(fileNames){
         console.log("Flat name:", flatName);
         console.log("Line name:", lineName);
     }
-
 
       const rel_path = "InputFlats/"; 
         
@@ -519,7 +519,7 @@ function GenerateShadow() {
 
 function fetch_Shadow_files(shadow_arr) {
     if (shadow_arr == names_shadow_segment) {
-        let relativePath = 'Shadows/sub-shadows/'; // Adjust this relative path based on your directory structure
+        let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
         names_shadow_segment.forEach(name => {
             let fullPath = relativePath + name;
             fetch(fullPath)
@@ -1590,23 +1590,32 @@ function setCardBackgroundImages(direction) {
     changeSizeDiv.style.display = 'block';
 
     let card_images = base_shadow_images.filter(img => img.customImageName.includes(direction));
-    console.log("Filtered base_shadow_images", card_images);
+    let card_images_sorted = card_images.sort((a, b) => {
+            let numA = parseInt(a.customImageName.match(/_([0-9]+)\.png/)[1]);
+            let numB = parseInt(b.customImageName.match(/_([0-9]+)\.png/)[1]);
+            return numA - numB;
+        });
+
+    let cardImagePaths = card_images_sorted.map(img => `Shadows/${img.customImageName}`);
+
+    console.log("Filtered card_images", card_images);
 
     let cards = document.querySelectorAll('.card-container');
     let imagePath = null;
+    let index=0;
 
-    cards.forEach((card, index) => {
+    cards.forEach((card,index) => {
           
           clicked_index = null;
           
           imagePath = `Shadows/${card_images[index].customImageName}`;
 
+          console.log("for index", index, "image fetched", imagePath);
+
           card.querySelector('.card').style.background = `#e6e6e6 url(${imagePath}) no-repeat center center`;
           card.querySelector('.card').style.backgroundSize = 'cover';
           card.querySelector('.card').style.border = '1px solid #4d4d4d';
 
-
-                  // Highlight the first card
           if (index === 0) {
               card.querySelector('.card').style.border = '3px solid black';
               card.querySelector('.card').style.background = `white url(${imagePath}) no-repeat center center`;
@@ -1627,7 +1636,8 @@ function setCardBackgroundImages(direction) {
 
               canvas.getObjects().forEach(obj => {
                   if (obj.customImageName && obj.customImageName.includes('shadow')) {
-                      console.log(obj.customImageName, obj.visible);
+                      if(obj.visible)
+                        {console.log(obj.customImageName, obj.visible);}
                   }
               });
 
@@ -1640,6 +1650,7 @@ function setCardBackgroundImages(direction) {
               card.querySelector('.card').style.backgroundColor = 'white';
               clicked_index = null;
           });
+
     });
 
 }
