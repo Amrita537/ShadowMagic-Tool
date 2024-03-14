@@ -363,7 +363,8 @@ def to_shadow_img(shadow):
     shadow = add_alpha_line(shadow)
     shadow = Image.fromarray(shadow)
     return base64.encodebytes(shadow).decode("utf-8")
-
+    
+@eel.expose
 def open_psd(path_to_psd, var = 4):
     # extract png images from psd files
     name = get_file_name(path_to_psd)
