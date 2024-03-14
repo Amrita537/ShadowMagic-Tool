@@ -35,6 +35,13 @@
     let global_opacity = 0.6;
     let Shadow_change = 0;
     let global_number=0;
+    let global_filename=null;
+
+
+    const canvasElement= document.getElementById('canvas_div')
+    const canvasElement2= document.getElementById('Tempcanvas_div')
+
+    const paginationItems = document.querySelectorAll('.pagination-item');
 
     //======================Temporary Canvas ==========================
 
@@ -196,7 +203,6 @@ function handleImageSelect(event) {
                   canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
                       scaleX: canvas.width / backimg.width,
                       scaleY: canvas.height / backimg.height
-
                   });
           });
           
@@ -226,42 +232,35 @@ function displayImages() {
 //======================load from psd=======================//
 
 psd_layer_names=[];
-
 function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
+    
+    console.log(files[0].name);
 
-    // from ChatGPT
-    // read file as binary and send it to python backend
-    const reader = new FileReader();
-    reader.onload = async function() {
-        await eel.open_psd_as_binary(reader.result, files[0].name);    
-    };
-    reader.readAsDataURL(files[0]); // Read the file as binary data
+    eel.open_psd("./batch_input/"+files[0].name); 
+
+    
     loader.style.display = 'block';
-}
 
-// moved the layer updating logic to different function and expose it to python side
-eel.expose(updatePSDSelect);
-function updatePSDSelect(fileNames){
-    // and here even has a neasted for loop, why?
-    for (let i = 0; i < fileNames.length; i++) {
-        let fileName = fileNames[i];
+    if (files.length > 0) {
+        const fileName = files[0].name;
+
         let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
-        // Remove "flat" if it exists in the base name
+        global_filename=baseName;
+
         baseName = baseName.replace("flat", "");
-        // Add _flat.png and _line.png to the base name
-        let flatName = baseName + "_flat.png";
-        let lineName = baseName + "_line.png";
-        baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
-        baseName = baseName.replace("flat", "");
-        flatName = baseName + "_flat.png";
-        lineName = baseName + "_line.png";
+
+        const flatName = baseName + "_flat.png";
+        const lineName = baseName + "_line.png";
+
         psd_layer_names.push(flatName);
         psd_layer_names.push(lineName);
+
         console.log("Flat name:", flatName);
         console.log("Line name:", lineName);
     }
+
 
       const rel_path = "InputFlats/"; 
         
@@ -384,7 +383,7 @@ function updateLayerList(images) {
 
     eyeIcon.className = images[i].visible ? "fa fa-eye" : "fa fa-eye-slash";
     eyeIcon.style.fontSize="10px";
-    eyeIcon.style.marginRight = "8px"; // Adjust the margin as needed
+    eyeIcon.style.marginRight ="5px"; // Adjust the margin as needed
 
     // Create an image element for the icon
     const iconImage = document.createElement("img");
@@ -405,7 +404,8 @@ function updateLayerList(images) {
     const crossIcon = document.createElement("i");
     crossIcon.className = "fa fa-times cross-icon";
     crossIcon.style.float = "right";
-    crossIcon.style.marginTop="5px";
+    crossIcon.style.marginTop="6px";
+    crossIcon.style.marginRight="2px";
 
     layerButton.appendChild(eyeIcon);
     layerButton.appendChild(iconImage);
@@ -415,6 +415,7 @@ function updateLayerList(images) {
     layerButton.style.textAlign = "left";
     layerButton.style.backgroundColor = "#6c757d";
     layerButton.style.color = "#ffffff";
+    layerButton.style.padding= "4px";
 
     const iconElement = layerButton.querySelector("i");
 
@@ -505,7 +506,7 @@ function GenerateShadow() {
 
             fetch_Shadow_files(names_shadow);
             fetch_Shadow_files(names_shadow_segment);
-            setShadowOpacity();
+            // setShadowOpacity();
         } 
         else {
             console.log('No image on the canvas or the first image is not loaded.');
@@ -585,7 +586,10 @@ buttonIds.forEach(buttonId => {
       current_button.addEventListener('click', function () 
       {
             addShadowButton();
-            updateCheckboxes();
+            canvasElement2.style.display = 'none';
+            canvasElement.style.display = 'block';
+            updateBookmarkedShadows();
+
             if (current_button.classList.contains('active-button')) 
             {
                 current_button.classList.remove('active-button');
@@ -623,6 +627,8 @@ buttonIds.forEach(buttonId => {
               });
 
               setCardBackgroundImages(direction)
+              global_number=0;
+              updateCheckboxes();
             }
             // Example usage
       });
@@ -733,21 +739,15 @@ allCheckbox.addEventListener('change', function () {
 
 
 //===================adding shadow layers====================
-// const directions = {
-//     "btnLeft": "Left",
-//     "btnRight": "Right",
-//     "btnTop": "Top",
-//     "btnBack": "Back"
-// };
-
-
 
 let savedCounter=1;
 let savedLayers = [];
+let savedShadowsOnly = [];
+
 function addShadowButton() {
-    // Check if shadowList already has a button with id "unsaved"
     if (document.getElementById("currentLayer")) {
-        return; // Exit the function if "unsaved" button already exists
+        return; 
+
     }
 
     const shadowButton = document.createElement("button");
@@ -760,33 +760,21 @@ function addShadowButton() {
     shadowButton.style.color = "#ffffff";
 
 
-    // Create an image element for the icon
     const iconImageS = document.createElement("img");
-    iconImageS.className = "icon-image"; // Add a class for styling if needed
+    iconImageS.className = "icon-image"; 
     iconImageS.style.marginRight = "2px";
-    iconImageS.style.width = "30px"; // Adjust the width of the icon
+    iconImageS.style.width = "30px"; 
     iconImageS.style.height = "30px";
     iconImageS.style.border ="1px solid black";
     iconImageS.style.backgroundColor="white";
     iconImageS.style.objectFit = "cover";
-    // const imageFile = shadow_segment_images[0];
-    // iconImageS.src = URL.createObjectURL(imageFile);
 
-        // Create a temporary canvas to hold a snapshot of the current canvas state
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
+    let tempCanvas = document.createElement('canvas');
+    let tempCtx = tempCanvas.getContext('2d');
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
     tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
-
-    // Set the src of the image element to the data URL of the temporary canvas
     iconImageS.src = tempCanvas.toDataURL();
-
-    // Create an image element for the icon
-    const ShadEyeIcon = document.createElement("i");
-    ShadEyeIcon.className = "fa fa-eye";
-    ShadEyeIcon.style.fontSize = "10px";
-    ShadEyeIcon.style.marginRight = "8px";
 
     const tickIcon = document.createElement("i");
     tickIcon.className = "fa fa-bookmark-o";
@@ -799,75 +787,176 @@ function addShadowButton() {
     downloadIcon.style.float = "right";
     downloadIcon.style.marginTop = "5px";
 
-    // Create a span for the direction name
-    const NameSpan = document.createElement("span");
+    let NameSpan = document.createElement("span");
     NameSpan.innerText = 'Shadow Layer';  
 
-    // shadowButton.appendChild(ShadEyeIcon);
     shadowButton.appendChild(iconImageS);
     shadowButton.appendChild(NameSpan);
     shadowButton.appendChild(tickIcon);
 
     shadowList.appendChild(shadowButton);
 
-    ShadEyeIcon.addEventListener("click", function (event) {
+    // tickIcon.addEventListener("click", function (event) {
+    //     togglePolygonVisibility(false) 
+    //     const canvasStatus = JSON.stringify(canvas.toJSON());
+    //     savedLayers.push(canvasStatus);
+    //     console.log(shadowButton.id);
+    //     updateBookmarkedShadows();
+    // });
 
-        if (ShadEyeIcon.classList.contains('fa-eye')) {
-            ShadEyeIcon.classList.remove('fa-eye');
-            ShadEyeIcon.classList.add('fa-eye-slash');
-        } else {
-            ShadEyeIcon.classList.remove('fa-eye-slash');
-            ShadEyeIcon.classList.add('fa-eye');
-            }
-
-            const allCheckbox = document.getElementById('allCheckbox');
-            allCheckbox.checked = !allCheckbox.checked;
-
-            const event1 = new Event('change');
-            allCheckbox.dispatchEvent(event1);
-
-  });
-    
-    const BMshadowList = document.getElementById('BM_shadowList');
     tickIcon.addEventListener("click", function (event) {
+
         togglePolygonVisibility(false) 
+
         const canvasStatus = JSON.stringify(canvas.toJSON());
         savedLayers.push(canvasStatus);
-        console.log(canvasStatus);
-
-
-        shadowButton.id = `saved_${savedCounter}`; // Change the button id
         console.log(shadowButton.id);
 
-        shadowButton.style.backgroundColor = "#494949"; // Change the background color
+        const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line')));
+        console.log(filteredObjects);
 
-        tickIcon.remove();
-        ShadEyeIcon.remove();
-        shadowButton.appendChild(downloadIcon);
-        NameSpan.innerText = 'Shadow '+ savedCounter;
-        savedCounter++; // Increment the counter for the next button
-        tempbtn=shadowButton;
-        shadowButton.remove();
-        BMshadowList.appendChild(tempbtn);
+        const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
+        filteredObjects.forEach(obj => tempCanvas.add(obj));
+        const canvasStatus1 = JSON.stringify(tempCanvas.toJSON());
+        savedShadowsOnly .push(canvasStatus1);
+        updateBookmarkedShadows();
     });
 
 
-    // Add click event listener to the download icon
-    downloadIcon.addEventListener("click", function (event) {
-        
-        const Shadow_id = shadowButton.id;
-        const Shadow_index = parseInt(Shadow_id.split('_')[1]) - 1
+    shadowButton.addEventListener("mouseenter", function() {
+        shadowButton.style.backgroundColor = "#494949"; // Change to the desired color
+    });
 
-        const savedCanvasData = JSON.parse(savedLayers[Shadow_index]);
-        const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
+    shadowButton.addEventListener("mouseleave", function() {
+        shadowButton.style.backgroundColor = "#6c757d"; // Change back to the original color
+    });
+
+    shadowButton.addEventListener("click", function (event) {
+            canvasElement2.style.display = 'none';
+            canvasElement.style.display = 'block';
+            updateBookmarkedShadows();
+    });
+
+}
+
+
+const BmShadow_div = document.getElementById("BM_shadowList");
+let BM_canvas_visible= false;
+let visibility_arr=[];
+
+function updateBookmarkedShadows(){
+    BmShadow_div.innerHTML = "";
+
+    for (let i = 0; i < savedLayers.length; i++) 
+    {
+        let BMshadow_btn = document.createElement("button");
+        BMshadow_btn.id = `BMshadowbtn_${i}`;
+
+        BMshadow_btn.className = "btn btn-block";
+        BMshadow_btn.style.textAlign = "left";
+        BMshadow_btn.style.backgroundColor = "#6c757d";
+        BMshadow_btn.style.color = "#ffffff";
+        let NameSpan = document.createElement("span");
+        NameSpan.innerText = 'Saved Shadow '+ (i+1);
+
+
+        const BMEyeIcon = document.createElement("i");
+        // BMEyeIcon.className = visibility_arr[i] ? "fa fa-eye" : "fa fa-eye-slash";
+        BMEyeIcon.className = visibility_arr[i] && canvasElement.style.display == 'none' ? "fa fa-eye" : "fa fa-eye-slash";
+        BMEyeIcon.style.fontSize = "10px";
+        BMEyeIcon.style.marginRight = "8px";
+
+        const BmIconImg = document.createElement("img");
+        BmIconImg.className = "icon-image"; 
+        BmIconImg.style.marginRight = "2px";
+        BmIconImg.style.width = "30px"; 
+        BmIconImg.style.height = "30px";
+        BmIconImg.style.border ="1px solid black";
+        BmIconImg.style.backgroundColor="white";
+        BmIconImg.style.objectFit = "cover";
+
+        let tempCanvas = document.createElement('canvas');
+        let tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+        BmIconImg.src = tempCanvas.toDataURL();
+
+
+        BMshadow_btn.appendChild(BMEyeIcon);
+        // BMshadow_btn.appendChild(BmIconImg);
+        BMshadow_btn.appendChild(NameSpan);
+
+
+        const BMiconElement = BMshadow_btn.querySelector("i");
+        BMiconElement.addEventListener("click", function (event) {
+          event.stopPropagation(); // Stop event propagation
+          toggleBMCanvas(BMshadow_btn.id, i);
+          updateBookmarkedShadows(); // Update the button with the new visibility state
+        });
+
+        BMshadow_btn.addEventListener("mouseenter", function() {
+            BMshadow_btn.style.backgroundColor = "#494949"; // Change to the desired color
+        });
+
+        BMshadow_btn.addEventListener("mouseleave", function() {
+            BMshadow_btn.style.backgroundColor = "#6c757d"; // Change back to the original color
+        });
+
+
+        BmShadow_div.appendChild(BMshadow_btn);
+    }
+
+}
+
+let activeBMButtonId = null;
+
+function toggleBMCanvas(BM_button_id, val) {
+    if (activeBMButtonId === BM_button_id ) {
+            console.log(`Button ${BM_button_id} is already active`);
+            if (canvasElement2.style.display === 'none') 
+            {
+                visibility_arr[val]=true;
+                canvasElement2.style.display = 'block';
+                canvasElement.style.display = 'none';
+            } 
+            else 
+            {
+                visibility_arr[val]=false;
+                canvasElement2.style.display = 'none';
+                canvasElement.style.display = 'block';
+            }
+    } 
+    else 
+    {
+        console.log(`Button ${BM_button_id} is clicked`);
+        canvasElement2.style.display = 'block';
+        canvasElement.style.display = 'none';
+        const savedCanvasData = JSON.parse(savedLayers[val]);
+        canvas2.loadFromJSON(savedCanvasData, function() {
+            canvas2.renderAll();
+        });
+        activeBMButtonId = BM_button_id;
+        visibility_arr[val]=true;
+    }
+}
+
+
+
+function Download_Bookmarked() {
+    for (let i= 0; i < savedShadowsOnly.length; i++) {
+        const savedCanvasData = JSON.parse(savedShadowsOnly[i]);
+        const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
+
+        // Filter out flat and line objects
+        const filteredObjects = savedCanvasData.objects.filter(obj => !obj.customImageName || !obj.customImageName.includes('flat') || !obj.customImageName.includes('line'));
+        savedCanvasData.objects = filteredObjects;
 
         tempCanvas.loadFromJSON(savedCanvasData, function() {
-            
             const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
             const backgroundImage = tempCanvas.backgroundImage;
             tempCanvas.backgroundImage = null;
 
-            // Scale up the canvas
             const originalWidth = tempCanvas.getWidth();
             const originalHeight = tempCanvas.getHeight();
             tempCanvas.setWidth(originalWidth * scaleFactor);
@@ -881,7 +970,6 @@ function addShadowButton() {
                 multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
             });
 
-
             tempCanvas.backgroundImage = backgroundImage;
             tempCanvas.setWidth(originalWidth);
             tempCanvas.setHeight(originalHeight);
@@ -889,52 +977,208 @@ function addShadowButton() {
 
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = 'canvas.png';
+            link.download = global_filename+`Bookmarked_${i}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
         });
-
-
-    });
-
-    AddSavedShadowListeners();
-
-
+    }
 }
 
-const canvasElement= document.getElementById('canvas_div')
-const canvasElement2= document.getElementById('Tempcanvas_div')
-let canvasVisibilityStates = {}; // Object to store visibility states for each button
 
-function AddSavedShadowListeners() {
-    const savedButtons = document.querySelectorAll('[id^="saved_"]');
+
+// let savedCounter=1;
+// let savedLayers = [];
+// function addShadowButton() {
+//     // Check if shadowList already has a button with id "unsaved"
+//     if (document.getElementById("currentLayer")) {
+//         return; // Exit the function if "unsaved" button already exists
+//     }
+
+//     const shadowButton = document.createElement("button");
+//     shadowButton.id = "currentLayer"; 
+//     console.log(shadowButton.id);
+
+//     shadowButton.className = "btn btn-block";
+//     shadowButton.style.textAlign = "left";
+//     shadowButton.style.backgroundColor = "#6c757d";
+//     shadowButton.style.color = "#ffffff";
+
+
+//     const iconImageS = document.createElement("img");
+//     iconImageS.className = "icon-image"; 
+//     iconImageS.style.marginRight = "2px";
+//     iconImageS.style.width = "30px"; 
+//     iconImageS.style.height = "30px";
+//     iconImageS.style.border ="1px solid black";
+//     iconImageS.style.backgroundColor="white";
+//     iconImageS.style.objectFit = "cover";
+//     // const imageFile = shadow_segment_images[0];
+//     // iconImageS.src = URL.createObjectURL(imageFile);
+
+//     // Create a temporary canvas to hold a snapshot of the current canvas state
+//     const tempCanvas = document.createElement('canvas');
+//     const tempCtx = tempCanvas.getContext('2d');
+//     tempCanvas.width = canvas.width;
+//     tempCanvas.height = canvas.height;
+//     tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+
+//     // Set the src of the image element to the data URL of the temporary canvas
+//     iconImageS.src = tempCanvas.toDataURL();
+
+//     // Create an image element for the icon
+//     const ShadEyeIcon = document.createElement("i");
+//     ShadEyeIcon.className = "fa fa-eye";
+//     ShadEyeIcon.style.fontSize = "10px";
+//     ShadEyeIcon.style.marginRight = "8px";
+
+//     const tickIcon = document.createElement("i");
+//     tickIcon.className = "fa fa-bookmark-o";
+//     tickIcon.style.float = "right";
+//     tickIcon.style.marginTop = "5px";
+
+
+//     const downloadIcon = document.createElement("i");
+//     downloadIcon.className = "fa fa-bookmark";
+//     downloadIcon.style.float = "right";
+//     downloadIcon.style.marginTop = "5px";
+
+//     // Create a span for the direction name
+//     const NameSpan = document.createElement("span");
+//     NameSpan.innerText = 'Shadow Layer';  
+
+//     // shadowButton.appendChild(ShadEyeIcon);
+//     shadowButton.appendChild(iconImageS);
+//     shadowButton.appendChild(NameSpan);
+//     shadowButton.appendChild(tickIcon);
+
+//     shadowList.appendChild(shadowButton);
+
+//     ShadEyeIcon.addEventListener("click", function (event) {
+
+//         if (ShadEyeIcon.classList.contains('fa-eye')) {
+//             ShadEyeIcon.classList.remove('fa-eye');
+//             ShadEyeIcon.classList.add('fa-eye-slash');
+//         } else {
+//             ShadEyeIcon.classList.remove('fa-eye-slash');
+//             ShadEyeIcon.classList.add('fa-eye');
+//             }
+
+//             const allCheckbox = document.getElementById('allCheckbox');
+//             allCheckbox.checked = !allCheckbox.checked;
+
+//             const event1 = new Event('change');
+//             allCheckbox.dispatchEvent(event1);
+
+//   });
     
-    savedButtons.forEach(savedButton => {
-        canvasVisibilityStates[savedButton.id] = false; // Initialize visibility state for each button
-        savedButton.addEventListener("click", function (event) {
-            
-            const buttonId = savedButton.id;
-            console.log("clicked", buttonId);
-            const isCanvasVisible = canvasVisibilityStates[buttonId];
-            if (isCanvasVisible) {
-                canvasElement.style.display = 'block';
-                canvasElement2.style.display = 'none';
-            } else {
-                canvasElement.style.display = 'none';
-                canvasElement2.style.display = 'block';
-                const buttonIndex = parseInt(buttonId.split('_')[1]) - 1;
-                const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
-                canvas2.loadFromJSON(savedCanvasData, function() {
-                    canvas2.renderAll();
-                });
-            }
-            canvasVisibilityStates[buttonId] = !isCanvasVisible; // Toggle the state for the clicked button
+//     const BMshadowList = document.getElementById('BM_shadowList');
+//     tickIcon.addEventListener("click", function (event) {
+//         togglePolygonVisibility(false) 
+//         const canvasStatus = JSON.stringify(canvas.toJSON());
+//         savedLayers.push(canvasStatus);
+//         console.log(canvasStatus);
 
-        });
-    });
-}
+
+//         shadowButton.id = `saved_${savedCounter}`; // Change the button id
+//         console.log(shadowButton.id);
+
+//         shadowButton.style.backgroundColor = "#494949"; // Change the background color
+
+//         tickIcon.remove();
+//         ShadEyeIcon.remove();
+//         shadowButton.appendChild(downloadIcon);
+//         NameSpan.innerText = 'Shadow '+ savedCounter;
+//         savedCounter++; // Increment the counter for the next button
+//         tempbtn=shadowButton;
+//         shadowButton.remove();
+//         BMshadowList.appendChild(tempbtn);
+//     });
+
+
+//     // Add click event listener to the download icon
+//     downloadIcon.addEventListener("click", function (event) {
+        
+//         const Shadow_id = shadowButton.id;
+//         const Shadow_index = parseInt(Shadow_id.split('_')[1]) - 1
+
+//         const savedCanvasData = JSON.parse(savedLayers[Shadow_index]);
+//         const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
+
+//         tempCanvas.loadFromJSON(savedCanvasData, function() {
+            
+//             const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
+//             const backgroundImage = tempCanvas.backgroundImage;
+//             tempCanvas.backgroundImage = null;
+
+//             // Scale up the canvas
+//             const originalWidth = tempCanvas.getWidth();
+//             const originalHeight = tempCanvas.getHeight();
+//             tempCanvas.setWidth(originalWidth * scaleFactor);
+//             tempCanvas.setHeight(originalHeight * scaleFactor);
+//             tempCanvas.setZoom(scaleFactor);
+
+//             tempCanvas.renderAll();
+
+//             const dataUrl = tempCanvas.toDataURL({
+//                 format: 'png',
+//                 multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
+//             });
+
+
+//             tempCanvas.backgroundImage = backgroundImage;
+//             tempCanvas.setWidth(originalWidth);
+//             tempCanvas.setHeight(originalHeight);
+//             tempCanvas.setZoom(1);
+
+//             const link = document.createElement('a');
+//             link.href = dataUrl;
+//             link.download = 'canvas.png';
+//             document.body.appendChild(link);
+//             link.click();
+//             document.body.removeChild(link);
+
+//         });
+
+
+//     });
+
+//     AddSavedShadowListeners();
+
+
+// }
+
+// const canvasElement= document.getElementById('canvas_div')
+// const canvasElement2= document.getElementById('Tempcanvas_div')
+// let canvasVisibilityStates = {}; // Object to store visibility states for each button
+
+// function AddSavedShadowListeners() {
+//     const savedButtons = document.querySelectorAll('[id^="saved_"]');
+    
+//     savedButtons.forEach(savedButton => {
+//         canvasVisibilityStates[savedButton.id] = false; // Initialize visibility state for each button
+//         savedButton.addEventListener("click", function (event) {
+            
+//             const buttonId = savedButton.id;
+//             console.log("clicked", buttonId);
+//             const isCanvasVisible = canvasVisibilityStates[buttonId];
+//             if (isCanvasVisible) {
+//                 canvasElement.style.display = 'block';
+//                 canvasElement2.style.display = 'none';
+//             } else {
+//                 canvasElement.style.display = 'none';
+//                 canvasElement2.style.display = 'block';
+//                 const buttonIndex = parseInt(buttonId.split('_')[1]) - 1;
+//                 const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
+//                 canvas2.loadFromJSON(savedCanvasData, function() {
+//                     canvas2.renderAll();
+//                 });
+//             }
+//             canvasVisibilityStates[buttonId] = !isCanvasVisible; // Toggle the state for the clicked button
+
+//         });
+//     });
+// }
 
 
 
@@ -996,10 +1240,21 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
       function updateOpacity(value) {
           global_opacity = parseFloat(value);
           document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
-          canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+          
           shadow_segment_images.forEach((shadow) => {
               shadow.set('opacity', global_opacity);
           });
+
+          canvas.getObjects().forEach(obj => {
+                canvas.getObjects().forEach(obj => {
+                    if (obj.type === 'path') {
+                        obj.set('stroke', 'black');
+                        obj.set('opacity', value);
+                    }
+                });
+            });
+           canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+
           displayImages();
       }
 
@@ -1022,7 +1277,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
             if (isChecked) {
                 const FlatImage = images.find(image => image.customImageName.includes('flat'))
                 if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
-                    jsonFileName = FlatImage.customImageName.replace('_flat.png', '.json');
+                    jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                     console.log(jsonFileName);
                     fetch(`http://localhost:8000/RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
@@ -1148,6 +1403,9 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
           // Add click event listener to the search button
           zoomButton.addEventListener("click", function() {
+            canvasElement2.style.display = 'none';
+            canvasElement.style.display = 'block';
+            updateBookmarkedShadows();
             // Toggle visibility of the zoom controls
             if (zoomButton.classList.toggle("checked")) {
               zoomControls.style.display = "block";
@@ -1170,7 +1428,9 @@ let isPanning = false;
 panBtn.addEventListener("click", togglePanning);
 
 function togglePanning() {
-  // Toggle the panning mode
+  canvasElement2.style.display = 'none';
+  canvasElement.style.display = 'block';
+  updateBookmarkedShadows();
   isPanning = !isPanning;
 
   // Change the cursor style of the canvas based on the panning mode
@@ -1225,6 +1485,7 @@ function toggleErasing() {
     var toolSize = document.getElementById('ToolSize');
     isErasing = !isErasing;
     isPainting=false;
+
     deactivatePainting();
     if (isErasing)
       {   
@@ -1272,16 +1533,22 @@ undoEraser.addEventListener("click", UndoErase);
 
 function UndoErase() {
   console.log("undo");
-    undoErasing = !undoErasing;
-  if (undoErasing) {
     canvas.isDrawingMode = true;
+    undoErasing = !undoErasing;
+
+   
+   if (undoErasing) {
+    if(!isErasing){
+        toggleErasing();
+    }
     undoEraser.style.backgroundColor = "black";
     undoEraser.style.color = "white";
-  } else {
+    } 
+    else {
     canvas.isDrawingMode = false;
     undoEraser.style.backgroundColor = "";
     undoEraser.style.color = "";
-  }
+    }
 
     canvas.freeDrawingBrush.width = 20;
     canvas.freeDrawingBrush.inverted = true;
@@ -1301,34 +1568,71 @@ function UndoErase() {
 const saveBtn = document.getElementById("save_id");
 saveBtn.addEventListener('click', saveCanvasImage);
 
+// function saveCanvasImage() {
+//     Download_Bookmarked();
+//     const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
+//     const backgroundImage = canvas.backgroundImage;
+//     canvas.backgroundImage = null;
+
+//     // Scale up the canvas
+//     const originalWidth = canvas.getWidth();
+//     const originalHeight = canvas.getHeight();
+//     canvas.setWidth(originalWidth * scaleFactor);
+//     canvas.setHeight(originalHeight * scaleFactor);
+//     canvas.setZoom(scaleFactor);
+
+//     canvas.renderAll();
+
+//     const dataURL = canvas.toDataURL('image/png', 1.0);
+
+//     canvas.backgroundImage = backgroundImage;
+//     canvas.setWidth(originalWidth);
+//     canvas.setHeight(originalHeight);
+//     canvas.setZoom(1);
+
+//     const link = document.createElement('a');
+//     link.download = images[0].customImageName+'.png';
+//     link.href = dataURL;
+
+//     link.click();
+// }
+
 function saveCanvasImage() {
-    const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
-    const backgroundImage = canvas.backgroundImage;
-    canvas.backgroundImage = null;
+
+    Download_Bookmarked();
+    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line')));
+
+    // Create a new canvas with the filtered objects
+    const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
+    filteredObjects.forEach(obj => tempCanvas.add(obj));
+
+    // Download the canvas image
+    const scaleFactor = calculateScaleFactor(actual_w, actual_h, tempCanvas.width, tempCanvas.height) * 10;
+    const backgroundImage = tempCanvas.backgroundImage;
+    tempCanvas.backgroundImage = null;
 
     // Scale up the canvas
-    const originalWidth = canvas.getWidth();
-    const originalHeight = canvas.getHeight();
-    canvas.setWidth(originalWidth * scaleFactor);
-    canvas.setHeight(originalHeight * scaleFactor);
-    canvas.setZoom(scaleFactor);
+    const originalWidth = tempCanvas.getWidth();
+    const originalHeight = tempCanvas.getHeight();
+    tempCanvas.setWidth(originalWidth * scaleFactor);
+    tempCanvas.setHeight(originalHeight * scaleFactor);
+    tempCanvas.setZoom(scaleFactor);
 
-    canvas.renderAll();
+    tempCanvas.renderAll();
 
-    const dataURL = canvas.toDataURL('image/png', 1.0);
+    const dataURL = tempCanvas.toDataURL('image/png', 1.0);
 
-    canvas.backgroundImage = backgroundImage;
-    canvas.setWidth(originalWidth);
-    canvas.setHeight(originalHeight);
-    canvas.setZoom(1);
+    tempCanvas.backgroundImage = backgroundImage;
+    tempCanvas.setWidth(originalWidth);
+    tempCanvas.setHeight(originalHeight);
+    tempCanvas.setZoom(1);
 
     const link = document.createElement('a');
-    link.download = images[0].customImageName+'.png';
+    link.download = global_filename+`_current.png`;
     link.href = dataURL;
 
     link.click();
 }
-
 
 
 //========================paint brush functions==========================//
@@ -1462,13 +1766,6 @@ function deactivatePainting() {
 
 // Function to undo the last action
 function undo() {
-    if (this.style.color === "white" && this.style.backgroundColor === "black") {
-        this.style.color = "";
-        this.style.backgroundColor = "";
-    } else {
-        this.style.color = "white";
-        this.style.backgroundColor = "black";
-    }
 
     if (undoStack.length > 0) {
         var obj = undoStack.pop();
@@ -1485,14 +1782,6 @@ function redo() {
         canvas.add(obj);
         undoStack.push(obj);
         canvas.renderAll();
-    }
-    // Toggle button style
-    if (this.style.color === "white" && this.style.backgroundColor === "black") {
-        this.style.color = "";
-        this.style.backgroundColor = "";
-    } else {
-        this.style.color = "white";
-        this.style.backgroundColor = "black";
     }
 }
 
@@ -1517,32 +1806,13 @@ window.addEventListener("resize", function () {
 
 
 next.addEventListener("click", function (e) {
-  e.preventDefault();
-  if (index < track.children.length - 2 && -index * width > -250) { // Adjusted to ensure there are always two cards visible and limit translateX to -250
-    index = index + 1;
-    prev.classList.add("show");
-    // Limit the translateX value to -250
-    let translateX = -index * width;
-    if (translateX < -250) {
-      translateX = -250;
-    }
-    track.style.transform = "translateX(" + translateX + "px)";
-    if (index === track.children.length - 2) {
-      next.classList.add("hide");
-    }
-  }
+            goTo(3); 
 });
 
-prev.addEventListener("click", function () {
-  if (index > 0) {
-    index = index - 1;
-    next.classList.remove("hide");
-    if (index === 0) {
-      prev.classList.remove("show");
-    }
-    track.style.transform = "translateX(" + -index * width + "px)";
-  }
+prev.addEventListener("click", function (e) {
+            goTo(0); 
 });
+
 
 
 function Hide_allshadows(){
@@ -1574,6 +1844,10 @@ function goTo(index) {
   }
 }
 
+// Initial setup
+goTo(0);
+
+
 let clicked_index= null;
 function setCardBackgroundImages(direction) {
     
@@ -1583,11 +1857,16 @@ function setCardBackgroundImages(direction) {
     let partDiv = document.getElementById('partdiv_id');
     let carnav = document.querySelector('#Carousel_id .nav');
     let changeSizeDiv = document.getElementById('ChangeSize');
+    let paginationDiv= document.getElementById('pagination');
+
+    paginationItems.forEach(item => item.classList.remove('active'));
+    paginationItems[0].classList.add('active');
    
     carnav.style.display = 'block';
     opacityDiv.style.display = 'block';
     partDiv.style.display = 'block';
     changeSizeDiv.style.display = 'block';
+    paginationDiv.style.display = 'flex'
 
     let card_images = base_shadow_images.filter(img => img.customImageName.includes(direction));
     let card_images_sorted = card_images.sort((a, b) => {
@@ -1626,6 +1905,14 @@ function setCardBackgroundImages(direction) {
               
               Hide_allshadows();
               addShadowButton();
+              updateCheckboxes();
+
+              paginationItems.forEach(item => item.classList.remove('active'));
+              paginationItems[index].classList.add('active');
+
+              canvasElement2.style.display = 'none';
+              canvasElement.style.display = 'block';
+              updateBookmarkedShadows();
               
               clicked_index = index;
               console.log("clicked_index", clicked_index);
@@ -1656,8 +1943,30 @@ function setCardBackgroundImages(direction) {
 }
 
 
+let cards = document.querySelectorAll('.card-container');
+
+paginationItems.forEach((item, index) => {
+    item.addEventListener('click', () => {
+        paginationItems.forEach(paginationItem => paginationItem.classList.remove('active'));
+        item.classList.add('active');
+    
+        if (index === 2 || index === 3) {
+            goTo(3); 
+        } else if (index === 0 || index === 1) {
+            goTo(0); 
+        }
+
+        cards[index].querySelector('.card').click();
+    });
+});
+
+
 //===================== Pointer Click=========================//
 document.getElementById("pointerBtn").addEventListener("click", function(event) {
+    canvasElement2.style.display = 'none';
+    canvasElement.style.display = 'block';
+    updateBookmarkedShadows();
+
     document.body.style.cursor = "pointer"; // Change cursor style to pointer
     deactivateEraser();
     deactivatePainting();
