@@ -131,6 +131,7 @@ const images = [];
 const initialSizes = [];
 let actual_h=0;
 let actual_w=0;
+let loadedFlag = false;
 
 function handleFileSelect(event) {
     console.log("clicked");
@@ -243,6 +244,9 @@ function handlePSDSelect(event) {
 
 eel.expose(updatePSDSelect);
 function updatePSDSelect(fileName){
+    if (loadedFlag){
+        return 0;
+    }
     // prepare the full fileName
     let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
     global_filename=baseName;
@@ -328,6 +332,7 @@ function updatePSDSelect(fileName){
         })
         .catch(error => console.error('Error fetching image:', error));
       });
+    loadedFlag = true
 }
 
 
