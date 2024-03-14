@@ -230,8 +230,7 @@ psd_layer_names=[];
 function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
-    
-<<<<<<< HEAD
+
     // from ChatGPT
     // read file as binary and send it to python backend
     const reader = new FileReader();
@@ -239,26 +238,9 @@ function handlePSDSelect(event) {
         await eel.open_psd_as_binary(reader.result, files[0].name);    
     };
     reader.readAsDataURL(files[0]); // Read the file as binary data
-=======
-    console.log(files[0].name);
-    eel.open_psd("./batch_input/"+files[0].name); 
-
-    // // from ChatGPT
-    // // read file as binary and send it to python backend
-
-    // const reader = new FileReader();
-    // reader.onload = function(e) {
-    //     const arrayBuffer = reader.result;
-    //     // Use Eel to call the Python function `receive_file` and pass the file data and name
-    //     eel.open_psd_as_binary(arrayBuffer, files[0].name);
-    // };
-    // reader.readAsDataURL(files[0]); // Read the file as binary data
-    
->>>>>>> ff56a1a93cca6c07aea05c5efe1f94bb9e4cc936
     loader.style.display = 'block';
 }
 
-<<<<<<< HEAD
 // moved the layer updating logic to different function and expose it to python side
 eel.expose(updatePSDSelect);
 function updatePSDSelect(fileNames){
@@ -271,10 +253,6 @@ function updatePSDSelect(fileNames){
             // Add _flat.png and _line.png to the base name
             const flatName = baseName + "_flat.png";
             const lineName = baseName + "_line.png";
-=======
-    if (files.length > 0) {
-        const fileName = files[0].name;
->>>>>>> ff56a1a93cca6c07aea05c5efe1f94bb9e4cc936
 
         let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
 
