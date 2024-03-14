@@ -226,6 +226,7 @@ function displayImages() {
 //======================load from psd=======================//
 
 psd_layer_names=[];
+
 function handlePSDSelect(event) {
     const files = event.target.files;
     console.log("Selected files:");
@@ -233,18 +234,19 @@ function handlePSDSelect(event) {
     // from ChatGPT
     // read file as binary and send it to python backend
     const reader = new FileReader();
-    reader.onload = function(e) {
-        const arrayBuffer = reader.result;
-        // Use Eel to call the Python function `receive_file` and pass the file data and name
-        eel.open_psd_as_binary(arrayBuffer, files[0].name);
+    reader.onload = async function() {
+        await eel.open_psd_as_binary(reader.result, files[0].name);    
     };
     reader.readAsDataURL(files[0]); // Read the file as binary data
-    
     loader.style.display = 'block';
+}
 
+// moved the layer updating logic to different function and expose it to python side
+eel.expose(updatePSDSelect);
+function updatePSDSelect(fileNames){
     // and here even has a neasted for loop, why?
-    for (let i = 0; i < files.length; i++) {
-            const fileName = files[i].name;
+    for (let i = 0; i < fileNames.length; i++) {
+            const fileName = fileNames[i];
             let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
             // Remove "flat" if it exists in the base name
             baseName = baseName.replace("flat", "");
@@ -515,7 +517,7 @@ function GenerateShadow() {
 
 function fetch_Shadow_files(shadow_arr) {
     if (shadow_arr == names_shadow_segment) {
-        let relativePath = 'Shadows/sub-shadows/'; // Adjust this relative path based on your directory structure
+        let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
         names_shadow_segment.forEach(name => {
             let fullPath = relativePath + name;
             fetch(fullPath)
