@@ -14,7 +14,7 @@
 <!--   <script src="./lib/fabric.min.js"></script> -->
 
   <script src="./lib/fabric.js"></script>
-  <script type="text/javascript" src="/eel.js"></script>
+
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
   <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
@@ -164,7 +164,7 @@
                               
                               <div id="zoomControls">
                                   <button class="btn btn-outline-dark btn-block" id="zoomInButton"><i class="fa fa-plus"></i></button>
-                                  <span class="text-light" id="zoomPercentage">50%</span>
+                                  <span class="text-light" id="zoomPercentage">100%</span>
                                   <br>
                                   <button class="btn btn-outline-dark btn-block" id="zoomOutButton"><i class="fa fa-minus"></i></button>
                               </div>
@@ -208,7 +208,13 @@
                                                      <img src="assets/direction_back.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
                                                     </div>
-
+                                                  
+                                                  <div id="pagination" class="pagination-container">
+                                                      <span class="pagination-item">1</span>
+                                                      <span class="pagination-item">2</span>
+                                                      <span class="pagination-item">3</span>
+                                                      <span class="pagination-item">4</span>
+                                                  </div>
 
                                                     <div id="Carousel_id" class="carousel-container">
                                                         <div class="inner-carousel">
@@ -219,7 +225,7 @@
                                                             <div class="card-container">
                                                               <div class="card card2"></div>
                                                             </div>
-                                                            <div class="card-container">
+                                                            <div style="margin-left: 5px"class="card-container">
                                                               <div class="card card3"></div>
                                                             </div>
                                                             <div class="card-container">
@@ -241,7 +247,7 @@
                                                       <span>Opacity: 
                                                         <span id="opacityValue" style="float:right; margin-bottom: 5px;">1</span>
                                                       </span>
-                                                      <input type="range" class="custom-range" id="opacityRange" min="0" max="1" step="0.1" value="1">
+                                                      <input type="range" class="custom-range" id="opacityRange" min="0" max="1" step="0.05" value="1">
                                                   </div>
 
 
