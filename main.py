@@ -395,5 +395,5 @@ if __name__ == "__main__":
     # start main GUI
     eel.init("web") 
     # let's run this code remotely for now
-    # print("log:\tOpen a web browser to: http://localhost:7000/GUI2.html")
+    print("log:\tOpen a web browser to: http://http://164.90.158.133:[port#]/GUI2.html")
     eel.start("GUI2.html", mode=False, all_interfaces=True, size = (1400, 800), port = 7000)
