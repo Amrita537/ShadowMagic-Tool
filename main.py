@@ -393,7 +393,6 @@ if __name__ == "__main__":
     #     Image.fromarray(line).save(os.path.join(PATH_TO_PREPROCESS, png.replace("flat", "line")))
     
     # init
-    global ARGS
     parser = argparse.ArgumentParser(description='ShadowMagic Ver 0.1')
     parser.add_argument('--port_to_user', type = int, default = 7001)    
     parser.add_argument('--port_to_backend', type = int, default = 8000)
