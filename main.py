@@ -201,7 +201,7 @@ def preprocess(path_to_psd, name, var):
     pbar = tqdm(total=len(DIRS) * var)
     for direction in DIRS:
         pbar.set_description("Predicting shadow for %s" %name)
-        url = "http://127.0.0.1:%d/shadowsingle"%ARGS.port_to_backend
+        url = "http://127.0.0.1:%d/shadowsingle"%int(ARGS.port_to_backend)
         data_send = {}
         data_send['user'] = 'userA'
         data_send['direction'] = direction
@@ -406,6 +406,6 @@ if __name__ == "__main__":
     # start main GUI
     eel.init("web")
     # let's run this code remotely for now
-    print("log:\tconnecting backend with port:%d"&args.port_to_backend)
-    print("log:\tOpen a web browser to: http://http://164.90.158.133:%d/GUI2.html"&(8081+args.port_to_user-7001))
-    eel.start("GUI2.html", mode=False, all_interfaces=True, size = (1400, 800), port = args.port_to_user)
+    print("log:\tconnecting backend with port:%d"&int(args.port_to_backend))
+    print("log:\tOpen a web browser to: http://http://164.90.158.133:%d/GUI2.html"&(8081+int(args.port_to_user)-7001))
+    eel.start("GUI2.html", mode=False, all_interfaces=True, size = (1400, 800), port = int(args.port_to_user))
