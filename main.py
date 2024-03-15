@@ -12,6 +12,7 @@ import shutil
 import random
 import subprocess
 import re
+import argparse
 from random import randint
 from tools.files import open_psd, get_file_name, add_alpha_all, add_alpha_flat, add_alpha_line, decrease_shadow_gaussian
 from yolov5.segment.predict import run as seg
@@ -36,9 +37,8 @@ PATH_TO_SEGS = []
 PATH_TO_JSON = False
 PATH_TO_TEMP = "./temp"
 DIRS = ['left', 'right', "top", "back"]
-
 PATH_TO_LAYERS = './web/InputFlats'
-
+ARGS = None
 # intermediate shadows
 SHADOWS = {}
 
@@ -201,7 +201,7 @@ def preprocess(path_to_psd, name, var):
     pbar = tqdm(total=len(DIRS) * var)
     for direction in DIRS:
         pbar.set_description("Predicting shadow for %s" %name)
-        url = "http://127.0.0.1:8000/shadowsingle"
+        url = "http://127.0.0.1:%d/shadowsingle"%ARGS.port_to_backend
         data_send = {}
         data_send['user'] = 'userA'
         data_send['direction'] = direction
@@ -392,8 +392,21 @@ if __name__ == "__main__":
     #     Image.fromarray(flat).save(os.path.join(PATH_TO_PREPROCESS, png))
     #     Image.fromarray(line).save(os.path.join(PATH_TO_PREPROCESS, png.replace("flat", "line")))
     
+    # init
+    global ARGS
+    parser = argparse.ArgumentParser(description='ShadowMagic Ver 0.1')
+    parser.add_argument('--port_to_user', type = int, default = 7001)    
+    parser.add_argument('--port_to_backend', type = int, default = 8000)
+    args = parser.parse_args()
+    ARGS = args
+
+    for p in [PATH_TO_PSD, PATH_TO_FLAT, PATH_TO_SHADOW, PATH_TO_SHADOWS, PATH_TO_REFINEDJSON, PATH_TO_TEMP, PATH_TO_LAYERS]:
+        if os.path.exists(p) == False:
+            os.makedirs(p)
+
     # start main GUI
-    eel.init("web") 
+    eel.init("web")
     # let's run this code remotely for now
-    print("log:\tOpen a web browser to: http://http://164.90.158.133:[port#]/GUI2.html")
-    eel.start("GUI2.html", mode=False, all_interfaces=True, size = (1400, 800), port = 7000)
+    print("log:\tconnecting backend with port:%d"&args.port_to_backend)
+    print("log:\tOpen a web browser to: http://http://164.90.158.133:%d/GUI2.html"&(8081+args.port_to_user-7001))
+    eel.start("GUI2.html", mode=False, all_interfaces=True, size = (1400, 800), port = args.port_to_user)
