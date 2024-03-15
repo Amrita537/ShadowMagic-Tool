@@ -28,6 +28,37 @@
 
 <div class="container">
 
+<!--     <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">Open Modal</button> -->
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" role="dialog">
+      <div class="modal-dialog">
+      
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Action Needed</h4>
+          </div>
+          <div class="modal-body">
+            <p>Close existing work?</p>
+          </div>
+          <div class="modal-footer">
+              <div class="row">
+                  <div class="col-md-5 text-left">
+                      <button id="yes_btn" type="button" class="btn btn-default" data-dismiss="modal">Yes</button>
+                  </div>
+                  <div class="col-md-7 text-right">
+                      <button id="continue_btn" type="button" class="btn btn-default" data-dismiss="modal">Continue Working</button>
+                  </div>
+              </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+
     <div id="topbar_id">
           <!--topnavigation bar code here -->
           <nav>
@@ -41,11 +72,12 @@
                                 Open Images</label><input type="file" id="fileInput" accept="image/*" multiple></a>
                                 </li> -->
 
-                                <li><a href="#"><label for="fileInput">
+                                <li><a href="#" ><label for="fileInput">
                                 Open PSD</label><input type="file" id="fileInput" accept="image/*, .psd" multiple></a>
                                 </li>
+
                                 <li id="save_id"><a href="#">Save</a></li>
-                                <li><a href="#">Save As</a></li>
+<!--                                 <li><a href="#">Save As</a></li> -->
                               </ul>
                             </li>
 <!-- 
