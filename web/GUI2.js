@@ -132,6 +132,7 @@ const initialSizes = [];
 let actual_h=0;
 let actual_w=0;
 let loadedFlag = false;
+let fileOpened = false; 
 
 function handleFileSelect(event) {
     console.log("clicked");
@@ -143,6 +144,13 @@ function handleFileSelect(event) {
     if (extension === 'psd'){
         console.log(fileName + ' is a PSD file');
         handlePSDSelect(event);
+        if (!fileOpened) {
+            fileOpened = true;
+            const openPsdLink = event.target.parentNode;
+            openPsdLink.setAttribute('data-toggle', 'modal');
+            openPsdLink.setAttribute('data-target', '#myModal');
+        }
+
     } 
     else{
         console.log(fileName + ' has an unknown extension');
@@ -229,6 +237,7 @@ function displayImages() {
 
 psd_layer_names=[];
 function handlePSDSelect(event) {
+    
     const files = event.target.files;
     console.log("Selected files:");    
     console.log(files[0].name);
@@ -238,7 +247,6 @@ function handlePSDSelect(event) {
         await eel.open_psd_as_binary(reader.result, files[0].name);    
     };
     reader.readAsDataURL(files[0]); // Read the file as binary data
-
     loader.style.display = 'block';
 }
 
@@ -2027,6 +2035,19 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
             console.log(CurrentShadow_arr);
             console.log(labels_arr);
       });
+
+
+//====================================Modal events====================================================//
+    document.getElementById("yes_btn").addEventListener("click", function() {
+        console.log("Yes button clicked");
+        location.reload();
+    });
+
+    // Get the "Continue Working" button by ID and attach a click event handler
+    document.getElementById("continue_btn").addEventListener("click", function() {
+        console.log("Continue Working...");
+    });
+
 
 
 });
