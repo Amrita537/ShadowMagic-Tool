@@ -407,6 +407,7 @@ if __name__ == "__main__":
     eel.init("web")
     # let's run this code remotely for now
     print("log:\tconnecting backend with port:%d"%int(args.port_to_backend))
-    print("log:\tOpen a web browser to: http://http://164.90.158.133:%d/GUI2.html"%(8081+int(args.port_to_user)-7001))
+    print("log:\tfor remote user: open a web browser to: http://164.90.158.133:%d/GUI2.html"%(8081+int(args.port_to_user)-7001))
+    print("log:\tfor local user: open a web browser to: http://127.0.0.1:%d/GUI2.html"%(7001+int(args.port_to_user)-7001))
     # let's make the shotdown delay to 3 days
     eel.start("GUI2.html", mode=False, all_interfaces=True, size = (1400, 800), port = int(args.port_to_user), shutdown_delay = 259200)
