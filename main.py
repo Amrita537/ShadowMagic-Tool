@@ -46,6 +46,11 @@ SHADOWS = {}
 exposed functions
 '''
 @eel.expose
+def get_port():
+    assert ARGS is not None
+    return ARGS.port_to_backend
+    
+@eel.expose
 def open_psd_as_binary(psd_data, psd_name):
     if os.path.exists(PATH_TO_TEMP) == False:
         os.makedirs(PATH_TO_TEMP)

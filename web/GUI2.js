@@ -1275,6 +1275,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
 
         function getOutline(checkval){
+            let port = eel.get_port();
 
             const isChecked = checkval;
 
@@ -1283,7 +1284,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                 if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
                     jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                     console.log(jsonFileName);
-                    fetch(`http://localhost:8000/RefinedOutput/json/${jsonFileName}`)
+                    fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
                         .then(data => {
                             isDataFetched = true;
