@@ -1981,61 +1981,116 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 
 //======================= Change Shadow Size =====================================//
 
-      const incrementButton = document.querySelector('.increment');
-      const decrementButton = document.querySelector('.decrement');
+    const incrementButton = document.querySelector('.increment');
+    const decrementButton = document.querySelector('.decrement');
 
 
-      // incrementButton.addEventListener('click', function() {
+    // incrementButton.addEventListener('click', function() {
 
-      //       //When we are clicking the increment button, 
-      //       //its fetching the current segmented shadow layers as an array.
-      //       //current labels of the image, as an array.
+    //       //When we are clicking the increment button, 
+    //       //its fetching the current segmented shadow layers as an array.
+    //       //current labels of the image, as an array.
 
-      //       console.log('Increment button clicked');
+    //       console.log('Increment button clicked');
 
-      //       let CurrentShadow_arr= []
-      //       const NumberRegExp = new RegExp(`shadow_${global_number}`);
+    //       let CurrentShadow_arr= []
+    //       const NumberRegExp = new RegExp(`shadow_${global_number}`);
 
-      //       canvas.getObjects().forEach(obj => {
-      //           if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
-      //               CurrentShadow_arr.push(obj);
-      //           }
-      //       });
-            
-      //       const labels_arr = getSegmentNames();
-      //       console.log(CurrentShadow_arr);
-      //       console.log(labels_arr);
+    //       canvas.getObjects().forEach(obj => {
+    //           if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
+    //               CurrentShadow_arr.push(obj);
+    //           }
+    //       });
+        
+    //       const labels_arr = getSegmentNames();
+    //       console.log(CurrentShadow_arr);
+    //       console.log(labels_arr);
 
-      // });
-
-
-      incrementButton.addEventListener('click', function() {
-            shadow=shadow_segment_images[0].customBase64;
-            region_label="cloth"
-            eel.shadow_increase(shadow, region_label)((response) => {
-                console.log(response); // Log the response from the Python function
-              });
-      });
+    // });
 
 
-      decrementButton.addEventListener('click', function() {
-            console.log('decrement button clicked');
+    incrementButton.addEventListener('click', function() {
+        shadow=shadow_segment_images[0].customBase64;
+        region_label="cloth"
+        eel.shadow_increase(shadow, region_label)((response) => {
+            console.log(response); // Log the response from the Python function
+          });
+    });
 
-            let CurrentShadow_arr= []
-            const NumberRegExp = new RegExp(`shadow_${global_number}`);
+    decrementButton.addEventListener('click', function(labels = []) {
+        // lables
+        console.log('decrement button clicked');
+        if (!labels.length){
+            labels = [];
+        }
+        let shadowRegExp = constructRegExp(labels, global_number);
+        let res = {};
+        const lineRegExp = new RegExp(`line`);    
+        // super weird logic...
+        canvas.getObjects().forEach(obj => {
+            if (obj.customImageName && obj.customImageName.match(shadowRegExp) && obj.visible) {
+                res[obj.customImageName] = obj.customBase64;
+            }
+            if (obj.customImageName.match(lineRegExp)){
+                res['line'] = obj.customBase64;
+            }
+        });
 
-            canvas.getObjects().forEach(obj => {
-                if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
-                    CurrentShadow_arr.push(obj);
-                }
+        // pass them into shadow_decrease
+        eel.shadow_decrease(res);
+    });
+
+    // call back function for layer update
+    eel.expose(UpdataShadow);
+    function UpdataShadow(imgDict){
+        for (let label in imgData){
+            UpdateLayerByName(imgData[label], label);
+        }
+        canvas.renderAll();
+    }
+
+    function constructRegExp(labels, global_number){
+        let label = "";
+        if (!labels.length){
+            label = "*";
+        }
+        else{
+            label = "("+labels.join("|")+")";
+        }
+        // collect all shown shadow layers by label 
+        const NumberRegExp = new RegExp(`shadow_${global_number}_${label}`);    
+        return NumberRegExp;
+    }
+
+    function UpdateLayerByName(newImageUrl, label){
+        // Step 1: Find the image object with given label
+        const layerImageObject = canvas.getObjects().find(obj => obj.customImageName === label);
+
+        if (!layerImageObject || layerImageObject.visible == false) {
+            console.error("Invalide image layer.");
+            return;
+        }
+
+        // Step 2: Load the new image
+        fabric.Image.fromURL(newImageUrl, function(newImage) {
+            // Step 3: Replace the old background image with the new one
+            // Adjust the position and scale if needed
+            newImage.set({
+              left: layerImageObject.left,
+              top: layerImageObject.top,
+              scaleX: layerImageObject.scaleX,
+              scaleY: layerImageObject.scaleY,
+              customImageName: label // Keep the custom name for future reference
             });
 
-            const labels_arr = getSegmentNames();
-            const lineImage = images.filter(img => img.customImageName.includes('line'));
-            console.log(lineImage);
-            console.log(CurrentShadow_arr);
-            console.log(labels_arr);
-      });
+            // Remove the old background image
+            canvas.remove(layerImageObject);
+
+            // Add the new image to the canvas
+            canvas.add(newImage);
+            // canvas.moveTo(newImage, 0); // Move to background if necessary    
+        });    
+    }
 
 
 //====================================Modal events====================================================//
