@@ -1662,11 +1662,15 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     const decrementButton = document.querySelector('.decrement');
 
     incrementButton.addEventListener('click', function() {
-        shadow=shadow_segment_images[0].customBase64;
-        region_label="cloth"
-        eel.shadow_increase(shadow, region_label)((response) => {
-            console.log(response); // Log the response from the Python function
-          });
+        // shadow=shadow_segment_images[0].customBase64;
+        // region_label="cloth"
+        // eel.shadow_increase(shadow, region_label)((response) => {
+        //     console.log(response); // Log the response from the Python function
+        //   });
+
+      
+        const Shadow_by_label = get_shadow_by_label('cloth');
+        console.log(Shadow_by_label);
     });
 
     decrementButton.addEventListener('click', function(labels = []) {
@@ -1756,6 +1760,21 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
         console.log("Continue Working...");
     });
 
+
+//=================================== Get shadows from canvas =======================================//
+
+function get_shadow_by_label(label_name) {
+    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (obj.customImageName.includes('shadow')));
+
+    const result = filteredObjects.filter(obj => {
+        let isLabelMatch = obj.customImageName.endsWith(`_${label_name}.png`);
+        let isDirectionMatch = obj.customImageName.includes(`_${direction}_`); 
+        let isIndexMatch = obj.customImageName.includes(`shadow_${global_number}`); 
+        return isLabelMatch && isDirectionMatch && isIndexMatch;
+    });
+
+    return result;
+}
 
 
 });
