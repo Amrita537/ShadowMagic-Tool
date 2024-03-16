@@ -1,4 +1,4 @@
- document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
       console.log("hello from web");
     // ====================canvas functions====================
       const canvas = new fabric.Canvas('canvas', {
@@ -36,6 +36,7 @@
     let Shadow_change = 0;
     let global_number=0;
     let global_filename=null;
+    let global_scaleFactor=null;
 
 
     const canvasElement= document.getElementById('canvas_div')
@@ -149,6 +150,7 @@ function handleFileSelect(event) {
             const openPsdLink = event.target.parentNode;
             openPsdLink.setAttribute('data-toggle', 'modal');
             openPsdLink.setAttribute('data-target', '#myModal');
+            document.querySelector('.footer p').textContent = fileName;
         }
 
     } 
@@ -158,76 +160,12 @@ function handleFileSelect(event) {
     
 }
 
-// function handleImageSelect(event) {
-//   console.log("clicked");
-//   const files = event.target.files;
-
-//   if (files && files.length > 0) {
-//     for (let i = 0; i <files.length; i++) 
-//     {
-//       const file = files[i];
-//       const reader = new FileReader();
-//       reader.onload = function (e) {
-//         fabric.Image.fromURL(e.target.result, function (img) {
-
-//           actual_h=img.height;
-//           actual_w=img.width;
-//           const scaleFactor = calculateScaleFactor(img.width, img.height, 700, 600);
-          
-//           img.scale(scaleFactor);
-//           img.customSelected = false; // Custom property to indicate selected state
-//           img.customImageName = file.name;
-//           img.customBase64 = e.target.result;
-//           img.selectable = false;
-//           console.log("adding", img.customImageName)
-
-//           images.push(img);
-//           initialSizes.push({ width: img.width, height: img.height });
-//           canvas.add(img);
-
-//           sc_imgwidth = actual_w * scaleFactor;
-//           sc_imgheight = actual_h * scaleFactor;
-//           const canvasWidth = Math.min(sc_imgwidth);
-//           const canvasHeight = Math.min(sc_imgheight);
-//           canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
-
-//           let backimg_name='';
-//           if (sc_imgwidth < 400){
-//                 backimg_name='backgroundVer.png';
-//           }
-//           else if(sc_imgwidth>400 && sc_imgwidth <600)
-//           {
-//                 backimg_name='backgroundVer2.png';
-//           }
-//           else{
-//                 backimg_name='background.png';
-//           }
-//           console.log(backimg_name)
-//           fabric.Image.fromURL(backimg_name, function (backimg) {
-//                   canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
-//                       scaleX: canvas.width / backimg.width,
-//                       scaleY: canvas.height / backimg.height
-//                   });
-//           });
-          
-//           updateLayerList(images);
-//           displayImages();
-//           // Save_Image_backend(img.customBase64, img.customImageName);
-//           // Semantic_segmentation(img.customImageName);
-//           GenerateShadow();
-
-//         });
-//       };
-//       reader.readAsDataURL(file);
-//     }
-//     fileInput.value = "";
-//   }
-// }
 
 function calculateScaleFactor(originalWidth, originalHeight, targetWidth, targetHeight) {
   const widthRatio = targetWidth / originalWidth;
   const heightRatio = targetHeight / originalHeight;
-  return Math.min(widthRatio, heightRatio);
+  const Decimal = Math.min(widthRatio, heightRatio);
+  return Math.round(Decimal * 100) / 100; // Round to 2 decimal places
 }
 
 function displayImages() {
@@ -277,14 +215,16 @@ function updatePSDSelect(fileName){
                 loader.style.display = 'none';
                 const imgData = e.target.result;
                 fabric.Image.fromURL(imgData, function (img) {
+                    
                     canvas.width= 750;
                     canvas.height= 600;
 
                     actual_h = img.height;
                     actual_w = img.width;
-                    const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                    global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+                    console.log("ScaleFactor from UpdatePsd", global_scaleFactor)
                     
-                    img.scale(scaleFactor);
+                    img.scale(global_scaleFactor);
                     img.customSelected = false; // Custom property to indicate selected state
                     img.customImageName = psdlayername;
                     img.customBase64 = imgData; // Set custom base64 data
@@ -297,8 +237,8 @@ function updatePSDSelect(fileName){
 
                     updateLayerList(images);
                     
-                    sc_imgwidth = actual_w * scaleFactor;
-                    sc_imgheight = actual_h * scaleFactor;
+                    sc_imgwidth = actual_w * global_scaleFactor;
+                    sc_imgheight = actual_h * global_scaleFactor;
                     const canvasWidth = Math.min(sc_imgwidth, img.width);
                     const canvasHeight = Math.min(sc_imgheight, img.height);
                     canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
@@ -435,7 +375,9 @@ function updateLayerList(images) {
         console.log("val of i", i);
         const removedImage = images.splice(i, 1)[0];
         if (removedImage.customImageName.includes('flat')) {
-            location.reload();
+            const openPsdLink = event.target.parentNode;
+            openPsdLink.setAttribute('data-toggle', 'modal');
+            openPsdLink.setAttribute('data-target', '#myModal');
         } else {
             canvas.remove(removedImage);
             layerButton.remove();
@@ -505,8 +447,8 @@ function GenerateShadow() {
 
             });
 
-            console.log('Base shadow names', names_shadow);
-            console.log('Shadow segment names', names_shadow_segment);
+            // console.log('Base shadow names', names_shadow);
+            // console.log('Shadow segment names', names_shadow_segment);
 
             fetch_Shadow_files(names_shadow);
             fetch_Shadow_files(names_shadow_segment);
@@ -531,8 +473,8 @@ function fetch_Shadow_files(shadow_arr) {
                 .then(response => {
                     if (response.ok) {
                         fabric.Image.fromURL(fullPath, function (img) {
-                            const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                            img.scale(scaleFactor);
+                            console.log("ScaleFactor from fechShadowFiles",global_scaleFactor)
+                            img.scale(global_scaleFactor);
                             img.customImageName = name;
                             img.selectable = false;
                             img.visible = false;
@@ -547,7 +489,7 @@ function fetch_Shadow_files(shadow_arr) {
                     }
                 });
         });
-         console.log("Loaded shadow_segment_images", shadow_segment_images);
+         // console.log("Loaded shadow_segment_images", shadow_segment_images);
     } 
     else {
         let relativePath = 'Shadows/'; // Adjust this relative path based on your directory structure
@@ -557,8 +499,8 @@ function fetch_Shadow_files(shadow_arr) {
                 .then(response => {
                     if (response.ok) {
                         fabric.Image.fromURL(fullPath, function (img) {
-                            const scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                            img.scale(scaleFactor);
+                            console.log("ScaleFactor from fechShadowFiles", global_scaleFactor)
+                            img.scale(global_scaleFactor);
                             img.customImageName = name;
                             img.selectable = false;
                             img.visible = false;
@@ -570,7 +512,7 @@ function fetch_Shadow_files(shadow_arr) {
 
                 });
         });
-        console.log("Loaded base_shadow_images", base_shadow_images);
+        // console.log("Loaded base_shadow_images", base_shadow_images);
     }
 }
 
@@ -747,11 +689,10 @@ allCheckbox.addEventListener('change', function () {
 let savedCounter=1;
 let savedLayers = [];
 let savedShadowsOnly = [];
-
+let CRshadow_eye = null;
 function addShadowButton() {
     if (document.getElementById("currentLayer")) {
         return; 
-
     }
 
     const shadowButton = document.createElement("button");
@@ -763,6 +704,11 @@ function addShadowButton() {
     shadowButton.style.backgroundColor = "#6c757d";
     shadowButton.style.color = "#ffffff";
 
+    const SHEyeIcon = document.createElement("i");
+    SHEyeIcon.id="CurrentEye";
+    SHEyeIcon.className = canvasElement2.style.display == 'none' ? "fa fa-eye" : "fa fa-eye-slash";
+    SHEyeIcon.style.fontSize = "10px";
+    SHEyeIcon.style.marginRight = "5px";
 
     const iconImageS = document.createElement("img");
     iconImageS.className = "icon-image"; 
@@ -794,25 +740,21 @@ function addShadowButton() {
     let NameSpan = document.createElement("span");
     NameSpan.innerText = 'Shadow Layer';  
 
+    shadowButton.appendChild(SHEyeIcon);
     shadowButton.appendChild(iconImageS);
     shadowButton.appendChild(NameSpan);
     shadowButton.appendChild(tickIcon);
+    CRshadow_eye = SHEyeIcon;
 
     shadowList.appendChild(shadowButton);
-
-    // tickIcon.addEventListener("click", function (event) {
-    //     togglePolygonVisibility(false) 
-    //     const canvasStatus = JSON.stringify(canvas.toJSON());
-    //     savedLayers.push(canvasStatus);
-    //     console.log(shadowButton.id);
-    //     updateBookmarkedShadows();
-    // });
 
     tickIcon.addEventListener("click", function (event) {
 
         togglePolygonVisibility(false) 
 
+        //saving the current canvas status
         const canvasStatus = JSON.stringify(canvas.toJSON());
+
         savedLayers.push(canvasStatus);
         console.log(shadowButton.id);
 
@@ -821,8 +763,12 @@ function addShadowButton() {
 
         const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
         filteredObjects.forEach(obj => tempCanvas.add(obj));
+        
+
         const canvasStatus1 = JSON.stringify(tempCanvas.toJSON());
-        savedShadowsOnly .push(canvasStatus1);
+
+        savedShadowsOnly.push(canvasStatus1);
+
         updateBookmarkedShadows();
     });
 
@@ -854,6 +800,10 @@ function updateBookmarkedShadows(){
     for (let i = 0; i < savedLayers.length; i++) 
     {
         let BMshadow_btn = document.createElement("button");
+        
+        console.log("CRshadow_eye", CRshadow_eye);
+        CRshadow_eye.className = canvasElement2.style.display == 'none' ? "fa fa-eye" : "fa fa-eye-slash";
+
         BMshadow_btn.id = `BMshadowbtn_${i}`;
 
         BMshadow_btn.className = "btn btn-block";
@@ -879,16 +829,15 @@ function updateBookmarkedShadows(){
         BmIconImg.style.backgroundColor="white";
         BmIconImg.style.objectFit = "cover";
 
-        let tempCanvas = document.createElement('canvas');
-        let tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
-        BmIconImg.src = tempCanvas.toDataURL();
+        let iconCanvas = document.createElement('canvas');
+        let iconCanvasCtx = iconCanvas.getContext('2d');
+        iconCanvas.width = canvas.width;
+        iconCanvas.height = canvas.height;
+        iconCanvasCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+        BmIconImg.src = iconCanvas.toDataURL();
 
 
         BMshadow_btn.appendChild(BMEyeIcon);
-        // BMshadow_btn.appendChild(BmIconImg);
         BMshadow_btn.appendChild(NameSpan);
 
 
@@ -916,6 +865,7 @@ function updateBookmarkedShadows(){
 let activeBMButtonId = null;
 
 function toggleBMCanvas(BM_button_id, val) {
+    visibility_arr = new Array(visibility_arr.length).fill(false);
     if (activeBMButtonId === BM_button_id ) {
             console.log(`Button ${BM_button_id} is already active`);
             if (canvasElement2.style.display === 'none') 
@@ -937,6 +887,7 @@ function toggleBMCanvas(BM_button_id, val) {
         canvasElement2.style.display = 'block';
         canvasElement.style.display = 'none';
         const savedCanvasData = JSON.parse(savedLayers[val]);
+
         canvas2.loadFromJSON(savedCanvasData, function() {
             canvas2.renderAll();
         });
@@ -946,291 +897,77 @@ function toggleBMCanvas(BM_button_id, val) {
 }
 
 
-
 function Download_Bookmarked() {
     for (let i= 0; i < savedShadowsOnly.length; i++) {
-        const savedCanvasData = JSON.parse(savedShadowsOnly[i]);
-        const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
+            const savedCanvasData = JSON.parse(savedShadowsOnly[i]);
+            console.log(savedCanvasData);
 
-        // Filter out flat and line objects
-        const filteredObjects = savedCanvasData.objects.filter(obj => !obj.customImageName || !obj.customImageName.includes('flat') || !obj.customImageName.includes('line'));
-        savedCanvasData.objects = filteredObjects;
+            const tempCanvas3 = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
+            const originalWidth = tempCanvas3.getWidth();
+            const originalHeight = tempCanvas3.getHeight();
 
-        tempCanvas.loadFromJSON(savedCanvasData, function() {
-            const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
-            const backgroundImage = tempCanvas.backgroundImage;
-            tempCanvas.backgroundImage = null;
+            tempCanvas3.loadFromJSON(savedCanvasData, function() {
+                const scaleFactor = global_scaleFactor*10;
 
-            const originalWidth = tempCanvas.getWidth();
-            const originalHeight = tempCanvas.getHeight();
-            tempCanvas.setWidth(originalWidth * scaleFactor);
-            tempCanvas.setHeight(originalHeight * scaleFactor);
-            tempCanvas.setZoom(scaleFactor);
+                tempCanvas3.setWidth(originalWidth * scaleFactor);
+                tempCanvas3.setHeight(originalHeight * scaleFactor);
+                tempCanvas3.setZoom(scaleFactor);
 
-            tempCanvas.renderAll();
+                tempCanvas3.renderAll();
 
-            const dataUrl = tempCanvas.toDataURL({
-                format: 'png',
-                multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
+                const dataURL = tempCanvas3.toDataURL('image/png', 1.0);
+
+                const link = document.createElement('a');
+                link.download = global_filename+`_bookmarked.png`;
+                link.href = dataURL;
+                link.click();
             });
-
-            tempCanvas.backgroundImage = backgroundImage;
-            tempCanvas.setWidth(originalWidth);
-            tempCanvas.setHeight(originalHeight);
-            tempCanvas.setZoom(1);
-
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = global_filename+`Bookmarked_${i}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
     }
 }
 
 
+//===================save image=====================//
 
-// let savedCounter=1;
-// let savedLayers = [];
-// function addShadowButton() {
-//     // Check if shadowList already has a button with id "unsaved"
-//     if (document.getElementById("currentLayer")) {
-//         return; // Exit the function if "unsaved" button already exists
-//     }
-
-//     const shadowButton = document.createElement("button");
-//     shadowButton.id = "currentLayer"; 
-//     console.log(shadowButton.id);
-
-//     shadowButton.className = "btn btn-block";
-//     shadowButton.style.textAlign = "left";
-//     shadowButton.style.backgroundColor = "#6c757d";
-//     shadowButton.style.color = "#ffffff";
+const saveBtn = document.getElementById("save_id");
+saveBtn.addEventListener('click', saveCanvasImage);
 
 
-//     const iconImageS = document.createElement("img");
-//     iconImageS.className = "icon-image"; 
-//     iconImageS.style.marginRight = "2px";
-//     iconImageS.style.width = "30px"; 
-//     iconImageS.style.height = "30px";
-//     iconImageS.style.border ="1px solid black";
-//     iconImageS.style.backgroundColor="white";
-//     iconImageS.style.objectFit = "cover";
-//     // const imageFile = shadow_segment_images[0];
-//     // iconImageS.src = URL.createObjectURL(imageFile);
+function saveCanvasImage() {
 
-//     // Create a temporary canvas to hold a snapshot of the current canvas state
-//     const tempCanvas = document.createElement('canvas');
-//     const tempCtx = tempCanvas.getContext('2d');
-//     tempCanvas.width = canvas.width;
-//     tempCanvas.height = canvas.height;
-//     tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+    Download_Bookmarked();
+    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line')));
 
-//     // Set the src of the image element to the data URL of the temporary canvas
-//     iconImageS.src = tempCanvas.toDataURL();
+    // Create a new canvas with the filtered objects
+    const tempCanvas2 = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
+    filteredObjects.forEach(obj => tempCanvas2.add(obj));
 
-//     // Create an image element for the icon
-//     const ShadEyeIcon = document.createElement("i");
-//     ShadEyeIcon.className = "fa fa-eye";
-//     ShadEyeIcon.style.fontSize = "10px";
-//     ShadEyeIcon.style.marginRight = "8px";
+    // Download the canvas image
+    const scaleFactor = global_scaleFactor*10;
+    console.log("ScaleFactor from saveCanvasImage", scaleFactor)
+    const backgroundImage = tempCanvas2.backgroundImage;
+    tempCanvas2.backgroundImage = null;
 
-//     const tickIcon = document.createElement("i");
-//     tickIcon.className = "fa fa-bookmark-o";
-//     tickIcon.style.float = "right";
-//     tickIcon.style.marginTop = "5px";
+    // Scale up the canvas
+    const originalWidth = tempCanvas2.getWidth();
+    const originalHeight = tempCanvas2.getHeight();
+    tempCanvas2.setWidth(originalWidth * scaleFactor);
+    tempCanvas2.setHeight(originalHeight * scaleFactor);
+    tempCanvas2.setZoom(scaleFactor);
 
+    tempCanvas2.renderAll();
 
-//     const downloadIcon = document.createElement("i");
-//     downloadIcon.className = "fa fa-bookmark";
-//     downloadIcon.style.float = "right";
-//     downloadIcon.style.marginTop = "5px";
+    const dataURL = tempCanvas2.toDataURL('image/png', 1.0);
 
-//     // Create a span for the direction name
-//     const NameSpan = document.createElement("span");
-//     NameSpan.innerText = 'Shadow Layer';  
+    tempCanvas2.backgroundImage = backgroundImage;
+    tempCanvas2.setWidth(originalWidth);
+    tempCanvas2.setHeight(originalHeight);
+    tempCanvas2.setZoom(1);
 
-//     // shadowButton.appendChild(ShadEyeIcon);
-//     shadowButton.appendChild(iconImageS);
-//     shadowButton.appendChild(NameSpan);
-//     shadowButton.appendChild(tickIcon);
-
-//     shadowList.appendChild(shadowButton);
-
-//     ShadEyeIcon.addEventListener("click", function (event) {
-
-//         if (ShadEyeIcon.classList.contains('fa-eye')) {
-//             ShadEyeIcon.classList.remove('fa-eye');
-//             ShadEyeIcon.classList.add('fa-eye-slash');
-//         } else {
-//             ShadEyeIcon.classList.remove('fa-eye-slash');
-//             ShadEyeIcon.classList.add('fa-eye');
-//             }
-
-//             const allCheckbox = document.getElementById('allCheckbox');
-//             allCheckbox.checked = !allCheckbox.checked;
-
-//             const event1 = new Event('change');
-//             allCheckbox.dispatchEvent(event1);
-
-//   });
-    
-//     const BMshadowList = document.getElementById('BM_shadowList');
-//     tickIcon.addEventListener("click", function (event) {
-//         togglePolygonVisibility(false) 
-//         const canvasStatus = JSON.stringify(canvas.toJSON());
-//         savedLayers.push(canvasStatus);
-//         console.log(canvasStatus);
-
-
-//         shadowButton.id = `saved_${savedCounter}`; // Change the button id
-//         console.log(shadowButton.id);
-
-//         shadowButton.style.backgroundColor = "#494949"; // Change the background color
-
-//         tickIcon.remove();
-//         ShadEyeIcon.remove();
-//         shadowButton.appendChild(downloadIcon);
-//         NameSpan.innerText = 'Shadow '+ savedCounter;
-//         savedCounter++; // Increment the counter for the next button
-//         tempbtn=shadowButton;
-//         shadowButton.remove();
-//         BMshadowList.appendChild(tempbtn);
-//     });
-
-
-//     // Add click event listener to the download icon
-//     downloadIcon.addEventListener("click", function (event) {
-        
-//         const Shadow_id = shadowButton.id;
-//         const Shadow_index = parseInt(Shadow_id.split('_')[1]) - 1
-
-//         const savedCanvasData = JSON.parse(savedLayers[Shadow_index]);
-//         const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight()});
-
-//         tempCanvas.loadFromJSON(savedCanvasData, function() {
-            
-//             const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
-//             const backgroundImage = tempCanvas.backgroundImage;
-//             tempCanvas.backgroundImage = null;
-
-//             // Scale up the canvas
-//             const originalWidth = tempCanvas.getWidth();
-//             const originalHeight = tempCanvas.getHeight();
-//             tempCanvas.setWidth(originalWidth * scaleFactor);
-//             tempCanvas.setHeight(originalHeight * scaleFactor);
-//             tempCanvas.setZoom(scaleFactor);
-
-//             tempCanvas.renderAll();
-
-//             const dataUrl = tempCanvas.toDataURL({
-//                 format: 'png',
-//                 multiplier: 1 // Use a multiplier to ensure the quality of the downloaded image
-//             });
-
-
-//             tempCanvas.backgroundImage = backgroundImage;
-//             tempCanvas.setWidth(originalWidth);
-//             tempCanvas.setHeight(originalHeight);
-//             tempCanvas.setZoom(1);
-
-//             const link = document.createElement('a');
-//             link.href = dataUrl;
-//             link.download = 'canvas.png';
-//             document.body.appendChild(link);
-//             link.click();
-//             document.body.removeChild(link);
-
-//         });
-
-
-//     });
-
-//     AddSavedShadowListeners();
-
-
-// }
-
-// const canvasElement= document.getElementById('canvas_div')
-// const canvasElement2= document.getElementById('Tempcanvas_div')
-// let canvasVisibilityStates = {}; // Object to store visibility states for each button
-
-// function AddSavedShadowListeners() {
-//     const savedButtons = document.querySelectorAll('[id^="saved_"]');
-    
-//     savedButtons.forEach(savedButton => {
-//         canvasVisibilityStates[savedButton.id] = false; // Initialize visibility state for each button
-//         savedButton.addEventListener("click", function (event) {
-            
-//             const buttonId = savedButton.id;
-//             console.log("clicked", buttonId);
-//             const isCanvasVisible = canvasVisibilityStates[buttonId];
-//             if (isCanvasVisible) {
-//                 canvasElement.style.display = 'block';
-//                 canvasElement2.style.display = 'none';
-//             } else {
-//                 canvasElement.style.display = 'none';
-//                 canvasElement2.style.display = 'block';
-//                 const buttonIndex = parseInt(buttonId.split('_')[1]) - 1;
-//                 const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
-//                 canvas2.loadFromJSON(savedCanvasData, function() {
-//                     canvas2.renderAll();
-//                 });
-//             }
-//             canvasVisibilityStates[buttonId] = !isCanvasVisible; // Toggle the state for the clicked button
-
-//         });
-//     });
-// }
-
-
-
-// let isCanvas2Visible = false;
-
-
-// function AddSavedShadowListeners() {
-//     const savedButtons = document.querySelectorAll('[id^="saved_"]');
-
-//     savedButtons.forEach(savedButton => {
-//         savedButton.addEventListener("click", function (event) {
-//             console.log("clicked", savedButton.id);
-//             if (isCanvas2Visible) {
-//                 canvasElement.style.display = 'block';
-//                 canvasElement2.style.display = 'none';
-//             } else {
-//                 canvasElement.style.display = 'none';
-//                 canvasElement2.style.display = 'block';
-//                 const buttonIndex = parseInt(savedButton.id.split('_')[1]) - 1;
-//                 const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
-//                 canvas2.loadFromJSON(savedCanvasData, function() {
-//                     canvas2.renderAll();
-//                 });
-//             }
-//             isCanvas2Visible = !isCanvas2Visible; // Toggle the state
-//         });
-//     });
-// }
-
-
-// function createSavedButtonListener(savedButton, canvasIndex) {
-//     return function(event) {
-//         console.log("clicked", savedButton.id);
-//         if (isCanvas2Visible) {
-//             canvasElement.style.display = 'block';
-//             canvasElement2.style.display = 'none';
-//         } else {
-//             canvasElement.style.display = 'none';
-//             canvasElement2.style.display = 'block';
-//             const buttonIndex = canvasIndex - 1;
-//             const savedCanvasData = JSON.parse(savedLayers[buttonIndex]);
-//             canvas2.loadFromJSON(savedCanvasData, function() {
-//                 canvas2.renderAll();
-//             });
-//         }
-//         isCanvas2Visible = !isCanvas2Visible; // Toggle the state
-//     };
-// }
+    const link = document.createElement('a');
+    link.download = global_filename+`_current.png`;
+    link.href = dataURL;
+    link.click();
+}
 
 
 
@@ -1283,7 +1020,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                 const FlatImage = images.find(image => image.customImageName.includes('flat'))
                 if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
                     jsonFileName = FlatImage.customImageName.replace('.png', '.json');
-                    console.log(jsonFileName);
+                    // console.log(jsonFileName);
                     fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
                         .then(data => {
@@ -1292,10 +1029,10 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                             data.regions.forEach(region => {
                                 const originalCoordinates = region.coordinates;
                                 const color = region.color; // Get color from JSON
-                                const scaleFactor = calculateScaleFactor(FlatImage.width, FlatImage.height, canvas.width, canvas.height);
+                                console.log("ScaleFactor from getOutline", global_scaleFactor)
                                 const scaledCoordinates = originalCoordinates.map(point => ({
-                                    x: point[0] * scaleFactor,
-                                    y: point[1] * scaleFactor
+                                    x: point[0] * global_scaleFactor,
+                                    y: point[1] * global_scaleFactor
                                 }));
 
                                 // Draw the polygon on the canvas and set its initial visibility
@@ -1307,7 +1044,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                 } else {
                     // Data has already been fetched, toggle visibility based on the button state
                     polygonVisible = isChecked;
-                    console.log(polygonVisible);
+                    // console.log(polygonVisible);
                     togglePolygonVisibility(polygonVisible);
                 }
             }
@@ -1359,7 +1096,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
         }
 
         function togglePolygonVisibility(isVisible) {
-            console.log("here", isVisible);
+            // console.log("here", isVisible);
             canvas.forEachObject(function (obj) {
                 if (obj.isPolygon) {
                     obj.set('visible', isVisible);
@@ -1440,7 +1177,8 @@ function togglePanning() {
 
   // Change the cursor style of the canvas based on the panning mode
   if (isPanning) {
-
+    deactivateEraser();
+    deactivatePainting();
     canvas.hoverCursor = 'pointer';
     panBtn.style.backgroundColor = "black";
     panBtn.style.color = "white";
@@ -1480,18 +1218,21 @@ canvas.on("mouse:up", function () {
 
 //===============eraser code========================//
 var isPainting = false;
+let undoErasing = false;
+
 const eraserBtn = document.getElementById("eraserBtn");
+var toolSize = document.getElementById('ToolSize');
 
 eraserBtn.addEventListener("click", toggleErasing);
 
 let global_brush_width=10;
 
 function toggleErasing() {
-    var toolSize = document.getElementById('ToolSize');
     isErasing = !isErasing;
     isPainting=false;
 
     deactivatePainting();
+    deactivateUndoEraser();
     if (isErasing)
       {   
          toolSize.style.display = 'flex'
@@ -1530,36 +1271,33 @@ function toggleErasing() {
 
 }
 
-
-
-let undoErasing = false;
 const undoEraser = document.getElementById("magicBtn");
 undoEraser.addEventListener("click", UndoErase);
 
 function UndoErase() {
-  console.log("undo");
-    canvas.isDrawingMode = true;
+    deactivatePainting();
+    deactivateEraser();
     undoErasing = !undoErasing;
-
-   
-   if (undoErasing) {
-    if(!isErasing){
-        toggleErasing();
-    }
+    // console.log("undoErasing clicked", undoErasing);
+    if(undoErasing)
+    {
+    // console.log("undoErasing", undoErasing);
+    canvas.isDrawingMode = true;
+    canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
+    canvas.freeDrawingBrush.width = global_brush_width;
+    canvas.freeDrawingBrush.inverted = true;
     undoEraser.style.backgroundColor = "black";
     undoEraser.style.color = "white";
-    } 
-    else {
-    canvas.isDrawingMode = false;
+    }
+    else
+    {
+    console.log("undoErasing", undoErasing);
+    canvas.freeDrawingBrush.width = 0;
     undoEraser.style.backgroundColor = "";
     undoEraser.style.color = "";
     }
 
-    canvas.freeDrawingBrush.width = 20;
-    canvas.freeDrawingBrush.inverted = true;
 }
-
-
 
 //============================run eel===============================//
     // document.getElementById('backendButton').addEventListener('click', function() {
@@ -1568,76 +1306,6 @@ function UndoErase() {
     // });
 
 
-//===================save image=====================//
-
-const saveBtn = document.getElementById("save_id");
-saveBtn.addEventListener('click', saveCanvasImage);
-
-// function saveCanvasImage() {
-//     Download_Bookmarked();
-//     const scaleFactor = calculateScaleFactor(actual_w, actual_h, canvas.width, canvas.height) * 10;
-//     const backgroundImage = canvas.backgroundImage;
-//     canvas.backgroundImage = null;
-
-//     // Scale up the canvas
-//     const originalWidth = canvas.getWidth();
-//     const originalHeight = canvas.getHeight();
-//     canvas.setWidth(originalWidth * scaleFactor);
-//     canvas.setHeight(originalHeight * scaleFactor);
-//     canvas.setZoom(scaleFactor);
-
-//     canvas.renderAll();
-
-//     const dataURL = canvas.toDataURL('image/png', 1.0);
-
-//     canvas.backgroundImage = backgroundImage;
-//     canvas.setWidth(originalWidth);
-//     canvas.setHeight(originalHeight);
-//     canvas.setZoom(1);
-
-//     const link = document.createElement('a');
-//     link.download = images[0].customImageName+'.png';
-//     link.href = dataURL;
-
-//     link.click();
-// }
-
-function saveCanvasImage() {
-
-    Download_Bookmarked();
-    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line')));
-
-    // Create a new canvas with the filtered objects
-    const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
-    filteredObjects.forEach(obj => tempCanvas.add(obj));
-
-    // Download the canvas image
-    const scaleFactor = calculateScaleFactor(actual_w, actual_h, tempCanvas.width, tempCanvas.height) * 10;
-    const backgroundImage = tempCanvas.backgroundImage;
-    tempCanvas.backgroundImage = null;
-
-    // Scale up the canvas
-    const originalWidth = tempCanvas.getWidth();
-    const originalHeight = tempCanvas.getHeight();
-    tempCanvas.setWidth(originalWidth * scaleFactor);
-    tempCanvas.setHeight(originalHeight * scaleFactor);
-    tempCanvas.setZoom(scaleFactor);
-
-    tempCanvas.renderAll();
-
-    const dataURL = tempCanvas.toDataURL('image/png', 1.0);
-
-    tempCanvas.backgroundImage = backgroundImage;
-    tempCanvas.setWidth(originalWidth);
-    tempCanvas.setHeight(originalHeight);
-    tempCanvas.setZoom(1);
-
-    const link = document.createElement('a');
-    link.download = global_filename+`_current.png`;
-    link.href = dataURL;
-
-    link.click();
-}
 
 
 //========================paint brush functions==========================//
@@ -1652,7 +1320,7 @@ function saveCanvasImage() {
           isPainting= !isPainting;
           isErasing=false
           deactivateEraser();
-                
+          deactivateUndoEraser(); 
 
           if (isPainting) {
               canvas.isDrawingMode = true;
@@ -1765,6 +1433,15 @@ function deactivatePainting() {
     var paintBrushBtn = document.getElementById('paintBrushBtn');
     paintBrushBtn.style.backgroundColor = '';
     paintBrushBtn.style.color = '';
+    canvas.isDrawingMode = false;
+}
+
+function deactivateUndoEraser() {
+    undoErasing = false;
+    var UndoEraseBtn = document.getElementById("magicBtn");
+    UndoEraseBtn.style.backgroundColor = '';
+    UndoEraseBtn.style.color = '';
+    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.isDrawingMode = false;
 }
 
@@ -1882,7 +1559,7 @@ function setCardBackgroundImages(direction) {
 
     let cardImagePaths = card_images_sorted.map(img => `Shadows/${img.customImageName}`);
 
-    console.log("Filtered card_images", card_images);
+    // console.log("Filtered card_images", card_images);
 
     let cards = document.querySelectorAll('.card-container');
     let imagePath = null;
@@ -1894,7 +1571,7 @@ function setCardBackgroundImages(direction) {
           
           imagePath = `Shadows/${card_images[index].customImageName}`;
 
-          console.log("for index", index, "image fetched", imagePath);
+          // console.log("for index", index, "image fetched", imagePath);
 
           card.querySelector('.card').style.background = `#e6e6e6 url(${imagePath}) no-repeat center center`;
           card.querySelector('.card').style.backgroundSize = 'cover';
@@ -1981,33 +1658,66 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 
 //======================= Change Shadow Size =====================================//
 
+      const incrementButton = document.querySelector('.increment');
+      const decrementButton = document.querySelector('.decrement');
+
+
+      // incrementButton.addEventListener('click', function() {
+
+      //       //When we are clicking the increment button, 
+      //       //its fetching the current segmented shadow layers as an array.
+      //       //current labels of the image, as an array.
+
+      //       console.log('Increment button clicked');
+
+      //       let CurrentShadow_arr= []
+      //       const NumberRegExp = new RegExp(`shadow_${global_number}`);
+
+      //       canvas.getObjects().forEach(obj => {
+      //           if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
+      //               CurrentShadow_arr.push(obj);
+      //           }
+      //       });
+            
+      //       const labels_arr = getSegmentNames();
+      //       console.log(CurrentShadow_arr);
+      //       console.log(labels_arr);
+
+      // });
+
+
+      incrementButton.addEventListener('click', function() {
+            shadow=shadow_segment_images[0].customBase64;
+            region_label="cloth"
+            eel.shadow_increase(shadow, region_label)((response) => {
+                console.log(response); // Log the response from the Python function
+              });
+      });
+
+
+      decrementButton.addEventListener('click', function() {
+            console.log('decrement button clicked');
+
+            let CurrentShadow_arr= []
+            const NumberRegExp = new RegExp(`shadow_${global_number}`);
+
+            canvas.getObjects().forEach(obj => {
+                if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
+                    CurrentShadow_arr.push(obj);
+                }
+            });
+
+            const labels_arr = getSegmentNames();
+            const lineImage = images.filter(img => img.customImageName.includes('line'));
+            console.log(lineImage);
+            console.log(CurrentShadow_arr);
+            console.log(labels_arr);
+      });
+
+//======================= Change Shadow Size =====================================//
+
     const incrementButton = document.querySelector('.increment');
     const decrementButton = document.querySelector('.decrement');
-
-
-    // incrementButton.addEventListener('click', function() {
-
-    //       //When we are clicking the increment button, 
-    //       //its fetching the current segmented shadow layers as an array.
-    //       //current labels of the image, as an array.
-
-    //       console.log('Increment button clicked');
-
-    //       let CurrentShadow_arr= []
-    //       const NumberRegExp = new RegExp(`shadow_${global_number}`);
-
-    //       canvas.getObjects().forEach(obj => {
-    //           if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
-    //               CurrentShadow_arr.push(obj);
-    //           }
-    //       });
-        
-    //       const labels_arr = getSegmentNames();
-    //       console.log(CurrentShadow_arr);
-    //       console.log(labels_arr);
-
-    // });
-
 
     incrementButton.addEventListener('click', function() {
         shadow=shadow_segment_images[0].customBase64;
