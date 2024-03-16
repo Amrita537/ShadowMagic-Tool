@@ -112,11 +112,11 @@
                         <!--  tools code here -->
                               <div class="row">
                                 <div class="col-sm-6 text-right">
-                                    <button id="pointerBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="pointer">
+                                    <button id="pointerBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Pointer">
                                         <i class="fa fa-mouse-pointer" aria-hidden="true" ></i>
                                     </button>
 
-                                  <button id="paintBrushBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Paint">
+                                  <button id="paintBrushBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Shadow Brush">
                                       <i class="fa fa-paint-brush" aria-hidden="true"></i>
                                   </button>
 
@@ -131,7 +131,7 @@
 
                                                             
                                 <div class="col-sm-6">
-                                    <button id="panBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="pan">
+                                    <button id="panBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Panning">
                                         <i class="fa fa-hand-stop-o" aria-hidden="true"></i>
                                     </button>
 <!-- 
@@ -150,7 +150,7 @@
                                    <button id="eraserBtn" class="toggle-btn" data-toggle="tooltip" title="Erase" data-placement="top">
                                       <i class="fa fa-eraser" aria-hidden="true"></i>
                                   </button>
-                                    <button id="magicBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Shadow">
+                                    <button id="magicBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Undo Erase">
                                         <i class="fas fa-magic" aria-hidden="true"></i>
                                     </button>
                                    <button id="RedoBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Redo">
@@ -183,8 +183,9 @@
                   </div>
 
                   <div id="Tempcanvas_div" class="col-sm-8" style="display:none" >
+
                       <div id="canvas_id2">
-                          <canvas id="canvas2" ></canvas>
+                          <canvas id="canvas2"></canvas>
                       </div>
                   </div>
 
@@ -227,16 +228,16 @@
                                                   <span style="display: inline-block;">Light Control </span> <br>
 
                                                     <div class="btn-group" role="group">
-                                                      <button id="btnLeft" type="button" class="btn btn-secondary">
+                                                      <button id="btnLeft" type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="top" title="Left">
                                                      <img src="assets/direction_left.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
-                                                      <button id="btnRight" type="button" class="btn btn-secondary">
+                                                      <button id="btnRight" type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="top" title="Right">
                                                      <img src="assets/direction_right.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
-                                                      <button id="btnTop" type="button" class="btn btn-secondary">
+                                                      <button id="btnTop" type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="top" title="Top">
                                                      <img src="assets/direction_top.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
-                                                      <button id="btnBack" type="button" class="btn btn-secondary">
+                                                      <button id="btnBack" type="button" class="btn btn-secondary" data-toggle="tooltip" data-placement="top" title="Back">
                                                      <img src="assets/direction_back.png" alt="Arrow Down" style="width: 22px; height: 22px;">
                                                       </button>
                                                     </div>
@@ -399,6 +400,11 @@
 
 
 
+  </div>
+
+
+  <div class="footer">
+    <p>filename</p>
   </div>
 
 </div> <!-- container div -->
