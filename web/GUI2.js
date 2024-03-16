@@ -1658,64 +1658,6 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 
 //======================= Change Shadow Size =====================================//
 
-      const incrementButton = document.querySelector('.increment');
-      const decrementButton = document.querySelector('.decrement');
-
-
-      // incrementButton.addEventListener('click', function() {
-
-      //       //When we are clicking the increment button, 
-      //       //its fetching the current segmented shadow layers as an array.
-      //       //current labels of the image, as an array.
-
-      //       console.log('Increment button clicked');
-
-      //       let CurrentShadow_arr= []
-      //       const NumberRegExp = new RegExp(`shadow_${global_number}`);
-
-      //       canvas.getObjects().forEach(obj => {
-      //           if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
-      //               CurrentShadow_arr.push(obj);
-      //           }
-      //       });
-            
-      //       const labels_arr = getSegmentNames();
-      //       console.log(CurrentShadow_arr);
-      //       console.log(labels_arr);
-
-      // });
-
-
-      incrementButton.addEventListener('click', function() {
-            shadow=shadow_segment_images[0].customBase64;
-            region_label="cloth"
-            eel.shadow_increase(shadow, region_label)((response) => {
-                console.log(response); // Log the response from the Python function
-              });
-      });
-
-
-      decrementButton.addEventListener('click', function() {
-            console.log('decrement button clicked');
-
-            let CurrentShadow_arr= []
-            const NumberRegExp = new RegExp(`shadow_${global_number}`);
-
-            canvas.getObjects().forEach(obj => {
-                if (obj.customImageName && obj.customImageName.match(NumberRegExp)) {
-                    CurrentShadow_arr.push(obj);
-                }
-            });
-
-            const labels_arr = getSegmentNames();
-            const lineImage = images.filter(img => img.customImageName.includes('line'));
-            console.log(lineImage);
-            console.log(CurrentShadow_arr);
-            console.log(labels_arr);
-      });
-
-//======================= Change Shadow Size =====================================//
-
     const incrementButton = document.querySelector('.increment');
     const decrementButton = document.querySelector('.decrement');
 
