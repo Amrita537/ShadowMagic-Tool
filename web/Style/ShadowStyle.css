@@ -10,15 +10,18 @@
 }
 body{
   background-color: #383838;
-  height: 700px;
+  height: 800px;
+  overflow: hidden;
 }
 
 .container{
   padding-right: 0px;
   padding-left: 0px;
   background-color:var(--light-grey);
-  height: 800px;
-    width: 82%;
+  height: 100%;
+  width: 82%;
+  overflow-y: auto;
+  overflow-x: hidden;
 /*  border: 1px solid var(--dark-grey);*/
 }
 
@@ -30,6 +33,9 @@ body{
     cursor: url('circle_icon.png'), auto;
 }
 
+.upper-canvas{
+  position: 0px;
+}
 .upper-canvas: hover{
   cursor: url('circle_icon.png'), auto;
 }
@@ -80,6 +86,7 @@ body{
       right: 5px;
       top: 0;
     }
+
 /*================Style for tool_id================*/
 #tool_id 
 {
@@ -105,7 +112,7 @@ body{
 #tool_id .col-sm-6
 {
   padding: 0px;
-    margin: 0px;
+  margin: 0px;
 
 }
 
@@ -192,7 +199,8 @@ canvas {
     background-size: cover; 
     position: relative;
     display: flex; /* Display as flex container */
-    justify-content: center; /* Center horizontally */}
+    justify-content: center; /* Center horizontally */
+}
 /*================Style for operation_id================*/
 
 
@@ -708,4 +716,21 @@ input[type=checkbox] {
 #myModal .close {
     color: #fff; 
     opacity: 1;
+}
+
+/*===========================footer =======================*/
+.footer {
+   position: fixed;
+/*   left: 0;*/
+   left: 9%;
+   bottom: 0;
+   width: 82%;
+   background-color: var(--grey-color);
+   color: var(--white-grey);
+   text-align: left;
+}
+
+.footer p{
+ margin-left: 10px;
+ padding-top: 5px;
 }
