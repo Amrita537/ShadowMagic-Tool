@@ -474,13 +474,14 @@ function fetch_Shadow_files(shadow_arr) {
                     if (response.ok) {
                         fabric.Image.fromURL(fullPath, function (img) {
                             console.log("ScaleFactor from fechShadowFiles",global_scaleFactor)
+                            // why scale?
+                            img.customBase64 = img.toDataURL({ format: 'png' });
                             img.scale(global_scaleFactor);
                             img.customImageName = name;
                             img.selectable = false;
                             img.visible = false;
                             img.opacity = global_opacity; 
-                            img.customBase64 = img.toDataURL({ format: 'png' });
-
+                            // img.customBase64 = img.toDataURL({ format: 'png' });
                             canvas.add(img);
                             shadow_segment_images.push(img);
                         });
@@ -1683,12 +1684,16 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
         let res = {};
         const lineRegExp = new RegExp(`line`);    
         // super weird logic...
-        canvas.getObjects().forEach(obj => {
-            if (obj.customImageName && obj.customImageName.match(shadowRegExp) && obj.visible) {
-                res[obj.customImageName] = obj.customBase64;
-            }
+        const objs = canvas.getObjects().forEach(obj => {
             if (obj.customImageName.match(lineRegExp)){
                 res['line'] = obj.customBase64;
+            }
+            if (obj.customImageName && obj.customImageName.match(shadowRegExp) && obj.visible) {
+                res[obj.customImageName] = obj.customBase64;
+                return true;
+            }
+            else{
+                return false;
             }
         });
 
@@ -1699,8 +1704,8 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     // call back function for layer update
     eel.expose(UpdataShadow);
     function UpdataShadow(imgDict){
-        for (let label in imgData){
-            UpdateLayerByName(imgData[label], label);
+        for (let label in imgDict){
+            UpdateLayerByName(imgDict[label], label);
         }
         canvas.renderAll();
     }
@@ -1730,19 +1735,27 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
         // Step 2: Load the new image
         fabric.Image.fromURL(newImageUrl, function(newImage) {
             // Step 3: Replace the old background image with the new one
-            // Adjust the position and scale if needed
-            newImage.set({
-              left: layerImageObject.left,
-              top: layerImageObject.top,
-              scaleX: layerImageObject.scaleX,
-              scaleY: layerImageObject.scaleY,
-              customImageName: label // Keep the custom name for future reference
-            });
-
+            // // Adjust the position and scale if needed
+            // newImage.set({
+            //   left: layerImageObject.left,
+            //   top: layerImageObject.top,
+            //   scaleX: layerImageObject.scaleX,
+            //   scaleY: layerImageObject.scaleY,
+            //   customImageName: label // Keep the custom name for future reference
+            // });
+            newImage.customBase64 = newImageUrl
+            newImage.scale(global_scaleFactor);
+            newImage.customImageName = label;
+            newImage.selectable = false;
+            newImage.visible = true;
+            newImage.opacity = global_opacity; 
             // Remove the old background image
+            for (let i = 0; i < shadow_segment_images.length; i++){
+                if (shadow_segment_images[i].customImageName == label){
+                    shadow_segment_images[i] = newImage;        
+                }
+            }
             canvas.remove(layerImageObject);
-
-            // Add the new image to the canvas
             canvas.add(newImage);
             // canvas.moveTo(newImage, 0); // Move to background if necessary    
         });    
@@ -1759,22 +1772,5 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     document.getElementById("continue_btn").addEventListener("click", function() {
         console.log("Continue Working...");
     });
-
-
-//=================================== Get shadows from canvas =======================================//
-
-function get_shadow_by_label(label_name) {
-    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (obj.customImageName.includes('shadow')));
-
-    const result = filteredObjects.filter(obj => {
-        let isLabelMatch = obj.customImageName.endsWith(`_${label_name}.png`);
-        let isDirectionMatch = obj.customImageName.includes(`_${direction}_`); 
-        let isIndexMatch = obj.customImageName.includes(`shadow_${global_number}`); 
-        return isLabelMatch && isDirectionMatch && isIndexMatch;
-    });
-
-    return result;
-}
-
 
 });

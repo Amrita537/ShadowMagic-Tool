@@ -5,7 +5,7 @@ import cv2
 import psd_tools
 from psd_tools import PSDImage
 from PIL import Image
-
+from scipy.signal import convolve2d as conv
 
 # we probably don't need most of these logics
 def layer_to_png(layer, path_to_png, export_size):
@@ -48,8 +48,7 @@ def get_file_name(file_path):
     return name 
 
 def open_psd(path_to_psd, path_to_png):
-    assert os.path.exists(path_to_png)
-
+    assert os.path.exists(path_to_psd)
     # read psd file
     psd = PSDImage.open(path_to_psd)
     h, w = psd.size
@@ -108,3 +107,10 @@ def gkern(l=5, sig=1.):
     gauss = np.exp(-0.5 * np.square(ax) / np.square(sig))
     kernel = np.outer(gauss, gauss)
     return kernel / np.sum(kernel)
+
+if __name__ == "__main__":
+    path_to_psd = '../unseen_examples/'
+    path_to_png = '../unseen_examples/pngs'
+    for psd in os.listdir(path_to_psd):
+        if "psd" not in psd: continue
+        open_psd(os.path.join(path_to_psd, psd), path_to_png)

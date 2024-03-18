@@ -13,6 +13,7 @@ import random
 import subprocess
 import re
 import argparse
+import time
 from skimage.morphology import skeletonize
 from random import randint
 from tools.files import open_psd, get_file_name, add_alpha_all, add_alpha_flat, add_alpha_line, decrease_shadow_gaussian
@@ -90,11 +91,57 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
 @eel.expose
 def shadow_decrease(res_dict, reset = False):
     res = {}
-    line_base64 = res_dict["line"]
+    shadow_masks = {}
+    shadow_merged = None
+
+    # convert shadow into shadow map and merge all shadows into one image
     for label in res_dict:
         if 'line' in label: continue
-        res[label] = shadow_decrease_single(res_dict[label], line_base64, label)
-    return res
+        shadow = base64_to_np(res_dict[label])
+        h, w = shadow.shape[0], shadow.shape[1]
+        if shadow_merged is None:
+            shadow_merged = np.zeros((h, w)).astype(bool)
+        if len(shadow.shape) == 3 and shadow.shape[-1] == 3:
+            shadow = shadow.mean(axis = -1)
+        elif len(shadow.shape) == 3 and shadow.shape[-1] == 4:
+            shadow = 255 - shadow[..., -1]
+        assert len(shadow.shape) == 2
+        # convert to binary map
+        shadow_mask = (shadow == 0)
+        shadow_masks[label] = shadow_mask
+        shadow_merged[shadow_mask] = True
+
+    # convert line to line map
+    line_base64 = res_dict["line"]
+    line = base64_to_np(line_base64)
+    if len(line.shape) == 3 and line.shape[-1] == 3:
+        line = line.mean(axis = -1)
+    if len(line.shape) == 3 and line.shape[-1] == 4:
+        line = 255 - line[..., -1]
+    line = line == 0
+    line = line & shadow_merged
+    line_skel = skeletonize(line)
+    line_skel[0,:] = True
+    line_skel[-1,:] = True
+    line_skel[:, 0] = True
+    line_skel[:, -1] = True
+
+    shadow_conv = shadow_decrease_single(shadow_merged, line_skel)
+    
+    # split the result based on each label
+    for label in shadow_masks:
+        shadow_conv_ = shadow_conv.copy()
+        shadow_conv_[~shadow_masks[label]] = 0
+        shadow_res = to_shadow_img(shadow_conv_)
+        res[label] = shadow_res
+        if label in SHADOWS:
+            SHADOWS[label].append(shadow_res)
+        else:
+            SHADOWS[label] = [res_dict[label], shadow_res]
+    # end = time.time()
+    # print("log:\tdecrease shadow operation finished with %.2f seconds"%(end - start))
+    # call back function for updating shadow result
+    eel.UpdataShadow(res)
 
 @eel.expose
 def shadow_increase(shadow, region_label):
@@ -351,48 +398,24 @@ def open_psd_single(path_to_psd, var = 4):
         preprocess_to_work(name)
 
 def base64_to_np(img_base64):
-    img_dict = re.match("data:(?P<type>.*?);(?P<encoding>.*?),(?P<data>.*)", img_base64).groupdict()
-    img_binary = base64.b64decode(img_dict['data'])
-    img = np.array(Image.open(io.BytesIO(img_binary)))
+    try:
+        img_dict = re.match("data:(?P<type>.*?);(?P<encoding>.*?),(?P<data>.*)", img_base64).groupdict()
+        img_binary = base64.b64decode(img_dict['data'])
+        img = np.array(Image.open(io.BytesIO(img_binary)))
+    except:
+        _, img_binary = img_base64.split(',', 1)
+        img_binary = base64.b64decode(img_binary)
+        img = np.array(Image.open(io.BytesIO(img_binary)))
     return img
 
 def to_base64url(img_base64):
     return f'data:image/png;base64,{img_base64}'
 
-def shadow_decrease_single(shadow_base64, line_base64, region_label):
-    # open shadow
-    shadow = base64_to_np(shadow_base64)
-    line = base64_to_np(line_base64)
-    if len(shadow.shape) == 3 and shadow.shape[-1] == 3:
-        shadow = shadow.mean(axis = -1)
-    elif len(shadow.shape) == 3 and shadow.shape[-1] == 4:
-        shadow = 255 - shadow[..., -1]
-    assert len(shadow.shape) == 2
-    # convert shadow image to shadow map (reverse the color)
-    shadow = (shadow == 0)
+def shadow_decrease_single(shadow, line):
     bg_mask = ~shadow
-    
-    # convert line
-    if len(line.shape) == 3 and line.shape[-1] == 3:
-        line = line.mean(axis = -1)
-    if len(line.shape) == 3 and line.shape[-1] == 4:
-        line = 255 - line[..., -1]
-    line = line == 0
-    line = line & shadow
-    line_skel = skeletonize(line)
-    line_skel[0,:] = True
-    line_skel[-1,:] = True
-    line_skel[:, 0] = True
-    line_skel[:, -1] = True
-
     # decrease line
-    shadow_conv = decrease_shadow_gaussian(shadow.astype(float), line_skel, bg_mask)
-    shadow_res = to_shadow_img(shadow_conv)
-    if region_label in SHADOWS:
-        SHADOWS[region_label].append(shadow_res)
-    else:
-        SHADOWS[region_label] = [shadow, shadow_res]
-    return shadow_res
+    shadow_conv = decrease_shadow_gaussian(shadow.astype(float), line, bg_mask)
+    return shadow_conv
 
 if __name__ == "__main__":
     # for debug
