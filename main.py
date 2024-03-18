@@ -119,14 +119,14 @@ def shadow_decrease(res_dict, reset = False):
     if len(line.shape) == 3 and line.shape[-1] == 4:
         line = 255 - line[..., -1]
     line = line == 0
-    line = line & shadow_merged
-    line_skel = skeletonize(line)
-    line_skel[0,:] = True
-    line_skel[-1,:] = True
-    line_skel[:, 0] = True
-    line_skel[:, -1] = True
+    # line = line & shadow_merged
+    # line_skel = skeletonize(line)
+    line[0,:] = True
+    line[-1,:] = True
+    line[:, 0] = True
+    line[:, -1] = True
 
-    shadow_conv = shadow_decrease_single(shadow_merged, line_skel)
+    shadow_conv = shadow_decrease_single(shadow_merged, line)
     
     # split the result based on each label
     for label in shadow_masks:
@@ -144,16 +144,17 @@ def shadow_decrease(res_dict, reset = False):
     eel.UpdataShadow(res)
 
 @eel.expose
-def shadow_increase(shadow, region_label):
-    # open shadow
-    img_binary = base64.b64decode(shadow)
-    shadow_np = np.array(Image.open(io.BytesIO(img_binary)))
-
-    if region_label in SHADOWS:
-        if len(SHADOWS[region_label]) > 0:
-            return to_shadow_img(shadow)(SHADOWS[region_label].pop())
-    # return the input shadow if nothing could be poped
-    return to_shadow_img(shadow)
+def shadow_increase(res_dict):
+    res = {}
+    for region_label in res_dict:
+        # open shadow
+        shadow_np = base64_to_np(res_dict[region_label])
+        if region_label in SHADOWS:
+            if len(SHADOWS[region_label]) > 0:
+                res[region_label] = SHADOWS[region_label].pop()
+            else:
+                res[region_label] = res_dict[region_label]
+    eel.UpdataShadow(res)
 
 @eel.expose
 def get_subshadow_by_label(img, label, name):

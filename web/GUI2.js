@@ -133,7 +133,8 @@ const initialSizes = [];
 let actual_h=0;
 let actual_w=0;
 let loadedFlag = false;
-let fileOpened = false; 
+let fileOpened = false;
+let shadowChanged = false; 
 
 function handleFileSelect(event) {
     console.log("clicked");
@@ -1662,16 +1663,24 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     const incrementButton = document.querySelector('.increment');
     const decrementButton = document.querySelector('.decrement');
 
-    incrementButton.addEventListener('click', function() {
-        // shadow=shadow_segment_images[0].customBase64;
-        // region_label="cloth"
-        // eel.shadow_increase(shadow, region_label)((response) => {
-        //     console.log(response); // Log the response from the Python function
-        //   });
-
-      
-        const Shadow_by_label = get_shadow_by_label('cloth');
-        console.log(Shadow_by_label);
+    incrementButton.addEventListener('click', function(labels = []) {
+        let res = {};
+        if (!labels.length){
+            labels = [];
+        }
+        let shadowRegExp = constructRegExp(labels, global_number);
+        const objs = canvas.getObjects().forEach(obj => {
+            if (obj.customImageName && obj.customImageName.match(shadowRegExp) && obj.visible) {
+                res[obj.customImageName] = obj.customBase64;
+                return true;
+            }
+            else{
+                return false;
+            }
+        });
+        eel.shadow_increase(res)
+        loader.style.display = 'block';
+        shadowChanged = true;
     });
 
     decrementButton.addEventListener('click', function(labels = []) {
@@ -1699,15 +1708,23 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 
         // pass them into shadow_decrease
         eel.shadow_decrease(res);
+        loader.style.display = 'block';
+        shadowChanged = true;
     });
 
     // call back function for layer update
     eel.expose(UpdataShadow);
     function UpdataShadow(imgDict){
-        for (let label in imgDict){
-            UpdateLayerByName(imgDict[label], label);
+        if (shadowChanged){
+            for (let label in imgDict){
+                UpdateLayerByName(imgDict[label], label);
+            }
+            canvas.renderAll();
+            loader.style.display = 'none';
+            console.log("decreased shadow updated");    
+            shadowChanged = false;
         }
-        canvas.renderAll();
+        
     }
 
     function constructRegExp(labels, global_number){
@@ -1724,25 +1741,12 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     }
 
     function UpdateLayerByName(newImageUrl, label){
-        // Step 1: Find the image object with given label
         const layerImageObject = canvas.getObjects().find(obj => obj.customImageName === label);
-
         if (!layerImageObject || layerImageObject.visible == false) {
             console.error("Invalide image layer.");
             return;
         }
-
-        // Step 2: Load the new image
         fabric.Image.fromURL(newImageUrl, function(newImage) {
-            // Step 3: Replace the old background image with the new one
-            // // Adjust the position and scale if needed
-            // newImage.set({
-            //   left: layerImageObject.left,
-            //   top: layerImageObject.top,
-            //   scaleX: layerImageObject.scaleX,
-            //   scaleY: layerImageObject.scaleY,
-            //   customImageName: label // Keep the custom name for future reference
-            // });
             newImage.customBase64 = newImageUrl
             newImage.scale(global_scaleFactor);
             newImage.customImageName = label;
@@ -1750,11 +1754,12 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
             newImage.visible = true;
             newImage.opacity = global_opacity; 
             // Remove the old background image
-            for (let i = 0; i < shadow_segment_images.length; i++){
-                if (shadow_segment_images[i].customImageName == label){
-                    shadow_segment_images[i] = newImage;        
-                }
-            }
+            // this logic is also ugly...
+            // for (let i = 0; i < shadow_segment_images.length; i++){
+            //     if (shadow_segment_images[i].customImageName == label){
+            //         shadow_segment_images[i] = newImage;        
+            //     }
+            // }
             canvas.remove(layerImageObject);
             canvas.add(newImage);
             // canvas.moveTo(newImage, 0); // Move to background if necessary    
