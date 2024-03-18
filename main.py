@@ -54,6 +54,7 @@ def get_port():
 
 @eel.expose
 def open_psd_as_binary(psd_data, psd_name):
+    SHADOWS = {}
     if os.path.exists(PATH_TO_TEMP) == False:
         os.makedirs(PATH_TO_TEMP)
     psd_dict = re.match("data:(?P<type>.*?);(?P<encoding>.*?),(?P<data>.*)", psd_data).groupdict()
@@ -93,9 +94,14 @@ def shadow_decrease(res_dict, reset = False):
     res = {}
     shadow_masks = {}
     shadow_merged = None
-
+    skip = False
     # convert shadow into shadow map and merge all shadows into one image
     for label in res_dict:
+        if 'line' in label: continue
+        # this is a really bad logic...
+        if label in SHADOWS:
+            if (SHADOWS[label][1]+1) < len(SHADOWS[label][0]):
+                skip = True
         if 'line' in label: continue
         shadow = base64_to_np(res_dict[label])
         h, w = shadow.shape[0], shadow.shape[1]
@@ -111,36 +117,43 @@ def shadow_decrease(res_dict, reset = False):
         shadow_masks[label] = shadow_mask
         shadow_merged[shadow_mask] = True
 
-    # convert line to line map
-    line_base64 = res_dict["line"]
-    line = base64_to_np(line_base64)
-    if len(line.shape) == 3 and line.shape[-1] == 3:
-        line = line.mean(axis = -1)
-    if len(line.shape) == 3 and line.shape[-1] == 4:
-        line = 255 - line[..., -1]
-    line = line == 0
-    # line = line & shadow_merged
-    # line_skel = skeletonize(line)
-    line[0,:] = True
-    line[-1,:] = True
-    line[:, 0] = True
-    line[:, -1] = True
+    if skip:
+        for label in res_dict:
+            if 'line' in label:continue
+            res[label] = SHADOWS[label][0][SHADOWS[label][1]]
+            SHADOWS[label][1] += 1
+    else:
+        # convert line to line map
+        line_base64 = res_dict["line"]
+        line = base64_to_np(line_base64)
+        if len(line.shape) == 3 and line.shape[-1] == 3:
+            line = line.mean(axis = -1)
+        if len(line.shape) == 3 and line.shape[-1] == 4:
+            line = 255 - line[..., -1]
+        line = line == 0
+        # line = line & shadow_merged
+        # line_skel = skeletonize(line)
+        line[0,:] = True
+        line[-1,:] = True
+        line[:, 0] = True
+        line[:, -1] = True
 
-    shadow_conv = shadow_decrease_single(shadow_merged, line)
-    
-    # split the result based on each label
-    for label in shadow_masks:
-        shadow_conv_ = shadow_conv.copy()
-        shadow_conv_[~shadow_masks[label]] = 0
-        shadow_res = to_shadow_img(shadow_conv_)
-        res[label] = shadow_res
-        if label in SHADOWS:
-            SHADOWS[label].append(shadow_res)
-        else:
-            SHADOWS[label] = [res_dict[label], shadow_res]
-    # end = time.time()
-    # print("log:\tdecrease shadow operation finished with %.2f seconds"%(end - start))
-    # call back function for updating shadow result
+        shadow_conv = shadow_decrease_single(shadow_merged, line)
+        
+        # split the result based on each label
+        for label in shadow_masks:
+            shadow_conv_ = shadow_conv.copy()
+            shadow_conv_[~shadow_masks[label]] = 0
+            shadow_res = to_shadow_img(shadow_conv_)
+            res[label] = shadow_res
+            if label in SHADOWS:
+                SHADOWS[label][0].append(shadow_res)
+                SHADOWS[label][1] += 1
+            else:
+                SHADOWS[label] = [[shadow_res], 0]
+        # end = time.time()
+        # print("log:\tdecrease shadow operation finished with %.2f seconds"%(end - start))
+        # call back function for updating shadow result
     eel.UpdataShadow(res)
 
 @eel.expose
@@ -150,8 +163,9 @@ def shadow_increase(res_dict):
         # open shadow
         shadow_np = base64_to_np(res_dict[region_label])
         if region_label in SHADOWS:
-            if len(SHADOWS[region_label]) > 0:
-                res[region_label] = SHADOWS[region_label].pop()
+            if SHADOWS[region_label][1] > 0:
+                SHADOWS[region_label][1] -= 1
+                res[region_label] = SHADOWS[region_label][0][SHADOWS[region_label][1]]
             else:
                 res[region_label] = res_dict[region_label]
     eel.UpdataShadow(res)
