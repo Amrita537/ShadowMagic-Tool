@@ -87,28 +87,42 @@ document.addEventListener("keydown", function(event) {
     }
 });
 
+let isZooming = false;
 document.addEventListener("keydown", function(event) {
     if (event.ctrlKey) {
         event.preventDefault(); 
-        var ZoomBtn = document.getElementById('searchButton');
-        ZoomBtn.click();
-        if (event.key === "+" || event.key === "=") {
-            event.preventDefault();
-            zoomIn();
+        if(!isZooming)
+        {
+        var zoomBtn=document.getElementById('searchButton');
+        zoomBtn.click();
+        }
+        if(isZooming){
+            if (zoomButton.classList.toggle("checked")) {
+                  zoomControls.style.display = "block";
+                } else {
+                  zoomControls.style.display = "none";
+                }
 
-        } else if (event.key === "-") {
-            event.preventDefault();
-            zoomOut();
+            if (event.key === "+" || event.key === "=") {
+                event.preventDefault();
+                zoomIn();
+
+            } else if (event.key === "-") {
+                event.preventDefault();
+                zoomOut();
+            }
         }
     }
 
 });
 
-document.addEventListener("keydown", function(event) {
-    if (event.code === 'Space') {
+
+let isPanning = false;
+
+document.addEventListener("keyup", function(event) {
+    if (event.code === 'Space' && isPanning) {
         event.preventDefault(); // Prevent the default behavior
-        var panBtn = document.getElementById("panBtn");
-        panBtn.click();
+        deactivatePanning();
     }
 });
 
@@ -136,6 +150,14 @@ document.addEventListener("keydown", function(event) {
         }
         addMergedImageToCanvas(rasterOld);
     }
+
+    if (event.code === 'Space' && !isPanning) {
+        console.log("space");
+        // isPanning = true;
+        var panBtn = document.getElementById("panBtn");
+        panBtn.click();
+    }
+
 });
 
 // helper functions added by Chuan
@@ -405,6 +427,8 @@ function handlePSDSelect(event) {
 //       });
 //     loadedFlag = true
 // }
+
+
 eel.expose(updatePSDSelect);
 function updatePSDSelect(fileName){
     if (loadedFlag){
@@ -449,6 +473,7 @@ function updatePSDSelect(fileName){
                     global_img_h=img.height*global_scaleFactor;
                     global_img_w=img.width*global_scaleFactor;
 
+                    canvas.setBackgroundImage(null);
                     let backimg_name = 'backgroundVer.png';
                     if (img.width < 400) {
                         backimg_name = 'backgroundVer.png';
@@ -476,6 +501,7 @@ function updatePSDSelect(fileName){
                     updateLayerList(images);
                     displayImages();
                     GenerateShadow();
+
                 });
             };
             reader.readAsDataURL(blob);
@@ -508,6 +534,15 @@ function base64ToImage(base64String) {
   const blob = new Blob(byteArrays, { type: 'image/png' }); // Change the content type based on your image format
   const file = new File([blob], 'image.png', { type: 'image/png' }); // Change the file name and type as needed
   return file;
+}
+
+//====================== Reset image position ==========================
+
+function resetPosition() {
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]); // Reset the viewport transform to identity matrix (no zoom or panning)
+    canvas.absolutePan(new fabric.Point(0, 0)); // Pan the canvas to the top-left corner
+    canvas.setZoom(1); // Reset the zoom level to 1 (no zoom)
+    canvas.renderAll(); // Render the canvas to apply the changes
 }
 
 
@@ -683,6 +718,8 @@ function fetch_Shadow_files(shadow_arr) {
                             img.selectable = false;
                             img.visible = false;
                             img.opacity = global_opacity; 
+                            img.top=global_pos_top;
+                            img.left=global_pos_left;
                             // img.customBase64 = img.toDataURL({ format: 'png' });
                             canvas.add(img);
                             shadow_segment_images.push(img);
@@ -873,19 +910,19 @@ document.getElementById('objectCheckbox').addEventListener('click', function() {
 
 const cursorInfo = document.getElementById('cursorInfo');
 const allCheckbox = document.getElementById('allswitch');
-
 allCheckbox.addEventListener('change', function () {
-      if (this.checked) 
-      {
+    if (this.checked) {
         cursorInfo.style.display = 'block';
         getOutline(this.checked);
-      } 
-      else {
+        document.getElementById('collapse4').style.maxHeight = '120px';
+        document.getElementById('collapse4').style.overflowY = 'auto';
+    } else {
         cursorInfo.style.display = 'none';
         getOutline(this.checked);
-      }
-  });
-
+        document.getElementById('collapse4').style.maxHeight = '250px'; // Reset to the default max-height
+        document.getElementById('collapse4').style.overflowY = 'auto';
+    }
+});
 
 //===================adding shadow layers====================
 
@@ -1312,7 +1349,6 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 //======================zooming functionality=======================//
 //======================zooming functionality=======================//
 //Zooming variables///
-      let isZooming = false;
       const zoomInButton = document.getElementById("zoomInButton");
       const zoomOutButton = document.getElementById("zoomOutButton");
       const zoomPercentageElement = document.getElementById("zoomPercentage");
@@ -1357,20 +1393,27 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
             isZooming=!isZooming;
             if(isZooming)
             {
+                zoomButton.style.backgroundColor = "black";
+                zoomButton.style.color = "white";
                 deactivatePanning();
+                deactivatePainting();
+                deactivateEraser();
+                deactivateUndoEraser();
+
                 canvasElement2.style.display = 'none';
                 canvasElement.style.display = 'block';
+
                 updateBookmarkedShadows();
                 // Toggle visibility of the zoom controls
                 if (zoomButton.classList.toggle("checked")) {
                   zoomControls.style.display = "block";
-                  zoomButton.style.backgroundColor = "black";
-                  zoomButton.style.color = "white";
                 } else {
                   zoomControls.style.display = "none";
+                }
+            }
+            else{
                   zoomButton.style.backgroundColor = "";
                   zoomButton.style.color = "";
-                }
             }
 
           });
@@ -1384,7 +1427,6 @@ function deactivateZooming() {
 
 //======================panning===============================//
 const panBtn = document.getElementById("panBtn");
-let isPanning = false;
 
 // Add event listener to the pan button
 panBtn.addEventListener("click", togglePanning);
@@ -1466,6 +1508,7 @@ function deactivatePanning() {
   isPanning = false;
   panBtn.style.backgroundColor='';
   panBtn.style.color='';
+  canvas.hoverCursor = 'default';
 }
 
 //===============eraser code========================//
@@ -1529,6 +1572,7 @@ undoEraser.addEventListener("click", UndoErase);
 function UndoErase() {
     deactivatePainting();
     deactivateEraser();
+    deactivateZooming();
     undoErasing = !undoErasing;
     // console.log("undoErasing clicked", undoErasing);
     if(undoErasing)
@@ -1582,6 +1626,8 @@ function UndoErase() {
         isErasing=false;
         deactivateEraser();
         deactivateUndoEraser(); 
+        deactivateZooming();
+        deactivatePanning();
 
         if (isPainting) {
             canvas.isDrawingMode = true;
@@ -1910,6 +1956,7 @@ paginationItems.forEach((item, index) => {
 
 //===================== Pointer Click=========================//
 document.getElementById("pointerBtn").addEventListener("click", function(event) {
+    resetPosition();
     canvasElement2.style.display = 'none';
     canvasElement.style.display = 'block';
     updateBookmarkedShadows();
@@ -1917,6 +1964,9 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     document.body.style.cursor = "pointer"; // Change cursor style to pointer
     deactivateEraser();
     deactivatePainting();
+    deactivateUndoEraser(); 
+    deactivateZooming();
+    deactivatePanning();
     var toolSize = document.getElementById('ToolSize');
     toolSize.style.display = 'none';
 });
@@ -2042,4 +2092,3 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     });
 
 });
-
