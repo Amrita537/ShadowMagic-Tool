@@ -10,19 +10,28 @@
 }
 body{
   background-color: #383838;
-  height: 800px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
 }
 
-.container{
+/*.container{
   padding-right: 0px;
   padding-left: 0px;
   background-color:var(--light-grey);
+  max-height: 100%;
+  width: 82%;
+}
+*/
+.container {
+  padding-right: 0px;
+  padding-left: 0px;
+  background-color: var(--light-grey);
+  max-height: 100%;
   height: 100%;
   width: 82%;
-  overflow-y: auto;
-  overflow-x: hidden;
-/*  border: 1px solid var(--dark-grey);*/
+  max-width: 82%; /* Optional: set a maximum width for the container */
+  margin: 0 auto; /* Center the container horizontally */
 }
 
 #canvas:hover {
@@ -182,7 +191,7 @@ padding: 10px 5px 10px 5px;
 /*    padding-top: 2%;*/
 }
 canvas {
-/*     border: 1px solid var(--dark-grey);*/
+/*     border: 2px solid var(--grey-color);*/
      cursor: crosshair;
 }
 
@@ -190,8 +199,9 @@ canvas {
     background-size: cover; /* Adjust as needed */
     position: relative;
     display: flex;
+    height: 600px;
+    width: 600px;
     justify-content: center;
-
 }
 
 
