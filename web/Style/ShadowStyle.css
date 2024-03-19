@@ -186,6 +186,11 @@ padding: 10px 5px 10px 5px;
     background-color: black;
 }
 
+#pointerBtn:hover
+{
+    color: white; /* Change to the desired color */
+    background-color: black;
+}
 /*================Style for canvas_id================*/
 #canvas_id{
 /*    padding-top: 2%;*/
@@ -211,6 +216,8 @@ canvas {
     display: flex; /* Display as flex container */
     justify-content: center; /* Center horizontally */
 }
+
+
 /*================Style for operation_id================*/
 
 
@@ -259,12 +266,11 @@ canvas {
     }
 
 
-
+/*
 #collapse4 {
-  max-height: 250px; /* Set a maximum height for the panel */
-  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-y: auto; 
 }
-
+*/
 
 ::-webkit-scrollbar {
   width: 10px;
