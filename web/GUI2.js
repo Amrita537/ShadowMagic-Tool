@@ -109,19 +109,138 @@ document.addEventListener("keydown", function(event) {
     }
 });
 
+document.addEventListener("keydown", function(event) {
+    // merge all vector paths into raster layer
+    if (event.altKey) {
+        // collect all vector paths into vectorlayer
+        const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
+        objects.forEach(obj=>{
+            if (obj.type == 'path'){
+              vectorLayer.addWithUpdate(obj);
+            }
+          });
+        // remove all vector paths
+        canvas.remove(...objects);
+        // rasterize everything in vector layer
+        let rasterNew = rasterizeLayer(vectorLayer)
+        // merge the new raster image to the old one if necessary
+        if (firstRasterize){
+          rasterOld = rasterNew;
+          firstRasterize = false;
+        }
+        else{
+          rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
+        }
+        addMergedImageToCanvas(rasterOld);
+    }
+});
 
-    //======================Run python function=================== 
-    
+// helper functions added by Chuan
+function rasterizeLayer(layerOfPaths){
+    // Create a temporary canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width; // Set to your Fabric.js canvas width
+    tempCanvas.height = canvas.height; // Set to your Fabric.js canvas height
 
-    // function Semantic_segmentation(imageName){
+    const ctx = tempCanvas.getContext('2d');
+    layerOfPaths.render(ctx);
+    var imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    // base64ToPNG(tempCanvas.toDataURL());
+    return imageData;
+};
 
-    //   eel.random_python(imageName)(function(number){                       
-    //     console.log("files loaded")
-    //   }) 
-      
-    // }
+function mergeBinaryMaps(imageData1, imageData2) {
+    const width = imageData1.width;
+    const height = imageData1.height;
+
+    // Create a new ImageData object to store the result
+    let mergedData = new ImageData(width, height);
+
+    for (let i = 0; i < imageData1.data.length; i += 4) {
+        // Assuming black pixels are strictly RGBA(0, 0, 0, 255)
+        if (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0) {
+            // If either of the pixels is black, set the result pixel to black
+            mergedData.data[i] = 0; // R
+            mergedData.data[i + 1] = 0; // G
+            mergedData.data[i + 2] = 0; // B
+            mergedData.data[i + 3] = 127; // A
+        } else {
+            // Else, set the pixel to white
+            mergedData.data[i] = 0; // R
+            mergedData.data[i + 1] = 0; // G
+            mergedData.data[i + 2] = 0; // B
+            mergedData.data[i + 3] = 0; // A
+        }
+    }
+
+    return mergedData;  
+}
 
 
+// just for debug
+function base64ToPNG(base64URL){
+    // Convert the base64 URL to a blob
+    let blob = base64ToBlob(base64URL, 'image/png');
+
+    // Create a blob URL from the blob
+    let blobUrl = URL.createObjectURL(blob);
+
+    // Create an anchor element and trigger a download
+    let downloadLink = document.createElement('a');
+    downloadLink.href = blobUrl;
+    downloadLink.download = 'downloadedImage.png'; // Name the file
+
+    // Append the anchor to the body (required for Firefox)
+    document.body.appendChild(downloadLink);
+
+    // Trigger the download
+    downloadLink.click();
+
+    // Clean up by removing the link and revoking the blob URL
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(blobUrl);
+};
+
+function base64ToBlob(base64, mimeType) {
+    let byteCharacters = atob(base64.split(',')[1]);
+    let byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        let slice = byteCharacters.slice(offset, offset + 512);
+        let byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        let byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+
+    let blob = new Blob(byteArrays, {type: mimeType});
+    return blob;
+}
+
+function addMergedImageToCanvas(imageData) {
+    const objects = canvas.getObjects().filter(obj => obj.layerName == 'rasterLayer');
+    canvas.remove(...objects);
+    var c = document.createElement('canvas');
+
+    c.setAttribute('id', '_temp_canvas');
+    c.width = canvas.width;
+    c.height = canvas.height;
+
+    c.getContext('2d').putImageData(imageData, 0, 0);
+
+    // base64ToPNG(c.toDataURL());
+    fabric.Image.fromURL(c.toDataURL(), function(img) {
+        img.left = 0;
+        img.top = 0;
+        img.layerName = 'rasterLayer';
+        canvas.add(img);
+        // img.bringToFront();
+        c = null;
+        canvas.renderAll();
+    });
+}
 
 // ====================Open image functions================
 
@@ -1316,109 +1435,120 @@ function UndoErase() {
     var mousecursor; 
     var undoStack = [];
     var redoStack = [];
+    let vectorLayer = new fabric.Group([], 
+          {
+            subTargetCheck: true,
+            layerName: "vectorLayer"
+          }
+      );
+    let rasterOld = new ImageData(canvas.width, canvas.height);
+    let firstRasterize = true;
 
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
-          var toolSize = document.getElementById('ToolSize');
-          isPainting= !isPainting;
-          isErasing=false
-          deactivateEraser();
-          deactivateUndoEraser(); 
+        var toolSize = document.getElementById('ToolSize');
+        // toggle on/off of this paint brush button
+        isPainting= !isPainting;
+        isErasing=false;
+        deactivateEraser();
+        deactivateUndoEraser(); 
 
-          if (isPainting) {
-              canvas.isDrawingMode = true;
-              if (isPanning) {
-                  togglePanning();
-              }
-
-              toolSize.style.display = 'flex';
-              canvas.freeDrawingBrush.width = global_brush_width;
-              canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-
-              this.style.backgroundColor = 'black';
-              this.style.color = 'white';
-
-              canvas.on('object:added', function(e) {
-                  e.target.selectable = false;
-                  undoStack.push(e.target);
-                  redoStack = [];
-              });
-
-          } else {
-              toolSize.style.display = 'none'
-              canvas.isDrawingMode = false;
-              this.style.backgroundColor = '';
-              this.style.color = '';
-          }
-
-      });
-
-
-      let selectedCircleId = null;
-
-      document.querySelectorAll('#drawSizeCircle span').forEach(function(circle_id) {
-          circle_id.style.color = 'black';
-          
-          circle_id.addEventListener('click', function(event) {
-              if (selectedCircleId === circle_id.id) {
-                  canvas.freeDrawingBrush.width = 1;
-                  canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-                  selectedCircleId = null;
-                  this.style.color = 'black';
-                  this.style.backgroundColor= '';
-                  document.getElementById('BrushRange').value = 1;
-                  Drawing_Cursor(10);
-              } else {
-                  console.log('Circle span clicked: ', circle_id.id);
-                  canvas.freeDrawingBrush.width = parseInt(circle_id.id);
-                  canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-                  selectedCircleId = circle_id.id;
-                  global_brush_width= parseInt(circle_id.id);
-                          
-                  document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
-                      span.style.color = 'black';
-                      span.style.backgroundColor= '';
-                  });
-
-                  this.style.color = 'white';
-                  this.style.backgroundColor= 'black';
-
-                  document.getElementById('BrushRange').value = circle_id.id;
-                  Drawing_Cursor(circle_id.id);
-              }
-          });
-      });
-
-      document.getElementById('BrushRange').addEventListener('input', function () {
-            document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
-                      span.style.color = 'black';
-                      span.style.backgroundColor= '';
-            });
-            var rangeValue = parseFloat(this.value);
-            console.log(rangeValue);
-            canvas.freeDrawingBrush.width = parseInt(rangeValue);
-            global_brush_width=parseInt(rangeValue);
-            Drawing_Cursor(rangeValue);
-      });
-            
-
-
-      function Drawing_Cursor(cursor_Size){
-              canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-              canvas.isDrawingMode = true;
-
-              var cursorCanvas = document.createElement('canvas');
-              var cursorCtx = cursorCanvas.getContext('2d');
-              var cursorSize = cursor_Size; // Set the size of the cursor circle
-              cursorCanvas.width = cursorSize;
-              cursorCanvas.height = cursorSize;
-
-              cursorCtx.beginPath();
-              cursorCtx.arc(cursorSize / 2, cursorSize / 2, cursorSize / 2, 0, 2 * Math.PI);
-              cursorCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-              cursorCtx.fill();
-
-              canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 2 + ' ' + cursorSize / 2 + ', auto';
+        if (isPainting) {
+            canvas.isDrawingMode = true;
+            // disable panning I guess
+            if (isPanning) {
+                togglePanning();
             }
+            toolSize.style.display = 'flex';
+            canvas.freeDrawingBrush.width = global_brush_width;
+            // we can turn off the alpha channel but I think now it is better to keep it
+            canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+
+            this.style.backgroundColor = 'black';
+            this.style.color = 'white';
+
+            // TODO:this logic is not working anymore, but I don't have time to update it
+            // some possible update:
+            // 1. still recored all path objects and everytime pop one object, repeat the whole rasterization process to update the shadow layer
+            // 2. only record the bitmap changes and pop bitmap instead.
+            canvas.on('object:added', function(e) {
+            e.target.selectable = false;
+            undoStack.push(e.target);
+            redoStack = [];
+            });
+        } 
+        else {
+            toolSize.style.display = 'none'
+            canvas.isDrawingMode = false;
+            this.style.backgroundColor = '';
+            this.style.color = '';
+        }
+    });
+
+    let selectedCircleId = null;
+
+    document.querySelectorAll('#drawSizeCircle span').forEach(function(circle_id) {
+        circle_id.style.color = 'black';
+
+        circle_id.addEventListener('click', function(event) {
+            if (selectedCircleId === circle_id.id) {
+                canvas.freeDrawingBrush.width = 1;
+                canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+                selectedCircleId = null;
+                this.style.color = 'black';
+                this.style.backgroundColor= '';
+                document.getElementById('BrushRange').value = 1;
+                Drawing_Cursor(10);
+            } 
+            else {
+                console.log('Circle span clicked: ', circle_id.id);
+                canvas.freeDrawingBrush.width = parseInt(circle_id.id);
+                canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+                selectedCircleId = circle_id.id;
+                global_brush_width= parseInt(circle_id.id);
+
+                document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
+                span.style.color = 'black';
+                span.style.backgroundColor= '';
+            });
+
+            this.style.color = 'white';
+            this.style.backgroundColor= 'black';
+
+            document.getElementById('BrushRange').value = circle_id.id;
+            Drawing_Cursor(circle_id.id);
+            }
+        });
+    });
+
+    document.getElementById('BrushRange').addEventListener('input', function () {
+        document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
+            span.style.color = 'black';
+            span.style.backgroundColor= '';
+        });
+        var rangeValue = parseFloat(this.value);
+        console.log(rangeValue);
+        canvas.freeDrawingBrush.width = parseInt(rangeValue);
+        global_brush_width=parseInt(rangeValue);
+        Drawing_Cursor(rangeValue);
+    });
+            
+    function Drawing_Cursor(cursor_Size){
+        canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+        canvas.isDrawingMode = true;
+
+        var cursorCanvas = document.createElement('canvas');
+        var cursorCtx = cursorCanvas.getContext('2d');
+        var cursorSize = cursor_Size; // Set the size of the cursor circle
+        cursorCanvas.width = cursorSize;
+        cursorCanvas.height = cursorSize;
+
+        cursorCtx.beginPath();
+        cursorCtx.arc(cursorSize / 2, cursorSize / 2, cursorSize / 2, 0, 2 * Math.PI);
+        cursorCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        cursorCtx.fill();
+
+        canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 2 + ' ' + cursorSize / 2 + ', auto';
+    }
 
 
 function deactivateEraser() {
@@ -1460,6 +1590,8 @@ function undo() {
 }
 
 // Function to redo the last undone action
+// this logic will definitely not work anymore
+// todo: update undo logic
 function redo() {
     if (redoStack.length > 0) {
         var obj = redoStack.pop();
@@ -1779,3 +1911,4 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     });
 
 });
+
