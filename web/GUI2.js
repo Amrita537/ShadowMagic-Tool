@@ -464,6 +464,7 @@ function updatePSDSelect(fileName){
                         backimg.height=img.height*global_scaleFactor;
                         backimg.top = global_pos_top;
                         backimg.left = global_pos_left;
+                        backimg.customImageName="backgroundImage";
                         canvas.add(backimg);
                         canvas.sendToBack(backimg);
                     });
@@ -960,7 +961,7 @@ function addShadowButton() {
         savedLayers.push(canvasStatus);
         console.log(shadowButton.id);
 
-        const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line')));
+        const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line') && !obj.customImageName.includes('backgroundImage')));
         console.log(filteredObjects);
 
         const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
@@ -1137,7 +1138,7 @@ saveBtn.addEventListener('click', saveCanvasImage);
 function saveCanvasImage() {
 
     Download_Bookmarked();
-    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line')));
+    const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line') && !obj.customImageName.includes('backgroundImage')));
 
     // Create a new canvas with the filtered objects
     const tempCanvas2 = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
@@ -1484,6 +1485,8 @@ function toggleErasing() {
 
     deactivatePainting();
     deactivateUndoEraser();
+    deactivatePanning();
+    deactivateZooming();
     if (isErasing)
       {   
          toolSize.style.display = 'flex'
@@ -1503,12 +1506,11 @@ function toggleErasing() {
                         }
                       }
                     } 
-                    if (!obj.visible) {
+                    if (!obj.visible || obj.customImageName === 'backgroundImage') {
                         obj.erasable = false;
                     }
               });
 
-         canvas.backgroundImage.erasable = false;
       }
     else {
       isErasing = false;
@@ -1521,7 +1523,6 @@ function toggleErasing() {
 
 
 }
-
 const undoEraser = document.getElementById("magicBtn");
 undoEraser.addEventListener("click", UndoErase);
 
