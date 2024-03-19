@@ -14,12 +14,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
     canvas.setDimensions({ width: 750, height: 600});
-    fabric.Image.fromURL('background.png', function (img) {
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-            scaleX: canvas.width / img.width,
-            scaleY: canvas.height / img.height
-        });
-    });
+    // fabric.Image.fromURL('background.png', function (img) {
+    //     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+    //         scaleX: canvas.width / img.width,
+    //         scaleY: canvas.height / img.height
+    //     });
+    // });
 
 
     $('[data-toggle="tooltip"]').tooltip({
