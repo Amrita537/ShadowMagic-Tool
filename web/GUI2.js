@@ -30,13 +30,16 @@ document.addEventListener("DOMContentLoaded", function () {
         html: true
     });
 
-    //Global Variables//
     let isErasing = false;
     let global_opacity = 0.6;
     let Shadow_change = 0;
     let global_number=0;
     let global_filename=null;
     let global_scaleFactor=null;
+    let global_pos_left=null;
+    let global_pos_top=null;
+    let global_img_h=null;
+    let global_img_w=null;
 
 
     const canvasElement= document.getElementById('canvas_div')
@@ -308,6 +311,100 @@ function handlePSDSelect(event) {
     loader.style.display = 'block';
 }
 
+// eel.expose(updatePSDSelect);
+// function updatePSDSelect(fileName){
+//     if (loadedFlag){
+//         return 0;
+//     }
+//     // prepare the full fileName
+//     let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
+//     global_filename=baseName;
+//     baseName = baseName.replace("flat", "");
+//     const flatName = baseName + "_flat.png";
+//     const lineName = baseName + "_line.png";
+//     psd_layer_names.push(flatName);
+//     psd_layer_names.push(lineName);
+//     console.log("Flat name:", flatName);
+//     console.log("Line name:", lineName);
+
+//     const rel_path = "InputFlats/";         
+//     psd_layer_names.forEach(psdlayername => {
+//     folderPath = rel_path+psdlayername;
+//     fetch(folderPath)
+//         .then(response => response.blob())
+//         .then(blob => {
+//             const reader = new FileReader();
+//             reader.onload = function (e) {
+//                 loader.style.display = 'none';
+//                 const imgData = e.target.result;
+//                 fabric.Image.fromURL(imgData, function (img) {
+                    
+//                     canvas.width= 750;
+//                     canvas.height= 600;
+
+//                     actual_h = img.height;
+//                     actual_w = img.width;
+//                     global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
+//                     console.log("ScaleFactor from UpdatePsd", global_scaleFactor)
+                    
+//                     img.scale(global_scaleFactor);
+//                     img.customSelected = false; // Custom property to indicate selected state
+//                     img.customImageName = psdlayername;
+//                     img.customBase64 = imgData; // Set custom base64 data
+//                     img.selectable = false;
+//                     // console.log("adding", img.customImageName);
+
+//                     images.push(img);
+//                     initialSizes.push({ width: img.width, height: img.height });
+//                     canvas.add(img);
+
+//                     updateLayerList(images);
+                    
+//                     sc_imgwidth = actual_w * global_scaleFactor;
+//                     sc_imgheight = actual_h * global_scaleFactor;
+//                     const canvasWidth = Math.min(sc_imgwidth, img.width);
+//                     const canvasHeight = Math.min(sc_imgheight, img.height);
+//                     canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
+//                     canvas2.setDimensions({ width: canvasWidth, height: canvasHeight });
+
+//                     console.log(canvas.width, canvas.height);
+
+//                        let backimg_name='';
+//                         if (sc_imgwidth < 400){
+//                           backimg_name='backgroundVer.png';
+//                         }
+//                         else if(sc_imgwidth>400 && sc_imgwidth <600)
+//                         {
+//                           backimg_name='backgroundVer2.png';
+//                         }
+//                         else{
+//                           backimg_name='background.png';
+//                         }
+//                         console.log(backimg_name)
+//                         fabric.Image.fromURL(backimg_name, function (backimg) {
+//                                   canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
+//                                       scaleX: canvas.width / backimg.width,
+//                                       scaleY: canvas.height / backimg.height
+
+//                                   });
+
+//                                   canvas2.setBackgroundImage(backimg, canvas2.renderAll.bind(canvas2), {
+//                                       scaleX: canvas2.width / backimg.width,
+//                                       scaleY: canvas2.height / backimg.height
+
+//                                   });
+//                         });
+
+//                     displayImages();
+//                     GenerateShadow();
+//                 });
+//             };
+//             reader.readAsDataURL(blob);
+//         })
+//         .catch(error => console.error('Error fetching image:', error));
+//       });
+//     loadedFlag = true
+// }
 eel.expose(updatePSDSelect);
 function updatePSDSelect(fileName){
     if (loadedFlag){
@@ -335,12 +432,6 @@ function updatePSDSelect(fileName){
                 loader.style.display = 'none';
                 const imgData = e.target.result;
                 fabric.Image.fromURL(imgData, function (img) {
-                    
-                    canvas.width= 750;
-                    canvas.height= 600;
-
-                    actual_h = img.height;
-                    actual_w = img.width;
                     global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
                     console.log("ScaleFactor from UpdatePsd", global_scaleFactor)
                     
@@ -349,49 +440,39 @@ function updatePSDSelect(fileName){
                     img.customImageName = psdlayername;
                     img.customBase64 = imgData; // Set custom base64 data
                     img.selectable = false;
-                    // console.log("adding", img.customImageName);
+
+                    global_pos_top=(canvas.height - img.height * global_scaleFactor) / 2;
+                    global_pos_left=(canvas.width - img.width * global_scaleFactor) / 2;
+                    img.top = global_pos_top;
+                    img.left = global_pos_left;
+
+                    global_img_h=img.height*global_scaleFactor;
+                    global_img_w=img.width*global_scaleFactor;
+
+                    let backimg_name = 'backgroundVer.png';
+                    if (img.width < 400) {
+                        backimg_name = 'backgroundVer.png';
+                    } else if (img.width > 400 && img.width < 600) {
+                        backimg_name = 'backgroundVer2.png';
+                    } else {
+                        backimg_name = 'background.png';
+                    }
+
+
+                    fabric.Image.fromURL(backimg_name, function (backimg) {
+                        backimg.width=img.width*global_scaleFactor;
+                        backimg.height=img.height*global_scaleFactor;
+                        backimg.top = global_pos_top;
+                        backimg.left = global_pos_left;
+                        canvas.add(backimg);
+                        canvas.sendToBack(backimg);
+                    });
+
 
                     images.push(img);
                     initialSizes.push({ width: img.width, height: img.height });
                     canvas.add(img);
-
                     updateLayerList(images);
-                    
-                    sc_imgwidth = actual_w * global_scaleFactor;
-                    sc_imgheight = actual_h * global_scaleFactor;
-                    const canvasWidth = Math.min(sc_imgwidth, img.width);
-                    const canvasHeight = Math.min(sc_imgheight, img.height);
-                    canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
-                    canvas2.setDimensions({ width: canvasWidth, height: canvasHeight });
-
-                    console.log(canvas.width, canvas.height);
-
-                       let backimg_name='';
-                        if (sc_imgwidth < 400){
-                          backimg_name='backgroundVer.png';
-                        }
-                        else if(sc_imgwidth>400 && sc_imgwidth <600)
-                        {
-                          backimg_name='backgroundVer2.png';
-                        }
-                        else{
-                          backimg_name='background.png';
-                        }
-                        console.log(backimg_name)
-                        fabric.Image.fromURL(backimg_name, function (backimg) {
-                                  canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
-                                      scaleX: canvas.width / backimg.width,
-                                      scaleY: canvas.height / backimg.height
-
-                                  });
-
-                                  canvas2.setBackgroundImage(backimg, canvas2.renderAll.bind(canvas2), {
-                                      scaleX: canvas2.width / backimg.width,
-                                      scaleY: canvas2.height / backimg.height
-
-                                  });
-                        });
-
                     displayImages();
                     GenerateShadow();
                 });
@@ -1228,7 +1309,9 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
 
 //======================zooming functionality=======================//
+//======================zooming functionality=======================//
 //Zooming variables///
+      let isZooming = false;
       const zoomInButton = document.getElementById("zoomInButton");
       const zoomOutButton = document.getElementById("zoomOutButton");
       const zoomPercentageElement = document.getElementById("zoomPercentage");
@@ -1247,16 +1330,20 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
         function zoomOut() {
             const zoom = canvas.getZoom();
             const center = { x: canvas.width / 2, y: canvas.height / 2 };
+            if (zoom <= 1) {
+                resetPosition(); // Reset the image position to its initial position
+            }
+
             canvas.zoomToPoint(center, zoom / 1.1);
             updateZoomPercentage();
         }
+
 
         function updateZoomPercentage() {
           const zoomPercentage = (canvas.getZoom() * 100).toFixed(0);
           zoomPercentageElement.innerText = `${zoomPercentage}%`;
 
         }
-
 
           const zoomButton = document.getElementById("searchButton");
           const zoomControls = document.getElementById("zoomControls");
@@ -1266,22 +1353,33 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
           // Add click event listener to the search button
           zoomButton.addEventListener("click", function() {
-            canvasElement2.style.display = 'none';
-            canvasElement.style.display = 'block';
-            updateBookmarkedShadows();
-            // Toggle visibility of the zoom controls
-            if (zoomButton.classList.toggle("checked")) {
-              zoomControls.style.display = "block";
-              zoomButton.style.backgroundColor = "black";
-              zoomButton.style.color = "white";
-            } else {
-              zoomControls.style.display = "none";
-              zoomButton.style.backgroundColor = "";
-              zoomButton.style.color = "";
+            isZooming=!isZooming;
+            if(isZooming)
+            {
+                deactivatePanning();
+                canvasElement2.style.display = 'none';
+                canvasElement.style.display = 'block';
+                updateBookmarkedShadows();
+                // Toggle visibility of the zoom controls
+                if (zoomButton.classList.toggle("checked")) {
+                  zoomControls.style.display = "block";
+                  zoomButton.style.backgroundColor = "black";
+                  zoomButton.style.color = "white";
+                } else {
+                  zoomControls.style.display = "none";
+                  zoomButton.style.backgroundColor = "";
+                  zoomButton.style.color = "";
+                }
             }
+
           });
 
-
+function deactivateZooming() {
+  isZooming = false;
+  zoomButton.style.backgroundColor='';
+  zoomButton.style.color='';
+  zoomControls.style.display = "none";
+}
 
 //======================panning===============================//
 const panBtn = document.getElementById("panBtn");
@@ -1300,6 +1398,7 @@ function togglePanning() {
   if (isPanning) {
     deactivateEraser();
     deactivatePainting();
+    deactivateZooming();
     canvas.hoverCursor = 'pointer';
     panBtn.style.backgroundColor = "black";
     panBtn.style.color = "white";
@@ -1320,14 +1419,39 @@ canvas.on("mouse:down", function (event) {
   }
 });
 
+
 canvas.on("mouse:move", function (event) {
   if (isPanning && canvas.isGrabMode) {
-    const delta = new fabric.Point(event.e.clientX - canvas.lastPosX, event.e.clientY - canvas.lastPosY);
-    canvas.relativePan(delta);
-    canvas.lastPosX = event.e.clientX;
-    canvas.lastPosY = event.e.clientY;
+    const deltaX = event.e.clientX - canvas.lastPosX;
+    const deltaY = event.e.clientY - canvas.lastPosY;
+    const zoom = canvas.getZoom();
+    const imgWidth = global_img_w * zoom;
+    const imgHeight = global_img_h * zoom;
+
+    // if (imgWidth > canvas.width) {
+    //   let maxLeft = Math.min(0, (canvas.width - imgWidth)/2);
+    //   const newLeft = Math.max(maxLeft, Math.min(0, canvas.viewportTransform[4] + deltaX));
+    //   const actualDeltaX = newLeft - canvas.viewportTransform[4];
+    //   canvas.relativePan(new fabric.Point(actualDeltaX, 0));
+    //   canvas.lastPosX = event.e.clientX;
+    // }
+
+    if (imgWidth > canvas.width) {
+        const delta = new fabric.Point(event.e.clientX - canvas.lastPosX, event.e.clientY - canvas.lastPosY);
+        canvas.relativePan(delta);
+        canvas.lastPosX = event.e.clientX;
+    }
+    
+    if (imgHeight > canvas.height) {
+      const maxTop = Math.min(0, canvas.height - imgHeight);
+      const newTop = Math.max(maxTop, Math.min(0, canvas.viewportTransform[5] + deltaY));
+      const actualDeltaY = newTop - canvas.viewportTransform[5];
+      canvas.relativePan(new fabric.Point(0, actualDeltaY));
+      canvas.lastPosY = event.e.clientY;
+    }
   }
 });
+
 
 canvas.on("mouse:up", function () {
   if (isPanning) {
@@ -1336,6 +1460,12 @@ canvas.on("mouse:up", function () {
   }
 });
 
+
+function deactivatePanning() {
+  isPanning = false;
+  panBtn.style.backgroundColor='';
+  panBtn.style.color='';
+}
 
 //===============eraser code========================//
 var isPainting = false;
