@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
         transparentCorners: false
       });
 
-    canvas.setDimensions({ width: 750, height: 600});
+    canvas.setDimensions({ width: 1024, height: 768});
     // fabric.Image.fromURL('background.png', function (img) {
     //     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
     //         scaleX: canvas.width / img.width,
@@ -38,6 +38,62 @@ document.addEventListener("DOMContentLoaded", function () {
     let global_pos_top=null;
     let global_img_h=null;
     let global_img_w=null;
+    let globalRawWidth = null;
+    let globalRawHeight = null;
+
+    let vectorLayer = new fabric.Group([], 
+          {
+            subTargetCheck: true,
+            layerName: "vectorLayer",
+          }
+      );
+    let rasterOld = null;
+    let firstRasterize = true;
+    // for debug
+    function ImageDatatoPNG(imgData){
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = imgData.width; // Set to your Fabric.js canvas width
+        tempCanvas.height = imgData.height; // Set to your Fabric.js canvas height
+        const ctx = tempCanvas.getContext('2d');
+        ctx.putImageData(imgData, 0, 0);
+        base64ToPNG(tempCanvas.toDataURL());    
+    }
+    function imageDataResize(imgData, newWidth, newHeight){
+        // Step 1: Determine the target dimensions
+        const targetWidth = newWidth;
+        const targetHeight = newHeight;
+
+        // Step 2: Create an off-screen canvas
+        const canvasTarget = document.createElement('canvas');
+
+        // Step 3: Draw the original image onto the canvas with scaling
+        const ctx = canvasTarget.getContext('2d');
+
+        canvasTarget.width = targetWidth;
+        canvasTarget.height = targetHeight;
+
+        // const scaleX =  imgData.width/targetWidth;
+        // const scaleY =  imgData.height/targetHeight;
+        
+        // ctx.scale(scaleX, scaleY);
+        // ctx.putImageData(imgData, 0, 0);
+
+        // Create a temporary canvas to draw the original ImageData
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = imgData.width;
+        tempCanvas.height = imgData.height;
+        tempCtx.putImageData(imgData, 0, 0);
+
+        // Now draw the tempCanvas onto the main canvas with scaling
+        // dirty fix, I don't want to figure out the reason anymore...
+        ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+
+        // Step 4: Extract the scaled ImageData
+        const scaledImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+
+        return scaledImageData;
+    }
 
 
     const canvasElement= document.getElementById('canvas_div')
@@ -125,54 +181,27 @@ document.addEventListener("keyup", function(event) {
 });
 
 document.addEventListener("keydown", function(event) {
-    // merge all vector paths into raster layer
-    if (event.altKey) {
-        // collect all vector paths into vectorlayer
-        const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
-        objects.forEach(obj=>{
-            if (obj.type == 'path'){
-              vectorLayer.addWithUpdate(obj);
-            }
-          });
-        // remove all vector paths
-        canvas.remove(...objects);
-        // rasterize everything in vector layer
-        let rasterNew = rasterizeLayer(vectorLayer);
-        // merge the new raster image to the old one if necessary
-        if (firstRasterize){
-          rasterOld = rasterNew;
-          firstRasterize = false;
-        }
-        else{
-          rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
-        }
-        addMergedImageToCanvas(rasterOld);
-    }
-
     if (event.code === 'Space' && !isPanning) {
         console.log("space");
         // isPanning = true;
         var panBtn = document.getElementById("panBtn");
         panBtn.click();
     }
-
 });
 
 // helper functions added by Chuan
 function rasterizeLayer(layerOfPaths){
-    // Create a temporary canvas
+    // Create a temporary canvas and rasterize
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvas.width; // Set to your Fabric.js canvas width
     tempCanvas.height = canvas.height; // Set to your Fabric.js canvas height
-
     const ctx = tempCanvas.getContext('2d');
     layerOfPaths.render(ctx);
     var imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-    // base64ToPNG(tempCanvas.toDataURL());
     return imageData;
 };
 
-function mergeBinaryMaps(imageData1, imageData2) {
+function mergeBinaryMaps(imageData1, imageData2, maskData = null, mergeMask = false) {
     const width = imageData1.width;
     const height = imageData1.height;
 
@@ -181,21 +210,74 @@ function mergeBinaryMaps(imageData1, imageData2) {
 
     for (let i = 0; i < imageData1.data.length; i += 4) {
         // Assuming black pixels are strictly RGBA(0, 0, 0, 255)
-        if (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0) {
-            // If either of the pixels is black, set the result pixel to black
-            mergedData.data[i] = 0; // R
-            mergedData.data[i + 1] = 0; // G
-            mergedData.data[i + 2] = 0; // B
-            mergedData.data[i + 3] = Math.min(global_opacity*255, imageData1.data[i+3]); // A
-        } else {
+        let needMerge = null;
+        if (mergeMask){
+            needMerge = imageData1.data[i] != 0 || imageData2.data[i] != 0;
+        }
+        else{
+            if (maskData != null){
+                needMerge = (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0 )&&maskData.data[i]!=0;   
+            }
+            else{
+                needMerge = imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0;   
+            }
+            
+        }
+        if (needMerge) {
+            if (mergeMask){
+                // merge mask image
+                mergedData.data[i] = 255; // R
+                mergedData.data[i + 1] = 255; // G
+                mergedData.data[i + 2] = 255; // B
+                mergedData.data[i + 3] = 255; // A    
+            }
+            else{
+                // merge shadows
+                mergedData.data[i] = 0; // R
+                mergedData.data[i + 1] = 0; // G
+                mergedData.data[i + 2] = 0; // B
+                mergedData.data[i + 3] = global_opacity*255; // A        
+            }   
+             
+        } 
+        else {
             // Else, set the pixel to white
             mergedData.data[i] = 0; // R
             mergedData.data[i + 1] = 0; // G
             mergedData.data[i + 2] = 0; // B
-            mergedData.data[i + 3] = 0; // A
+            if (mergeMask){
+                mergedData.data[i + 3] = 255; // A    
+            }
+            else{
+                mergedData.data[i + 3] = 0; // A    
+            }
+            
         }
     }
 
+    return mergedData;  
+}
+
+function applyBinaryMaps(imageData, maskData) {
+    const width = imageData.width;
+    const height = imageData.height;
+
+    // Create a new ImageData object to store the result
+    let mergedData = new ImageData(width, height);
+    for (let i = 0; i < imageData.data.length; i += 4) {
+        if (imageData.data[i+3] != 0 && maskData.data[i] != 0 ) {
+            mergedData.data[i] = 0; // R
+            mergedData.data[i + 1] = 0; // G
+            mergedData.data[i + 2] = 0; // B
+            mergedData.data[i + 3] = 255*global_opacity; // A 
+        } 
+        else {
+            mergedData.data[i] = 0; // R
+            mergedData.data[i + 1] = 0; // G
+            mergedData.data[i + 2] = 0; // B
+            mergedData.data[i + 3] = 0; // A    
+        }
+    }
     return mergedData;  
 }
 
@@ -242,27 +324,50 @@ function base64ToBlob(base64, mimeType) {
     return blob;
 }
 
-function addMergedImageToCanvas(imageData) {
+function imgDataToBase64(imageData){
     const objects = canvas.getObjects().filter(obj => obj.layerName == 'rasterLayer');
     canvas.remove(...objects);
     var c = document.createElement('canvas');
+    c.width = imageData.width;
+    c.height = imageData.height;
+    c.getContext('2d').putImageData(imageData, 0, 0);    
+    return c.toDataURL();
+}
 
-    c.setAttribute('id', '_temp_canvas');
-    c.width = canvas.width;
-    c.height = canvas.height;
+function addMergedImageToCanvas(imageData, maskData = null) {
+    if (maskData != null){
+        fabric.Image.fromURL(imgDataToBase64(imageData), function(img) {
+          fabric.Image.fromURL(imgDataToBase64(maskData), function(maskImg) {
+            // Resize mask to match image dimensions
+            var scaleX = img.width / maskImg.width;
+            var scaleY = img.height / maskImg.height;
+            maskImg.scaleX = scaleX;
+            maskImg.scaleY = scaleY;
 
-    c.getContext('2d').putImageData(imageData, 0, 0);
-
-    // base64ToPNG(c.toDataURL());
-    fabric.Image.fromURL(c.toDataURL(), function(img) {
-        img.left = 0;
-        img.top = 0;
-        img.layerName = 'rasterLayer';
-        canvas.add(img);
-        // img.bringToFront();
-        c = null;
-        canvas.renderAll();
-    });
+            // Apply the mask filter
+            var maskFilter = new fabric.Image.filters.Mask({
+              mask: maskImg,
+            });
+            img.filters.push(maskFilter);
+            img.applyFilters();
+            img.layerName = 'rasterLayer';
+            canvas.add(img);
+            canvas.renderAll();
+          });
+        });    
+    }
+    else{
+        fabric.Image.fromURL(imgDataToBase64(imageData), function(img) {
+            img.left = 0;
+            img.top = 0;
+            img.layerName = 'rasterLayer';
+            canvas.add(img);
+            canvas.renderAll();
+        });    
+    }
+    
+    
+    
 }
 
 // ====================Open image functions================
@@ -426,6 +531,8 @@ function handlePSDSelect(event) {
 //     loadedFlag = true
 // }
 
+// add a hidden mask layer
+let maskLayer = [];
 
 eel.expose(updatePSDSelect);
 function updatePSDSelect(fileName){
@@ -454,6 +561,51 @@ function updatePSDSelect(fileName){
                 loader.style.display = 'none';
                 const imgData = e.target.result;
                 fabric.Image.fromURL(imgData, function (img) {
+                    // extract flat mask from the flat layer
+                    if (psdlayername.includes('flat')){
+                        let tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = img.width;
+                        tempCanvas.height = img.height;
+                        globalRawWidth = img.width;
+                        globalRawHeight = img.height;
+                        let ctx = tempCanvas.getContext('2d');
+                        img.render(ctx,{
+                            left: 0,
+                            top: 0,
+                            scaleX: 1,
+                            scaleY: 1
+                        });
+                        let maskWholeData = new ImageData(tempCanvas.width, tempCanvas.height);
+                        const flatData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                        for (var i = 0; i < flatData.data.length; i += 4) {
+                            if (flatData.data[i + 3] != 0){
+                                // Using the alpha value as the luminance for RGB
+                                maskWholeData.data[i] = 255;    // Red channel
+                                maskWholeData.data[i + 1] = 255; // Green channel
+                                maskWholeData.data[i + 2] = 255; // Blue channel
+                                maskWholeData.data[i + 3] = 255;         // Set alpha to fully opaque    
+                            }
+                            else{
+                                maskWholeData.data[i] = 0;    // Red channel
+                                maskWholeData.data[i + 1] = 0; // Green channel
+                                maskWholeData.data[i + 2] = 0; // Blue channel
+                                maskWholeData.data[i + 3] = 255;         // Set alpha to fully opaque    
+                            }
+                            
+                        };
+                        maskWholeData.layerName = 'maskWholeData';
+                        maskWholeData.activated = true;
+                        maskLayer.push(maskWholeData);
+                        // for debug
+                        // let tempCanvas1 = document.createElement('canvas');
+                        // tempCanvas1.width = img.width;
+                        // tempCanvas1.height = img.height;
+                        // let ctx1 = tempCanvas1.getContext('2d');
+                        // ctx1.putImageData(maskWholeData, 0, 0);
+                        // base64ToPNG(tempCanvas1.toDataURL());
+                        // console.log('fine');
+                    }
+
                     global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
                     console.log("ScaleFactor from UpdatePsd", global_scaleFactor)
                     
@@ -463,8 +615,10 @@ function updatePSDSelect(fileName){
                     img.customBase64 = imgData; // Set custom base64 data
                     img.selectable = false;
 
-                    global_pos_top=(canvas.height - img.height * global_scaleFactor) / 2;
-                    global_pos_left=(canvas.width - img.width * global_scaleFactor) / 2;
+                    // global_pos_top=(canvas.height - img.height * global_scaleFactor) / 2;
+                    // global_pos_left=(canvas.width - img.width * global_scaleFactor) / 2;
+                    global_pos_top = 0;
+                    global_pos_left = 0;
                     img.top = global_pos_top;
                     img.left = global_pos_left;
 
@@ -481,7 +635,7 @@ function updatePSDSelect(fileName){
                         backimg_name = 'background.png';
                     }
 
-
+                    // why create a image from text?
                     fabric.Image.fromURL(backimg_name, function (backimg) {
                         backimg.width=img.width*global_scaleFactor;
                         backimg.height=img.height*global_scaleFactor;
@@ -499,7 +653,7 @@ function updatePSDSelect(fileName){
                     updateLayerList(images);
                     displayImages();
                     GenerateShadow();
-
+                    
                 });
             };
             reader.readAsDataURL(blob);
@@ -1608,15 +1762,6 @@ function UndoErase() {
     var mousecursor; 
     var undoStack = [];
     var redoStack = [];
-    let vectorLayer = new fabric.Group([], 
-          {
-            subTargetCheck: true,
-            layerName: "vectorLayer",
-          }
-      );
-    let rasterOld = new ImageData(canvas.width, canvas.height);
-    let firstRasterize = true;
-
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
         var toolSize = document.getElementById('ToolSize');
         // toggle on/off of this paint brush button
@@ -1653,24 +1798,50 @@ function UndoErase() {
                 const obj = e.target;
                 undoStack.push(obj);
                 redoStack = [];
+            });
+            canvas.on('mouse:up', function(){
+                // TODO: need to retrieve the current activated masks
+                // now I just use the predefined flat mask
+                // get current mask
+                const activateMasks = maskLayer.filter(layer => layer.activated);
+                mergedMask = activateMasks.reduce(
+                    (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true));
                 // rasterize new added object
                 // collect all vector paths into vectorlayer
-                // if (e.traget.type == 'path'){
-                //     vectorLayer.addWithUpdate(obj);
-                //     // remove all vector paths
-                //     canvas.remove(obj);
-                //     // set up the opacity of vectorLayer and add it into the canvas
-                //     let rasterNew = rasterizeLayer(vectorLayer);
-                //     // merge the new raster image to the old one if necessary
-                //     if (firstRasterize){
-                //       rasterOld = rasterNew;
-                //       firstRasterize = false;
-                //     }
-                //     else{
-                //       rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
-                //     }
-                //     addMergedImageToCanvas(rasterOld);
-                // }
+                
+                const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
+                objects.forEach(obj=>{
+                    if (obj.type == 'path'){
+                      vectorLayer.addWithUpdate(obj);
+                    }
+                  });
+                // remove all vector paths
+                canvas.remove(...objects);
+                // set up the opacity of vectorLayer and add it into the canvas
+                let rasterNew = rasterizeLayer(vectorLayer);
+                if (rasterNew.width != mergedMask.width || rasterNew.height != mergedMask.height){
+                    mergedMask = imageDataResize(mergedMask, rasterNew.width, rasterNew.height);
+                }
+                // merge the new raster image to the old one if necessary
+                if (firstRasterize){
+                    if (rasterOld == null){
+                        rasterOld = new ImageData(rasterNew.width, rasterNew.height);
+                        rasterOld = rasterNew;    
+                    }
+                    else{
+                        rasterOld = rasterNew;
+                    }
+                    rasterOld = applyBinaryMaps(rasterOld, mergedMask);
+                    firstRasterize = false;
+                    // for debug
+                    // ImageDatatoPNG(rasterOld);
+                }
+                else{
+                    rasterOld = mergeBinaryMaps(rasterNew, rasterOld, maskData = mergedMask);
+                    // rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
+                }
+                addMergedImageToCanvas(rasterOld);
+                
             });
         } 
         else {
