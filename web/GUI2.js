@@ -2,10 +2,8 @@ document.addEventListener("DOMContentLoaded", function () {
       console.log("hello from web");
     // ====================canvas functions====================
       const canvas = new fabric.Canvas('canvas', {
-         // backgroundColor: '#6B6B6B',
          backgroundImageStretch: 'none',
-         selection: false // Disable Fabric.js default selection behavior
-
+         selection: false, // Disable Fabric.js default selection behavior
       });
 
       fabric.Object.prototype.set({
@@ -139,7 +137,7 @@ document.addEventListener("keydown", function(event) {
         // remove all vector paths
         canvas.remove(...objects);
         // rasterize everything in vector layer
-        let rasterNew = rasterizeLayer(vectorLayer)
+        let rasterNew = rasterizeLayer(vectorLayer);
         // merge the new raster image to the old one if necessary
         if (firstRasterize){
           rasterOld = rasterNew;
@@ -188,7 +186,7 @@ function mergeBinaryMaps(imageData1, imageData2) {
             mergedData.data[i] = 0; // R
             mergedData.data[i + 1] = 0; // G
             mergedData.data[i + 2] = 0; // B
-            mergedData.data[i + 3] = 127; // A
+            mergedData.data[i + 3] = Math.min(global_opacity*255, imageData1.data[i+3]); // A
         } else {
             // Else, set the pixel to white
             mergedData.data[i] = 0; // R
@@ -1613,7 +1611,7 @@ function UndoErase() {
     let vectorLayer = new fabric.Group([], 
           {
             subTargetCheck: true,
-            layerName: "vectorLayer"
+            layerName: "vectorLayer",
           }
       );
     let rasterOld = new ImageData(canvas.width, canvas.height);
@@ -1637,8 +1635,11 @@ function UndoErase() {
             }
             toolSize.style.display = 'flex';
             canvas.freeDrawingBrush.width = global_brush_width;
+            
             // we can turn off the alpha channel but I think now it is better to keep it
             canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+            // canvas.freeDrawingBrush.color = 'rgba(0,0,0,1)';
+
 
             this.style.backgroundColor = 'black';
             this.style.color = 'white';
@@ -1648,9 +1649,28 @@ function UndoErase() {
             // 1. still recored all path objects and everytime pop one object, repeat the whole rasterization process to update the shadow layer
             // 2. only record the bitmap changes and pop bitmap instead.
             canvas.on('object:added', function(e) {
-            e.target.selectable = false;
-            undoStack.push(e.target);
-            redoStack = [];
+                e.target.selectable = false;
+                const obj = e.target;
+                undoStack.push(obj);
+                redoStack = [];
+                // rasterize new added object
+                // collect all vector paths into vectorlayer
+                // if (e.traget.type == 'path'){
+                //     vectorLayer.addWithUpdate(obj);
+                //     // remove all vector paths
+                //     canvas.remove(obj);
+                //     // set up the opacity of vectorLayer and add it into the canvas
+                //     let rasterNew = rasterizeLayer(vectorLayer);
+                //     // merge the new raster image to the old one if necessary
+                //     if (firstRasterize){
+                //       rasterOld = rasterNew;
+                //       firstRasterize = false;
+                //     }
+                //     else{
+                //       rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
+                //     }
+                //     addMergedImageToCanvas(rasterOld);
+                // }
             });
         } 
         else {
