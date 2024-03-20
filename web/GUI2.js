@@ -564,10 +564,19 @@ function updatePSDSelect(fileName){
                     // extract flat mask from the flat layer
                     if (psdlayername.includes('flat')){
                         let tempCanvas = document.createElement('canvas');
+                        let longerSide = null;
                         tempCanvas.width = img.width;
                         tempCanvas.height = img.height;
                         globalRawWidth = img.width;
                         globalRawHeight = img.height;
+                        if (globalRawWidth > globalRawHeight){
+                            longerSide = globalRawWidth;
+                        }
+                        else{
+                            longerSide = globalRawWidth;
+                        }
+                        let ratio = 1024 / longerSide;
+                        canvas.setDimensions({ width: globalRawWidth*ratio, height: globalRawHeight*ratio});
                         let ctx = tempCanvas.getContext('2d');
                         img.render(ctx,{
                             left: 0,
