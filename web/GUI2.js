@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let global_img_w=null;
     let globalRawWidth = null;
     let globalRawHeight = null;
-
+    let canvasSizeInitialized = false;
     let vectorLayer = new fabric.Group([], 
           {
             subTargetCheck: true,
@@ -562,21 +562,30 @@ function updatePSDSelect(fileName){
                 const imgData = e.target.result;
                 fabric.Image.fromURL(imgData, function (img) {
                     // extract flat mask from the flat layer
-                    if (psdlayername.includes('flat')){
-                        let tempCanvas = document.createElement('canvas');
-                        let longerSide = null;
-                        tempCanvas.width = img.width;
-                        tempCanvas.height = img.height;
+                    if (globalRawWidth == null){
                         globalRawWidth = img.width;
-                        globalRawHeight = img.height;
+                        globalRawHeight = img.height;    
+                    }
+                    if (canvasSizeInitialized == false){
+                        let longerSide = null;
                         if (globalRawWidth > globalRawHeight){
                             longerSide = globalRawWidth;
                         }
                         else{
-                            longerSide = globalRawWidth;
+                            longerSide = globalRawHeight;
                         }
+
                         let ratio = 1024 / longerSide;
                         canvas.setDimensions({ width: globalRawWidth*ratio, height: globalRawHeight*ratio});
+                        canvasSizeInitialized = true;
+                            
+                    }
+
+                    // get flat mask data
+                    if (psdlayername.includes('flat')){
+                        let tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = img.width;
+                        tempCanvas.height = img.height;
                         let ctx = tempCanvas.getContext('2d');
                         img.render(ctx,{
                             left: 0,
@@ -584,6 +593,7 @@ function updatePSDSelect(fileName){
                             scaleX: 1,
                             scaleY: 1
                         });
+
                         let maskWholeData = new ImageData(tempCanvas.width, tempCanvas.height);
                         const flatData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                         for (var i = 0; i < flatData.data.length; i += 4) {
