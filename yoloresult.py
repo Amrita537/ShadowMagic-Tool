@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 
 def auto_merge(image_folder, json_folder):
     image_files = [f for f in os.listdir(image_folder) if f.lower().endswith('.png') or f.lower().endswith('.jpg')]
@@ -13,6 +14,7 @@ def auto_merge(image_folder, json_folder):
         if json_file in json_files:
             command = f"python AutoMerge.py {image_path} {json_path}"
             os.system(command)
+
 
 def create_directories_if_not_exist(image_path):
     # Get the parent directory of the image path
@@ -44,21 +46,26 @@ def create_directories_if_not_exist(image_path):
         os.makedirs(annot_txt_path)
 
     # Create the annot_txt_path directory if it doesn't exist
-    ref_txt_path = os.path.join(parent_directory, "web", "RefinedOutput", "labels")
+    ref_txt_path = os.path.join(parent_directory, "RefinedOutput", "labels")
     if not os.path.exists(ref_txt_path):
         os.makedirs(ref_txt_path)
 
     # Create the annot_txt_path directory if it doesn't exist
-    ref_json_path = os.path.join(parent_directory,"web", "RefinedOutput", "json")
+    ref_json_path = os.path.join(parent_directory, "RefinedOutput", "json")
     if not os.path.exists(ref_json_path):
         os.makedirs(ref_json_path)
 
     # Create the annot_txt_path directory if it doesn't exist
-    ref_output_img = os.path.join(parent_directory, "web","RefinedOutput", "images")
+    unmerged_json_path = os.path.join(parent_directory, "RefinedOutput", "Unmerged_json")
+    if not os.path.exists(unmerged_json_path):
+        os.makedirs(unmerged_json_path)
+
+    # Create the annot_txt_path directory if it doesn't exist
+    ref_output_img = os.path.join(parent_directory, "RefinedOutput", "images")
     if not os.path.exists(ref_output_img):
         os.makedirs(ref_output_img)
 
-    ref_raw_img = os.path.join(parent_directory,"web", "RefinedOutput", "Rawimages")
+    ref_raw_img = os.path.join(parent_directory, "RefinedOutput", "Rawimages")
     if not os.path.exists(ref_raw_img):
         os.makedirs(ref_raw_img)
 
@@ -80,18 +87,18 @@ def main(image_path, yolo_txt_path):
     annot_txt_path = os.path.join(parent_directory, "AnnotOutput", "labels")
 
     # to hold refined annotated image, merged images and json file of merged images and text label file.
-    ref_output_img=os.path.join(parent_directory,"web", "RefinedOutput", "images")
-    ref_raw_img=os.path.join(parent_directory, "web", "RefinedOutput", "Rawimages")
-    ref_json_path=os.path.join(parent_directory, "web", "RefinedOutput", "json")
-    ref_txt_path=os.path.join(parent_directory, "web", "RefinedOutput", "labels")
-    
+    ref_output_img=os.path.join(parent_directory, "RefinedOutput", "images")
+    ref_raw_img=os.path.join(parent_directory, "RefinedOutput", "Rawimages")
+    ref_json_path=os.path.join(parent_directory, "RefinedOutput", "json")
+    ref_txt_path=os.path.join(parent_directory, "RefinedOutput", "labels")
+    unmerged_json_path=os.path.join(parent_directory, "RefinedOutput", "Unmerged_json")
     
     # Convert raw yolo txt label file to json file and map json annotation on the image
     poly_to_json_command = f"python polyTojson.py {image_path} {yolo_txt_path} {yolo_json_path}"
     os.system(poly_to_json_command)
     
-    # modify_annots_command = f"python ModifyAnnots.py {image_path} {yolo_json_path} {yolo_output_img}"
-    # os.system(modify_annots_command)
+    modify_annots_command = f"python ModifyAnnots.py {image_path} {yolo_json_path} {yolo_output_img}"
+    os.system(modify_annots_command)
 
     # Generate random annotation, map json annotation on the image, generate yolo style txt label files.
     annot_xypix_command = f"python AnnotXYPix.py {image_path} {annot_output_img} {annot_json_path}"
@@ -118,8 +125,15 @@ def main(image_path, yolo_txt_path):
     updatejson_command = f"python updatejson.py {annot_json_path} {ref_json_path}"
     os.system(updatejson_command)
 
-    # ModifyAnnots_command1 = f"python ModifyAnnots.py {image_path} {ref_json_path} {ref_raw_img}"
-    # os.system(ModifyAnnots_command1)
+    ModifyAnnots_command1 = f"python ModifyAnnots.py {image_path} {ref_json_path} {ref_raw_img}"
+    os.system(ModifyAnnots_command1)
+
+    # Copy the json files to unmerged_ref_json_path
+    for filename in os.listdir(ref_json_path):
+      if filename.endswith(".json"):
+        src_file = os.path.join(ref_json_path, filename)
+        dst_file = os.path.join(unmerged_json_path, filename)
+        shutil.copyfile(src_file, dst_file)
 
     # Call the auto_merge function
     auto_merge(image_path, ref_json_path)
