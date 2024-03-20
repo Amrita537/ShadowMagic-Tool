@@ -567,15 +567,25 @@ function updatePSDSelect(fileName){
                         globalRawHeight = img.height;    
                     }
                     if (canvasSizeInitialized == false){
-                        let longerSide = null;
+                        // let longerSide = null;
+                        let ratio = null;
+                        let maxWidth = 1200;
+                        let maxHeight = 850;
                         if (globalRawWidth > globalRawHeight){
-                            longerSide = globalRawWidth;
+                            // longerSide = globalRawWidth;
+                            ratio = maxWidth / globalRawWidth;
+                            if (ratio * globalRawHeight > maxHeight){
+                                ratio = maxHeight / globalRawHeight;
+                            }
                         }
                         else{
-                            longerSide = globalRawHeight;
+                            ratio = maxHeight / globalRawHeight;
+                            if (ratio * globalRawWidth > maxWidth){
+                                ratio = maxWidth / globalRawWidth;
+                            }
                         }
 
-                        let ratio = 1024 / longerSide;
+                        // let ratio = 850 / longerSide;
                         canvas.setDimensions({ width: globalRawWidth*ratio, height: globalRawHeight*ratio});
                         canvasSizeInitialized = true;
                             
