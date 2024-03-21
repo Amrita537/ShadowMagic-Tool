@@ -1433,6 +1433,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
         async function getPort(){
             let res = await eel.get_port();
+            console.log('get server port: ' + res);
             return res;
         }
 
