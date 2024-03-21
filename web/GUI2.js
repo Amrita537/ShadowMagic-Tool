@@ -1432,10 +1432,10 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
         let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
         async function getPort(){
-            let res = await eel.get_port():
+            let res = await eel.get_port();
             return res;
         }
-        
+
         function getOutline(checkval){
             let port = getPort();
 
