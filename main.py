@@ -50,6 +50,7 @@ exposed functions
 '''
 @eel.expose
 def get_port():
+    # todo: modify this function to return the json file
     assert ARGS is not None
     eel.setPort(ARGS.port_to_backend)
 
