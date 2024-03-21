@@ -49,6 +49,10 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     let rasterOld = null;
     let firstRasterize = true;
+
+    var undoQueue = [];
+    var redoStack = [];
+
     // for debug
     function ImageDatatoPNG(imgData){
         const tempCanvas = document.createElement('canvas');
@@ -369,6 +373,8 @@ function imgDataToBase64(imageData){
     return c.toDataURL();
 }
 
+
+
 function addMergedImageToCanvas(imageData, maskData = null) {
     if (maskData != null){
         fabric.Image.fromURL(imgDataToBase64(imageData), function(img) {
@@ -387,6 +393,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
             img.applyFilters();
             img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
+            undoQueue.push(img);
             canvas.add(img);
             canvas.renderAll();
           });
@@ -398,6 +405,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
             img.top = 0;
             img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
+            undoQueue.push(img);
             canvas.add(img);
             canvas.renderAll();
         });    
@@ -1776,8 +1784,6 @@ function UndoErase() {
 
     const cursorUrl = 'circle_icon.png';
     var mousecursor; 
-    var undoStack = [];
-    var redoStack = [];
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
         var toolSize = document.getElementById('ToolSize');
         // toggle on/off of this paint brush button
@@ -1828,7 +1834,6 @@ function UndoErase() {
                     }
                   });
 
-                undoStack.push(...objects);
                 canvas.remove(...objects);
   
                 let rasterNew = rasterizeLayer(vectorLayer);
@@ -1934,6 +1939,45 @@ function UndoErase() {
     }
 
 
+//=======================undo redo========================
+function undo() {
+    deactivatePanning();
+    deactivateZooming();
+    deactivateEraser();
+    deactivatePainting();
+
+    console.log(undoQueue);
+
+    if(undoQueue.length > 0) {
+        var last_object = undoQueue.pop();
+        var second_last_object = undoQueue[undoQueue.length - 1];
+        canvas.remove(last_object);
+        console.log("Removed:", last_object);
+        console.log("Next:", second_last_object);
+        canvas.add(second_last_object);
+    }
+
+    console.log("Final Queue:", undoQueue);
+
+}
+
+// Function to redo the last undone action
+// this logic will definitely not work anymore
+// todo: update undo logic
+// function redo() {
+//     deactivatePanning();
+//     deactivateZooming();
+//     deactivateEraser();
+//     deactivatePainting();
+//     if (redoStack.length > 0) {
+//         var obj = redoStack.pop();
+//         canvas.add(obj);
+//         undoQueue.push(obj);
+//         canvas.renderAll();
+//     }
+// }
+//=======================deactivating buttons=====================
+
 function deactivateEraser() {
     isErasing = false;
     var eraserBtn = document.getElementById('eraserBtn');
@@ -1964,38 +2008,7 @@ function deactivateUndoEraser() {
 }
 
 
-// Function to undo the last action
-function undo() {
-    deactivatePanning();
-    deactivateZooming();
-    deactivateEraser();
-    deactivatePainting();
 
-    console.log(undoStack)
-    // if (undoStack.length > 0) {
-    //     var obj = undoStack.pop();
-    //     addMergedImageToCanvas(obj);
-    //     // canvas.remove(obj);
-    //     redoStack.push(obj);
-    //     canvas.renderAll();
-    // }
-}
-
-// Function to redo the last undone action
-// this logic will definitely not work anymore
-// todo: update undo logic
-function redo() {
-    deactivatePanning();
-    deactivateZooming();
-    deactivateEraser();
-    deactivatePainting();
-    if (redoStack.length > 0) {
-        var obj = redoStack.pop();
-        canvas.add(obj);
-        undoStack.push(obj);
-        canvas.renderAll();
-    }
-}
 
 // Event listeners for undo and redo buttons
 document.getElementById('UndoBtn').addEventListener('click', undo);
