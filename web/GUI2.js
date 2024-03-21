@@ -391,7 +391,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
             });
             img.filters.push(maskFilter);
             img.applyFilters();
-            img.opacity=global_opacity;
+            // img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
             img.customImageName="raster"+direction+global_number;
             undoQueue.push(img);
@@ -404,7 +404,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
         fabric.Image.fromURL(imgDataToBase64(imageData), function(img) {
             img.left = 0;
             img.top = 0;
-            img.opacity=global_opacity;
+            // img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
             img.customImageName="raster"+direction+global_number;
             undoQueue.push(img);
