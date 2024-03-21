@@ -1431,9 +1431,13 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
         let isDataFetched = false;
         let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
-
+        async function getPort(){
+            let res = await eel.get_port():
+            return res;
+        }
+        
         function getOutline(checkval){
-            let port = await eel.get_port();
+            let port = getPort();
 
             const isChecked = checkval;
 
