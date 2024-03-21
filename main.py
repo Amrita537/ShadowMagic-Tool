@@ -70,24 +70,8 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
     for psd in tqdm(os.listdir(path_to_psds)):
         if ".psd" not in psd: continue
         print("log:\topen %s"%psd)
-        # check if this file has been processed
-        processed = True
         # check extracted files
         name = get_file_name(psd)
-        if os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_color.png")) == False: processed = False
-        if os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")) == False: processed = False
-        if os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")) == False: processed = False
-        for direction in DIRS:
-            if processed == False: break
-            for i in range(var):
-                # check shadows
-                if os.path.exists(os.path.join(PATH_TO_SHADOW, 
-                    +"_"+ direction + "_shadow_%d.png"%i)) == False: 
-                    processed = False
-                    break
-                # check sub shadows
-                pass    
-        if processed:continue
         open_psd_single(os.path.join(path_to_psds, psd), var = var, seg_only = True)
 
 @eel.expose
@@ -231,6 +215,11 @@ def preprocess(path_to_psd, name, var, seg_only = False):
             Image.fromarray(add_alpha_line(line_to_save)).save(os.path.join(PATH_TO_PREPROCESS, name+"_line.png"))
 
         color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
+        # for output testing examples for comparison experiment
+        # Image.fromarray(color.astype(np.uint8)).save(os.path.join("./experiments/test_input", name+"_color.png"))
+        # Image.fromarray(line.astype(np.uint8)).save(os.path.join("./experiments/test_input", name+"_line.png"))
+        # Image.fromarray(flat.astype(np.uint8)).save(os.path.join("./experiments/test_input", name+"_flat.png"))
+        # return None
 
         # get shadows
         pbar = tqdm(total=len(DIRS) * var)
@@ -416,6 +405,7 @@ def open_psd_single(path_to_psd, var = 4, seg_only = False):
     else:
         preprocess(path_to_psd, name, var, seg_only)
         preprocess_to_work(name)
+    # preprocess(path_to_psd, name, var, seg_only)
 
 def base64_to_np(img_base64):
     try:
@@ -440,9 +430,9 @@ def shadow_decrease_single(shadow, line):
 if __name__ == "__main__":
     # for debug
     # open_psd("./test/image7.psd")
-    batch_process()
-    import pdb
-    pdb.set_trace()
+    # batch_process()
+    # import pdb
+    # pdb.set_trace()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
     #     if "flat" not in png: continue
