@@ -1443,7 +1443,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                     jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                     // console.log(jsonFileName);
                     // fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
-                    fetch(`http://164.90.158.133:${port}/RefinedOutput/json/${jsonFileName}`)
+                    fetch("http://164.90.158.133:"+port+"/RefinedOutput/json/"+jsonFileName)
                         .then(response => response.json())
                         .then(data => {
                             isDataFetched = true;
