@@ -97,8 +97,8 @@ def main(image_path, yolo_txt_path):
     poly_to_json_command = f"python polyTojson.py {image_path} {yolo_txt_path} {yolo_json_path}"
     os.system(poly_to_json_command)
     
-    modify_annots_command = f"python ModifyAnnots.py {image_path} {yolo_json_path} {yolo_output_img}"
-    os.system(modify_annots_command)
+    # modify_annots_command = f"python ModifyAnnots.py {image_path} {yolo_json_path} {yolo_output_img}"
+    # os.system(modify_annots_command)
 
     # Generate random annotation, map json annotation on the image, generate yolo style txt label files.
     annot_xypix_command = f"python AnnotXYPix.py {image_path} {annot_output_img} {annot_json_path}"
