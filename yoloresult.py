@@ -141,8 +141,8 @@ def main(image_path, yolo_txt_path):
     Merge_Updated_command = f"python Merge_Updated.py {unmerged_json_path} {image_path} {ref_json_path}"
     os.system(Merge_Updated_command)
     
-    ModifyAnnots_command = f"python ModifyAnnots.py {image_path} {ref_json_path} {ref_output_img}"
-    os.system(ModifyAnnots_command)
+    # ModifyAnnots_command = f"python ModifyAnnots.py {image_path} {ref_json_path} {ref_output_img}"
+    # os.system(ModifyAnnots_command)
 
     # json_to_roboflow_command2 = f"python JsonToRoboflow.py {ref_json_path} {image_path} {ref_txt_path}"
     # os.system(json_to_roboflow_command2)
