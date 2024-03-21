@@ -4,10 +4,6 @@ import json
 import numpy as np
 import sys
 
-# image_folder = '/content/drive/MyDrive/GMU/RA/YoloAll/RefineYolo/Image'
-# json_folder = '/content/drive/MyDrive/GMU/RA/YoloAll/RefineYolo/YoloAnnots'
-# output_folder = '/content/drive/MyDrive/GMU/RA/YoloAll/RefineYolo'
-
 def main(image_folder, json_folder, output_folder):
     # Your code logic here
     print("Image folder:", image_folder)
@@ -65,17 +61,18 @@ def draw_contours_from_json(image_filepath, json_filepath, output_filepath):
         # Calculate the minimum bounding rectangle (MBR) of the contour
         x, y, w, h = cv2.boundingRect(contour)
 
-        # Generate random points within the MBR
-        # while True:
-        #     random_point = np.random.randint(x, x+w), np.random.randint(y, y+h)
-        #     dist = cv2.pointPolygonTest(contour, random_point, True)
-        #     if dist >= 0:
-        #         break
+        if 'center' in region:
+         centroid_x, centroid_y = eval(region['center'])
+        else:
+           x, y, w, h = cv2.boundingRect(contour)
+           while True:
+            random_point = np.random.randint(x, x+w), np.random.randint(y, y+h)
+            dist = cv2.pointPolygonTest(contour, random_point, True)
+            if dist >= 0:
+             break
 
-        # centroid_x=random_point[0] 
-        # centroid_y=random_point[1]
-
-        centroid_x, centroid_y = eval(region['center']);
+           centroid_x = random_point[0]
+           centroid_y = random_point[1]
 
         # Update the color value in the JSON data
         region['color'] = {
@@ -85,7 +82,7 @@ def draw_contours_from_json(image_filepath, json_filepath, output_filepath):
         }
 
         # Draw the contour on the image
-        cv2.drawContours(img, [contour], -1, boundary_color,5)
+        cv2.drawContours(img, [contour], -1, boundary_color,20)
 
         # Set the font properties for the label
         font = cv2.FONT_HERSHEY_SIMPLEX
