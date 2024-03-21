@@ -1431,54 +1431,53 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
         let isDataFetched = false;
         let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
-        async function getPort(){
-            let res = await eel.get_port();
-            console.log('get server port: ' + res);
-            return res;
+        function getPort(){
+            return eel.get_port().then(res=>{
+                console.log('get server port: ' + res);
+                return res;    
+            });
         }
 
-        async function getOutline(checkval){
-            let port = await getPort();
-            console.log(port);
-            const isChecked = checkval;
+        function getOutline(checkval){
+            getPort().then(port =>{
+                const isChecked = checkval;
+                if (isChecked) {
+                    const FlatImage = images.find(image => image.customImageName.includes('flat'))
+                    if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
+                        jsonFileName = FlatImage.customImageName.replace('.png', '.json');
+                        // console.log(jsonFileName);
+                        // fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
+                        fetch("http://164.90.158.133:"+port+"/RefinedOutput/json/"+jsonFileName)
+                            .then(response => response.json())
+                            .then(data => {
+                                isDataFetched = true;
+                                data.regions.forEach(region => {
+                                    const originalCoordinates = region.coordinates;
+                                    const color = region.color; // Get color from JSON
+                                    console.log("ScaleFactor from getOutline", global_scaleFactor)
+                                    const scaledCoordinates = originalCoordinates.map(point => ({
+                                        x: point[0] * global_scaleFactor,
+                                        y: point[1] * global_scaleFactor
+                                    }));
+                                    // Draw the polygon on the canvas and set its initial visibility
+                                    drawPolygon(scaledCoordinates, region.label);
+                                });
+                            })
+                            .catch(error => console.error('Error fetching JSON file:', error));
 
-            if (isChecked) {
-                const FlatImage = images.find(image => image.customImageName.includes('flat'))
-                if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
-                    jsonFileName = FlatImage.customImageName.replace('.png', '.json');
-                    // console.log(jsonFileName);
-                    // fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
-                    fetch("http://164.90.158.133:"+port+"/RefinedOutput/json/"+jsonFileName)
-                        .then(response => response.json())
-                        .then(data => {
-                            isDataFetched = true;
-
-                            data.regions.forEach(region => {
-                                const originalCoordinates = region.coordinates;
-                                const color = region.color; // Get color from JSON
-                                console.log("ScaleFactor from getOutline", global_scaleFactor)
-                                const scaledCoordinates = originalCoordinates.map(point => ({
-                                    x: point[0] * global_scaleFactor,
-                                    y: point[1] * global_scaleFactor
-                                }));
-
-                                // Draw the polygon on the canvas and set its initial visibility
-                                drawPolygon(scaledCoordinates, region.label);
-                            });
-                        })
-                        .catch(error => console.error('Error fetching JSON file:', error));
-
-                } else {
-                    // Data has already been fetched, toggle visibility based on the button state
-                    polygonVisible = isChecked;
-                    // console.log(polygonVisible);
-                    togglePolygonVisibility(polygonVisible);
+                    } else {
+                        // Data has already been fetched, toggle visibility based on the button state
+                        polygonVisible = isChecked;
+                        // console.log(polygonVisible);
+                        togglePolygonVisibility(polygonVisible);
+                    }
                 }
-            }
-            else{
-                    polygonVisible = false;
-                    togglePolygonVisibility(polygonVisible);
-            }
+                else{
+                        polygonVisible = false;
+                        togglePolygonVisibility(polygonVisible);
+                }
+            });
+            
           }
       
 
