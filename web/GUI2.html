@@ -12,7 +12,7 @@
   <link rel="stylesheet" type="text/css" href="Style/ShadowStyle.css">
  
 <!--   <script src="./lib/fabric.min.js"></script> -->
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.15/paper-full.min.js"></script>
   <script src="./lib/fabric.js"></script>
   <script type="text/javascript" src="/eel.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
@@ -107,63 +107,42 @@
   <div id="Editor_id" class="tab-pane fade in active">
               <div class="row">
 
-                  <div class="col-sm-1">
+                  <div class="col-sm-1 editor-top-col">
                       <div id="tool_id">
-                        <!--  tools code here -->
-                              <div class="row">
-                                <div class="col-sm-6 text-right">
-                                    <button id="pointerBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Pointer">
-                                        <i class="fa fa-mouse-pointer" aria-hidden="true" ></i>
-                                    </button>
+                              <div class="row editor-row">
+                                
+                              <div class="col-md-4 editor-col">
+                                          <button id="pointerBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Pointer">
+                                                <i class="fa fa-mouse-pointer" aria-hidden="true" ></i>
+                                          </button>
+                                          <button id="paintBrushBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Shadow Brush">
+                                              <i class="fa fa-paint-brush" aria-hidden="true"></i>
+                                          </button>
+                                           <button id="eraserBtn" class="toggle-btn" data-toggle="tooltip" title="Erase" data-placement="top">
+                                              <i class="fa fa-eraser" aria-hidden="true"></i>
+                                          </button>
+                              </div>
+                              <div class="col-md-4 editor-col">
+                                            <button id="panBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Panning">
+                                                <i class="fa fa-hand-stop-o" aria-hidden="true"></i>
+                                            </button>
+                                            <button id="UndoBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Undo">
+                                                <i class="fa fa-undo" aria-hidden="true"></i>
+                                            </button>
+                                            <button id="magicBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Undo Erase">
+                                                <i class="fas fa-magic" aria-hidden="true"></i>
+                                            </button>
+                              </div>
+                              <div class="col-md-4 editor-col">
+                                           <button id="searchButton" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Zoom">
+                                                <i class="fa fa-search" aria-hidden="true"></i>
+                                            </button>
+                                           <button id="RedoBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Redo">
+                                                <i class="fa fa-redo" aria-hidden="true"></i>
+                                            </button>                      
+                              </div>
 
-                                  <button id="paintBrushBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Shadow Brush">
-                                      <i class="fa fa-paint-brush" aria-hidden="true"></i>
-                                  </button>
-
-                                    <button id="searchButton" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Zoom">
-                                        <i class="fa fa-search" aria-hidden="true"></i>
-                                    </button>
-                                    <button id="UndoBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Undo">
-                                        <i class="fa fa-undo" aria-hidden="true"></i>
-                                    </button>
-
-                                </div>
-
-                                                            
-                                <div class="col-sm-6">
-                                    <button id="panBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Panning">
-                                        <i class="fa fa-hand-stop-o" aria-hidden="true"></i>
-                                    </button>
-<!-- 
-                                  <button id="eraserBtn" class="toggle-btn" data-toggle="popover" title="Erase" data-content="
-                                      <div id='eraseSize' class='circle-container'>
-                                          <span id='11' class='circle-10'><i class='fas fa-circle'></i></span>
-                                          <span id='16' class='circle-15'><i class='fas fa-circle'></i></span>
-                                          <span id='21' class='circle-20'><i class='fas fa-circle'></i></span>
-                                          <span id='26' class='circle-25'><i class='fas fa-circle'></i></span>
-                                          <span id='31' class='circle-30'><i class='fas fa-circle'></i></span>
-                                      </div>">
-                                      <i data-toggle="tooltip" data-placement="top" title="Eraser" class="fa fa-eraser"></i>
-                                  </button> -->
-
-
-                                   <button id="eraserBtn" class="toggle-btn" data-toggle="tooltip" title="Erase" data-placement="top">
-                                      <i class="fa fa-eraser" aria-hidden="true"></i>
-                                  </button>
-                                    <button id="magicBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Undo Erase">
-                                        <i class="fas fa-magic" aria-hidden="true"></i>
-                                    </button>
-                                   <button id="RedoBtn" class="toggle-btn" data-toggle="tooltip" data-placement="top" title="Redo">
-                                        <i class="fa fa-redo" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-
-<!--                             <div>
-                              <button id="mybutton">backend</button>
-                            </div> -->
-
+                              </div>
 
                  
                             <div id="ToolSize" style="display: none;">
@@ -179,8 +158,17 @@
                                       </div>
                             </div>
 
+                            <div id="zoomControls" class="text-center">
+                                <button class="btn btn-outline-dark btn-block" id="zoomInButton"><i class="fa fa-plus"></i></button>
+                                  <span class="text-light" id="zoomPercentage">100%</span>
+                                  <br>
+                                <button class="btn btn-outline-dark btn-block" id="zoomOutButton"><i class="fa fa-minus"></i></button>
+                            </div>
+
                       </div>
                   </div>
+
+
 
                   <div id="Tempcanvas_div" class="col-sm-8" style="display:none" >
 
@@ -196,12 +184,13 @@
                           <canvas id="canvas"></canvas>
                       </div>
 
+<!-- 
                       <div id="zoomControls">
-                                  <button class="btn btn-outline-dark btn-block" id="zoomInButton"><i class="fa fa-plus"></i></button>
-                                  <span class="text-light" id="zoomPercentage">100%</span>
-                                  <br>
-                                  <button class="btn btn-outline-dark btn-block" id="zoomOutButton"><i class="fa fa-minus"></i></button>
-                      </div>
+                          <button class="btn btn-outline-dark btn-block" id="zoomInButton"><i class="fa fa-plus"></i></button>
+                            <span class="text-light" id="zoomPercentage">100%</span>
+                            <br>
+                          <button class="btn btn-outline-dark btn-block" id="zoomOutButton"><i class="fa fa-minus"></i></button>
+                      </div> -->
                   </div>
 
                   <div class="col-sm-3">
@@ -411,7 +400,8 @@
     <!-- Add Bootstrap JavaScript -->
     <script type="text/javascript" src="../eel.js"></script> 
 <!--     <script src="./script.js"></script>  -->
-    <script src="GUI2.js"></script> -->
+    <script src="GUI2.js"></script> 
+<!--     <script src="GUI2_paper.js"></script> -->
 
 
 <!-- <script type="text/javascript" src="../eel.js"></script> 
