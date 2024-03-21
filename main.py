@@ -51,8 +51,7 @@ exposed functions
 @eel.expose
 def get_port():
     assert ARGS is not None
-    print("log:\treturned work port%d"%ARGS.port_to_backend)
-    return str(ARGS.port_to_backend)
+    eel.setPort(ARGS.port_to_backend)
 
 @eel.expose
 def open_psd_as_binary(psd_data, psd_name):
