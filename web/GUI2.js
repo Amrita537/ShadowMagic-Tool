@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
         transparentCorners: false
       });
 
-    canvas.setDimensions({ width: 1024, height: 768});
+    canvas.setDimensions({ width: 750, height: 600});
     // fabric.Image.fromURL('background.png', function (img) {
     //     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
     //         scaleX: canvas.width / img.width,
@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     let rasterOld = null;
     let firstRasterize = true;
-    let outlineIsChecked = null;
     // for debug
     function ImageDatatoPNG(imgData){
         const tempCanvas = document.createElement('canvas');
@@ -103,7 +102,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const paginationItems = document.querySelectorAll('.pagination-item');
 
     //======================Temporary Canvas ==========================
-
     const canvas2 = new fabric.Canvas('canvas2', {
          backgroundImageStretch: 'none',
          selection: false // Disable Fabric.js default selection behavior
@@ -142,31 +140,67 @@ document.addEventListener("keydown", function(event) {
     }
 });
 
+// let isZooming = false;
+// document.addEventListener("keydown", function(event) {
+//     if (event.ctrlKey) {
+//         event.preventDefault(); 
+//         if(!isZooming)
+//         {
+//         var zoomBtn=document.getElementById('searchButton');
+//         zoomBtn.click();
+//         }
+//         if(isZooming){
+//             if (zoomButton.classList.toggle("checked")) {
+//                   zoomControls.style.display = "block";
+//                 } else {
+//                   zoomControls.style.display = "none";
+//                 }
+
+//             if (event.key === "+" || event.key === "=") {
+//                 event.preventDefault();
+//                 zoomIn();
+
+//             } else if (event.key === "-") {
+//                 event.preventDefault();
+//                 zoomOut();
+//             }
+//         }
+//     }
+
+// });
+
 let isZooming = false;
 document.addEventListener("keydown", function(event) {
-    if (event.ctrlKey) {
+    if (event.ctrlKey && event.key ==="+") 
+    {
         event.preventDefault(); 
         if(!isZooming)
         {
-        var zoomBtn=document.getElementById('searchButton');
-        zoomBtn.click();
+            turn_on_zoom();
+            zoomIn();
         }
-        if(isZooming){
-            if (zoomButton.classList.toggle("checked")) {
-                  zoomControls.style.display = "block";
-                } else {
-                  zoomControls.style.display = "none";
-                }
-
-            if (event.key === "+" || event.key === "=") {
-                event.preventDefault();
-                zoomIn();
-
-            } else if (event.key === "-") {
-                event.preventDefault();
-                zoomOut();
-            }
+        if(isZooming)
+        {
+            zoomIn();
         }
+
+    }
+
+
+    if (event.ctrlKey && event.key ==="-") 
+    {
+        event.preventDefault(); 
+        event.preventDefault(); 
+        if(!isZooming)
+        {
+            turn_on_zoom();
+            zoomOut();
+        }
+        if(isZooming)
+        {
+            zoomOut();
+        }
+
     }
 
 });
@@ -351,6 +385,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
             });
             img.filters.push(maskFilter);
             img.applyFilters();
+            img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
             canvas.add(img);
             canvas.renderAll();
@@ -361,6 +396,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
         fabric.Image.fromURL(imgDataToBase64(imageData), function(img) {
             img.left = 0;
             img.top = 0;
+            img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
             canvas.add(img);
             canvas.renderAll();
@@ -371,7 +407,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
     
 }
 
-// ====================Open image functions================
+// ====================Open PSD functions================
 
 const fileInput = document.getElementById("fileInput");
 fileInput.addEventListener("change", handleFileSelect);
@@ -417,6 +453,11 @@ function calculateScaleFactor(originalWidth, originalHeight, targetWidth, target
   return Math.round(Decimal * 100) / 100; // Round to 2 decimal places
 }
 
+
+function get_round_value(val){
+  return Math.round(val * 100) / 100; // Round to 2 decimal places
+}
+
 function displayImages() {
   canvas.renderAll();
 }
@@ -437,100 +478,6 @@ function handlePSDSelect(event) {
     loader.style.display = 'block';
 }
 
-// eel.expose(updatePSDSelect);
-// function updatePSDSelect(fileName){
-//     if (loadedFlag){
-//         return 0;
-//     }
-//     // prepare the full fileName
-//     let baseName = fileName.replace(/\.[^.]*$/, ""); // Remove the extension
-//     global_filename=baseName;
-//     baseName = baseName.replace("flat", "");
-//     const flatName = baseName + "_flat.png";
-//     const lineName = baseName + "_line.png";
-//     psd_layer_names.push(flatName);
-//     psd_layer_names.push(lineName);
-//     console.log("Flat name:", flatName);
-//     console.log("Line name:", lineName);
-
-//     const rel_path = "InputFlats/";         
-//     psd_layer_names.forEach(psdlayername => {
-//     folderPath = rel_path+psdlayername;
-//     fetch(folderPath)
-//         .then(response => response.blob())
-//         .then(blob => {
-//             const reader = new FileReader();
-//             reader.onload = function (e) {
-//                 loader.style.display = 'none';
-//                 const imgData = e.target.result;
-//                 fabric.Image.fromURL(imgData, function (img) {
-                    
-//                     canvas.width= 750;
-//                     canvas.height= 600;
-
-//                     actual_h = img.height;
-//                     actual_w = img.width;
-//                     global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-//                     console.log("ScaleFactor from UpdatePsd", global_scaleFactor)
-                    
-//                     img.scale(global_scaleFactor);
-//                     img.customSelected = false; // Custom property to indicate selected state
-//                     img.customImageName = psdlayername;
-//                     img.customBase64 = imgData; // Set custom base64 data
-//                     img.selectable = false;
-//                     // console.log("adding", img.customImageName);
-
-//                     images.push(img);
-//                     initialSizes.push({ width: img.width, height: img.height });
-//                     canvas.add(img);
-
-//                     updateLayerList(images);
-                    
-//                     sc_imgwidth = actual_w * global_scaleFactor;
-//                     sc_imgheight = actual_h * global_scaleFactor;
-//                     const canvasWidth = Math.min(sc_imgwidth, img.width);
-//                     const canvasHeight = Math.min(sc_imgheight, img.height);
-//                     canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
-//                     canvas2.setDimensions({ width: canvasWidth, height: canvasHeight });
-
-//                     console.log(canvas.width, canvas.height);
-
-//                        let backimg_name='';
-//                         if (sc_imgwidth < 400){
-//                           backimg_name='backgroundVer.png';
-//                         }
-//                         else if(sc_imgwidth>400 && sc_imgwidth <600)
-//                         {
-//                           backimg_name='backgroundVer2.png';
-//                         }
-//                         else{
-//                           backimg_name='background.png';
-//                         }
-//                         console.log(backimg_name)
-//                         fabric.Image.fromURL(backimg_name, function (backimg) {
-//                                   canvas.setBackgroundImage(backimg, canvas.renderAll.bind(canvas), {
-//                                       scaleX: canvas.width / backimg.width,
-//                                       scaleY: canvas.height / backimg.height
-
-//                                   });
-
-//                                   canvas2.setBackgroundImage(backimg, canvas2.renderAll.bind(canvas2), {
-//                                       scaleX: canvas2.width / backimg.width,
-//                                       scaleY: canvas2.height / backimg.height
-
-//                                   });
-//                         });
-
-//                     displayImages();
-//                     GenerateShadow();
-//                 });
-//             };
-//             reader.readAsDataURL(blob);
-//         })
-//         .catch(error => console.error('Error fetching image:', error));
-//       });
-//     loadedFlag = true
-// }
 
 // add a hidden mask layer
 let maskLayer = [];
@@ -570,8 +517,8 @@ function updatePSDSelect(fileName){
                     if (canvasSizeInitialized == false){
                         // let longerSide = null;
                         let ratio = null;
-                        let maxWidth = 1200;
-                        let maxHeight = 850;
+                        let maxWidth = 750;
+                        let maxHeight = 600;
                         if (globalRawWidth > globalRawHeight){
                             // longerSide = globalRawWidth;
                             ratio = maxWidth / globalRawWidth;
@@ -637,7 +584,6 @@ function updatePSDSelect(fileName){
                     }
 
                     global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                    console.log("ScaleFactor from UpdatePsd", global_scaleFactor)
                     
                     img.scale(global_scaleFactor);
                     img.customSelected = false; // Custom property to indicate selected state
@@ -645,15 +591,22 @@ function updatePSDSelect(fileName){
                     img.customBase64 = imgData; // Set custom base64 data
                     img.selectable = false;
 
-                    // global_pos_top=(canvas.height - img.height * global_scaleFactor) / 2;
-                    // global_pos_left=(canvas.width - img.width * global_scaleFactor) / 2;
+                    // global_pos_top=get_round_value((canvas.height - img.height * global_scaleFactor) / 2);
+                    // global_pos_left=get_round_value((canvas.width - img.width * global_scaleFactor) / 2);
+
+                    // img.top = global_pos_top;
+                    // img.left = global_pos_left;
+
                     global_pos_top = 0;
                     global_pos_left = 0;
                     img.top = global_pos_top;
                     img.left = global_pos_left;
 
+
                     global_img_h=img.height*global_scaleFactor;
                     global_img_w=img.width*global_scaleFactor;
+
+
 
                     canvas.setBackgroundImage(null);
                     let backimg_name = 'backgroundVer.png';
@@ -665,7 +618,7 @@ function updatePSDSelect(fileName){
                         backimg_name = 'background.png';
                     }
 
-                    // why create a image from text?
+
                     fabric.Image.fromURL(backimg_name, function (backimg) {
                         backimg.width=img.width*global_scaleFactor;
                         backimg.height=img.height*global_scaleFactor;
@@ -892,7 +845,7 @@ function fetch_Shadow_files(shadow_arr) {
                 .then(response => {
                     if (response.ok) {
                         fabric.Image.fromURL(fullPath, function (img) {
-                            console.log("ScaleFactor from fechShadowFiles",global_scaleFactor)
+                            // console.log("ScaleFactor from fechShadowFiles",global_scaleFactor)
                             // why scale?
                             img.customBase64 = img.toDataURL({ format: 'png' });
                             img.scale(global_scaleFactor);
@@ -921,7 +874,7 @@ function fetch_Shadow_files(shadow_arr) {
                 .then(response => {
                     if (response.ok) {
                         fabric.Image.fromURL(fullPath, function (img) {
-                            console.log("ScaleFactor from fechShadowFiles", global_scaleFactor)
+                            // console.log("ScaleFactor from fechShadowFiles", global_scaleFactor)
                             img.scale(global_scaleFactor);
                             img.customImageName = name;
                             img.selectable = false;
@@ -988,7 +941,7 @@ buttonIds.forEach(buttonId => {
               current_button.classList.add('active-button');
 
               direction = buttonId.replace('btn', '').toLowerCase(); // Store the selected direction
-              console.log('Selected Direction:', direction);
+              // console.log('Selected Direction:', direction);
 
               segments.forEach(seg => {
                     toggleVisibilityByDirectionAndSegment(direction, seg, 0, true);
@@ -1005,7 +958,7 @@ buttonIds.forEach(buttonId => {
 
 function toggleVisibilityByDirectionAndSegment(direction, segment, index, isVisible) {
 
-  console.log(direction, segment, index, isVisible);
+  // console.log(direction, segment, index, isVisible);
   if (isErasing) {
           const eraserBtn_1 = document.getElementById("eraserBtn");
           eraserBtn_1.click();
@@ -1018,7 +971,7 @@ function toggleVisibilityByDirectionAndSegment(direction, segment, index, isVisi
 
     if (isDirectionMatch && isSegmentMatch && isIndexMatch) 
           {
-                console.log("match");
+                // console.log("match");
                 const image = canvas.getObjects().find(obj => obj.customImageName === name);
                 if (image) {
                   image.erasable = true;
@@ -1061,7 +1014,7 @@ function updateCheckboxes() {
 // Function to toggle the visibility of canvas objects based on checkbox state
 function toggleVisibilityByCheckbox(label) {
     let number=global_number;
-    console.log("changing", label, "for", number);
+    // console.log("changing", label, "for", number);
     let checkbox = document.getElementById(`${label}Checkbox`);
     toggleVisibilityByDirectionAndSegment(direction, label, number, checkbox.checked);
     canvas.renderAll();
@@ -1119,7 +1072,7 @@ function addShadowButton() {
 
     const shadowButton = document.createElement("button");
     shadowButton.id = "currentLayer"; 
-    console.log(shadowButton.id);
+    // console.log(shadowButton.id);
 
     shadowButton.className = "btn btn-block";
     shadowButton.style.textAlign = "left";
@@ -1176,16 +1129,14 @@ function addShadowButton() {
 
         //saving the current canvas status
         const canvasStatus = JSON.stringify(canvas.toJSON());
-
         savedLayers.push(canvasStatus);
-        console.log(shadowButton.id);
+        // console.log(shadowButton.id);
 
         const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line') && !obj.customImageName.includes('backgroundImage')));
-        console.log(filteredObjects);
+        // console.log(filteredObjects);
 
         const tempCanvas = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
         filteredObjects.forEach(obj => tempCanvas.add(obj));
-        
 
         const canvasStatus1 = JSON.stringify(tempCanvas.toJSON());
 
@@ -1223,7 +1174,7 @@ function updateBookmarkedShadows(){
     {
         let BMshadow_btn = document.createElement("button");
         
-        console.log("CRshadow_eye", CRshadow_eye);
+        // console.log("CRshadow_eye", CRshadow_eye);
         CRshadow_eye.className = canvasElement2.style.display == 'none' ? "fa fa-eye" : "fa fa-eye-slash";
 
         BMshadow_btn.id = `BMshadowbtn_${i}`;
@@ -1305,10 +1256,14 @@ function toggleBMCanvas(BM_button_id, val) {
     } 
     else 
     {
-        console.log(`Button ${BM_button_id} is clicked`);
         canvasElement2.style.display = 'block';
         canvasElement.style.display = 'none';
         const savedCanvasData = JSON.parse(savedLayers[val]);
+
+        // const currentObjects = canvas.getObjects();
+        // savedCanvasData.objects.forEach((obj, index) => {
+        //     obj.left = get_round_value(obj.left+(currentObjects[index].left/2)*100);
+        // });
 
         canvas2.loadFromJSON(savedCanvasData, function() {
             canvas2.renderAll();
@@ -1410,10 +1365,11 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
           canvas.getObjects().forEach(obj => {
                 canvas.getObjects().forEach(obj => {
-                    if (obj.type === 'path') {
+                    if (obj.type === 'path' || obj.layerName==='rasterLayer') {
                         obj.set('stroke', 'black');
                         obj.set('opacity', value);
                     }
+
                 });
             });
            canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
@@ -1432,37 +1388,37 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
         let isDataFetched = false;
         let polygonVisible = false;  // Add a flag to track the visibility of the polygon
 
-        eel.expose(setPort);
-        function setPort(port){
-            //TODO: let python pass json string to this function
-            //Then modify the function getOutline_2nd to finish the same logic but the input should be a json string
-            getOutline_2nd(port);
-        }
 
-        function getOutline_2nd(serverPort){
-            if (outlineIsChecked) {
+        function getOutline(checkval){
+            let port = eel.get_port();
+
+            const isChecked = checkval;
+
+            if (isChecked) {
                 const FlatImage = images.find(image => image.customImageName.includes('flat'))
                 if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
                     jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                     // console.log(jsonFileName);
-                    // fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
-                    fetch("http://164.90.158.133:"+serverPort+"/RefinedOutput/json/"+jsonFileName)
+                    fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
                         .then(data => {
                             isDataFetched = true;
+
                             data.regions.forEach(region => {
                                 const originalCoordinates = region.coordinates;
                                 const color = region.color; // Get color from JSON
-                                console.log("ScaleFactor from getOutline", global_scaleFactor)
+                                // console.log("ScaleFactor from getOutline", global_scaleFactor)
                                 const scaledCoordinates = originalCoordinates.map(point => ({
                                     x: point[0] * global_scaleFactor,
                                     y: point[1] * global_scaleFactor
                                 }));
+
                                 // Draw the polygon on the canvas and set its initial visibility
                                 drawPolygon(scaledCoordinates, region.label);
                             });
                         })
                         .catch(error => console.error('Error fetching JSON file:', error));
+
                 } else {
                     // Data has already been fetched, toggle visibility based on the button state
                     polygonVisible = isChecked;
@@ -1474,12 +1430,9 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                     polygonVisible = false;
                     togglePolygonVisibility(polygonVisible);
             }
-        }
+          }
+      
 
-        function getOutline(checkval){
-            eel.get_port();
-            outlineIsChecked = checkval;
-        } 
 
         const colors = {
             hair: '#66c2a5',
@@ -1570,38 +1523,66 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
           const zoomButton = document.getElementById("searchButton");
           const zoomControls = document.getElementById("zoomControls");
 
-          // Initially hide the zoom controls
           zoomControls.style.display = "none";
 
-          // Add click event listener to the search button
-          zoomButton.addEventListener("click", function() {
-            isZooming=!isZooming;
-            if(isZooming)
-            {
-                zoomButton.style.backgroundColor = "black";
-                zoomButton.style.color = "white";
-                deactivatePanning();
-                deactivatePainting();
-                deactivateEraser();
-                deactivateUndoEraser();
+          // // Add click event listener to the search button
+          // zoomButton.addEventListener("click", function() {
+          //   isZooming=!isZooming;
+          //   if(isZooming)
+          //   {
+          //       zoomButton.style.backgroundColor = "black";
+          //       zoomButton.style.color = "white";
+          //       deactivatePanning();
+          //       deactivatePainting();
+          //       deactivateEraser();
+          //       deactivateUndoEraser();
 
-                canvasElement2.style.display = 'none';
-                canvasElement.style.display = 'block';
+          //       canvasElement2.style.display = 'none';
+          //       canvasElement.style.display = 'block';
 
+          //       updateBookmarkedShadows();
+          //       // Toggle visibility of the zoom controls
+          //       if (zoomButton.classList.toggle("checked")) {
+          //         zoomControls.style.display = "block";
+          //       } else {
+          //         zoomControls.style.display = "none";
+          //       }
+          //   }
+          //   else{
+          //         zoomButton.style.backgroundColor = "";
+          //         zoomButton.style.color = "";
+          //         zoomControls.style.display = "none";
+          //   }
+
+          // });
+
+          zoomButton.addEventListener("click", function() 
+          {
+                isZooming=!isZooming;
                 updateBookmarkedShadows();
-                // Toggle visibility of the zoom controls
-                if (zoomButton.classList.toggle("checked")) {
-                  zoomControls.style.display = "block";
-                } else {
-                  zoomControls.style.display = "none";
+                console.log("zooming is ", isZooming);
+                if(isZooming){
+                    console.log("zoom is on")
+                    turn_on_zoom();
                 }
-            }
-            else{
-                  zoomButton.style.backgroundColor = "";
-                  zoomButton.style.color = "";
-            }
+                else{
+                    console.log("zoom is off")
+                    deactivateZooming();
+                }
 
           });
+
+function turn_on_zoom(){
+    zoomButton.style.backgroundColor = "black";
+    zoomButton.style.color = "white";
+    deactivatePanning();
+    deactivatePainting();
+    deactivateEraser();
+    deactivateUndoEraser();
+    zoomControls.style.display = "block";
+    isZooming=true;
+}
+
 
 function deactivateZooming() {
   isZooming = false;
@@ -1758,6 +1739,8 @@ function UndoErase() {
     deactivatePainting();
     deactivateEraser();
     deactivateZooming();
+    deactivatePanning();
+
     undoErasing = !undoErasing;
     // console.log("undoErasing clicked", undoErasing);
     if(undoErasing)
@@ -1822,25 +1805,21 @@ function UndoErase() {
             this.style.backgroundColor = 'black';
             this.style.color = 'white';
 
-            // TODO:this logic is not working anymore, but I don't have time to update it
-            // some possible update:
-            // 1. still recored all path objects and everytime pop one object, repeat the whole rasterization process to update the shadow layer
-            // 2. only record the bitmap changes and pop bitmap instead.
-            canvas.on('object:added', function(e) {
-                e.target.selectable = false;
-                const obj = e.target;
-                undoStack.push(obj);
-                redoStack = [];
-            });
+            // canvas.on('object:added', function(e) {
+            //     e.target.selectable = false;
+            //     const obj = e.target;
+            //     undoStack.push(obj);
+            //     redoStack = [];
+            // });
+
+
             canvas.on('mouse:up', function(){
-                // TODO: need to retrieve the current activated masks
-                // now I just use the predefined flat mask
-                // get current mask
+
                 const activateMasks = maskLayer.filter(layer => layer.activated);
                 mergedMask = activateMasks.reduce(
-                    (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true));
-                // rasterize new added object
-                // collect all vector paths into vectorlayer
+                    (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true)
+                    );
+
                 
                 const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
                 objects.forEach(obj=>{
@@ -1848,14 +1827,15 @@ function UndoErase() {
                       vectorLayer.addWithUpdate(obj);
                     }
                   });
-                // remove all vector paths
+
+                undoStack.push(...objects);
                 canvas.remove(...objects);
-                // set up the opacity of vectorLayer and add it into the canvas
+  
                 let rasterNew = rasterizeLayer(vectorLayer);
                 if (rasterNew.width != mergedMask.width || rasterNew.height != mergedMask.height){
                     mergedMask = imageDataResize(mergedMask, rasterNew.width, rasterNew.height);
                 }
-                // merge the new raster image to the old one if necessary
+
                 if (firstRasterize){
                     if (rasterOld == null){
                         rasterOld = new ImageData(rasterNew.width, rasterNew.height);
@@ -1876,6 +1856,8 @@ function UndoErase() {
                 addMergedImageToCanvas(rasterOld);
                 
             });
+
+
         } 
         else {
             toolSize.style.display = 'none'
@@ -1959,6 +1941,7 @@ function deactivateEraser() {
     eraserBtn.style.color = '';
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
 }
 
 function deactivatePainting() {
@@ -1967,6 +1950,7 @@ function deactivatePainting() {
     paintBrushBtn.style.backgroundColor = '';
     paintBrushBtn.style.color = '';
     canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
 }
 
 function deactivateUndoEraser() {
@@ -1976,24 +1960,35 @@ function deactivateUndoEraser() {
     UndoEraseBtn.style.color = '';
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
 }
 
 
 // Function to undo the last action
 function undo() {
+    deactivatePanning();
+    deactivateZooming();
+    deactivateEraser();
+    deactivatePainting();
 
-    if (undoStack.length > 0) {
-        var obj = undoStack.pop();
-        canvas.remove(obj);
-        redoStack.push(obj);
-        canvas.renderAll();
-    }
+    console.log(undoStack)
+    // if (undoStack.length > 0) {
+    //     var obj = undoStack.pop();
+    //     addMergedImageToCanvas(obj);
+    //     // canvas.remove(obj);
+    //     redoStack.push(obj);
+    //     canvas.renderAll();
+    // }
 }
 
 // Function to redo the last undone action
 // this logic will definitely not work anymore
 // todo: update undo logic
 function redo() {
+    deactivatePanning();
+    deactivateZooming();
+    deactivateEraser();
+    deactivatePainting();
     if (redoStack.length > 0) {
         var obj = redoStack.pop();
         canvas.add(obj);
@@ -2307,9 +2302,7 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 //====================================Modal events====================================================//
     document.getElementById("yes_btn").addEventListener("click", function() {
         console.log("Yes button clicked");
-        // what... just reloading?
         location.reload();
-
     });
 
     // Get the "Continue Working" button by ID and attach a click event handler
