@@ -1434,8 +1434,8 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
         eel.expose(setPort);
         function setPort(port){
-            // I can let python pass json string to this function
-            // you need to modify the function getOutline_2nd to finish the same logic but the input should be a json string
+            //TODO: let python pass json string to this function
+            //Then modify the function getOutline_2nd to finish the same logic but the input should be a json string
             getOutline_2nd(port);
         }
 
@@ -1475,6 +1475,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                     togglePolygonVisibility(polygonVisible);
             }
         }
+
         function getOutline(checkval){
             eel.get_port();
             outlineIsChecked = checkval;
