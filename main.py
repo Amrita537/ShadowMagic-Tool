@@ -35,7 +35,7 @@ PATH_TO_LINE = './InputLines'
 PATH_TO_SHADOW = './web/Shadows'
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
 # PATH_TO_REFINEDJSON= "./web/RefinedOutput/json"
-PATH_TO_REFINEDJSON= "./web/RefinedOutput/Unmerged_json"
+PATH_TO_REFINEDJSON= "./RefinedOutput/Unmerged_json"
 PATH_TO_SEGS = []
 PATH_TO_JSON = False
 PATH_TO_TEMP = "./temp"
@@ -247,6 +247,8 @@ def preprocess(path_to_psd, name, var, seg_only = False):
                 Image.fromarray(shadow.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
                 pbar.update(1)
         pbar.close()
+    else:
+        shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, name+"_shadows.zip"), PATH_TO_PREPROCESS)
 
     # get the segmentation result
     # a dirty fix for the path issue...
@@ -259,20 +261,19 @@ def preprocess(path_to_psd, name, var, seg_only = False):
         delete_item(os.path.join(PATH_TO_SHADOW, f))
     seg_path_cleanup()
 
-    if seg_only == False:
-        # find all shadowing results
-        shadows = []
-        for img in os.listdir(PATH_TO_PREPROCESS):
-            if name not in img or 'shadow' not in img or 'png' not in img: continue
-            shadows.append(img)
-            shutil.copy(os.path.join(PATH_TO_PREPROCESS, img), os.path.join(PATH_TO_SHADOW, img))
-        shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_shadows"),
-            'zip',
-            PATH_TO_SHADOW)
-        for img in shadows:
-            os.remove(os.path.join(PATH_TO_PREPROCESS, img))
-        assert len(shadows) == len(DIRS) * var
-    
+    # find all shadowing results
+    shadows = []
+    for img in os.listdir(PATH_TO_PREPROCESS):
+        if name not in img or 'shadow' not in img or 'png' not in img: continue
+        shadows.append(img)
+        shutil.copy(os.path.join(PATH_TO_PREPROCESS, img), os.path.join(PATH_TO_SHADOW, img))
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_shadows"),
+        'zip',
+        PATH_TO_SHADOW)
+    for img in shadows:
+        os.remove(os.path.join(PATH_TO_PREPROCESS, img))
+    assert len(shadows) == len(DIRS) * var
+
     segment_single(name)
 
     # copy segmentation result to preprocess folder
@@ -284,7 +285,7 @@ def preprocess(path_to_psd, name, var, seg_only = False):
         './YoloOutput')
     shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_RefinedOutput"), 
         'zip', 
-        './web/RefinedOutput')
+        './RefinedOutput')
     shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_sub_shadows"), 
         'zip', 
         PATH_TO_SHADOWS)
@@ -304,8 +305,8 @@ def preprocess_to_work(fname):
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_AnnotOutput.zip"), "./AnnotOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_YoloOutput.zip"), "./YoloOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_RefinedOutput.zip"), "./web/RefinedOutput")
-    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), "./web/Shadows/sub_shadows")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_shadows.zip"), "./web/Shadows")
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), "./web/Shadows/sub_shadows")
 
     # copy the preprocessed result to
     if os.path.exists(PATH_TO_LAYERS) == False:
