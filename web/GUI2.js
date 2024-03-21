@@ -393,6 +393,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
             img.applyFilters();
             img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
+            img.customImageName="raster"+direction+global_number;
             undoQueue.push(img);
             canvas.add(img);
             canvas.renderAll();
@@ -405,6 +406,7 @@ function addMergedImageToCanvas(imageData, maskData = null) {
             img.top = 0;
             img.opacity=global_opacity;
             img.layerName = 'rasterLayer';
+            img.customImageName="raster"+direction+global_number;
             undoQueue.push(img);
             canvas.add(img);
             canvas.renderAll();
@@ -1059,6 +1061,8 @@ allCheckbox.addEventListener('change', function () {
         getOutline(this.checked);
         document.getElementById('collapse4').style.maxHeight = '120px';
         document.getElementById('collapse4').style.overflowY = 'auto';
+        document.getElementById('collapse1').style.maxHeight = '300';
+        document.getElementById('collapse1').style.overflowY = 'auto';
     } else {
         cursorInfo.style.display = 'none';
         getOutline(this.checked);
@@ -1380,7 +1384,15 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
                 });
             });
-           canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
+
+
+          // Set stroke to black and opacity for objects in vectorLayer
+            vectorLayer.getObjects().forEach(obj => {
+                if (obj.type === 'path') {
+                    obj.set('stroke', 'black');
+                    obj.set('opacity', value); // Set 'value' to the desired opacity value (0 to 1)
+                }
+            });
 
           displayImages();
       }
@@ -1439,6 +1451,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                     togglePolygonVisibility(polygonVisible);
             }
           }
+      
       
 
 
@@ -1830,9 +1843,18 @@ function UndoErase() {
                 const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
                 objects.forEach(obj=>{
                     if (obj.type == 'path'){
+                      // obj.set('stroke', 'black');
+                      // obj.set('opacity', global_opacity); // Set 'value' to the desired opacity value (0 to 1)
                       vectorLayer.addWithUpdate(obj);
                     }
                   });
+
+            //                 vectorLayer.getObjects().forEach(obj => {
+            //     if (obj.type === 'path') {
+            //         obj.set('stroke', 'black');
+            //         obj.set('opacity', value); // Set 'value' to the desired opacity value (0 to 1)
+            //     }
+            // });
 
                 canvas.remove(...objects);
   
@@ -1940,16 +1962,23 @@ function UndoErase() {
 
 
 //=======================undo redo========================
+
+
+// Event listeners for undo and redo buttons
+document.getElementById('UndoBtn').addEventListener('click', undo);
+document.getElementById('RedoBtn').addEventListener('click', redo);
+
 function undo() {
     deactivatePanning();
     deactivateZooming();
     deactivateEraser();
     deactivatePainting();
 
-    console.log(undoQueue);
+    console.log("Undo Queue:", undoQueue);
 
     if (undoQueue.length > 1) {
         var last_object = undoQueue.pop();
+        redoStack.push(last_object);
         var second_last_object = undoQueue[undoQueue.length - 1];
         canvas.remove(last_object);
         console.log("Removed:", last_object);
@@ -1957,27 +1986,26 @@ function undo() {
         canvas.add(second_last_object);
     } else if (undoQueue.length === 1) {
         var last_object = undoQueue.pop();
+        redoStack.push(last_object);
         canvas.remove(last_object);
     }
     console.log("Final Queue:", undoQueue);
-
+    console.log("Redo Stack:", redoStack);
 }
 
-// Function to redo the last undone action
-// this logic will definitely not work anymore
-// todo: update undo logic
-// function redo() {
-//     deactivatePanning();
-//     deactivateZooming();
-//     deactivateEraser();
-//     deactivatePainting();
-//     if (redoStack.length > 0) {
-//         var obj = redoStack.pop();
-//         canvas.add(obj);
-//         undoQueue.push(obj);
-//         canvas.renderAll();
-//     }
-// }
+function redo() {
+    if (redoStack.length > 0) {
+        var last_redo_object = redoStack.pop();
+        var last_undo_object = undoQueue[undoQueue.length - 1];
+        canvas.remove(last_undo_object);
+        canvas.add(last_redo_object);
+        undoQueue.push(last_redo_object);
+        console.log("Redo Stack:", redoStack);
+        console.log("Undo Queue:", undoQueue);
+    }
+}
+
+
 //=======================deactivating buttons=====================
 
 function deactivateEraser() {
@@ -2011,10 +2039,6 @@ function deactivateUndoEraser() {
 
 
 
-
-// Event listeners for undo and redo buttons
-document.getElementById('UndoBtn').addEventListener('click', undo);
-// document.getElementById('RedoBtn').addEventListener('click', redo);
 
 
 //==========================carousel functions=====================================//
@@ -2149,6 +2173,10 @@ function setCardBackgroundImages(direction) {
               });
 
               canvas.getObjects().forEach(obj => {
+                  if(obj.customImageName && obj.customImageName.includes('raster'))
+                  {
+                    console.log(obj.customImageName);
+                  }
                   if (obj.customImageName && obj.customImageName.includes('shadow')) {
                       if(obj.visible)
                         {console.log(obj.customImageName, obj.visible);}
