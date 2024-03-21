@@ -1433,7 +1433,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
 
         function getOutline(checkval){
-            let port = eel.get_port();
+            let port = await eel.get_port();
 
             const isChecked = checkval;
 
