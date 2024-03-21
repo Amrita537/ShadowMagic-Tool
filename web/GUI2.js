@@ -1948,15 +1948,17 @@ function undo() {
 
     console.log(undoQueue);
 
-    if(undoQueue.length > 0) {
+    if (undoQueue.length > 1) {
         var last_object = undoQueue.pop();
         var second_last_object = undoQueue[undoQueue.length - 1];
         canvas.remove(last_object);
         console.log("Removed:", last_object);
         console.log("Next:", second_last_object);
         canvas.add(second_last_object);
+    } else if (undoQueue.length === 1) {
+        var last_object = undoQueue.pop();
+        canvas.remove(last_object);
     }
-
     console.log("Final Queue:", undoQueue);
 
 }
@@ -2012,7 +2014,7 @@ function deactivateUndoEraser() {
 
 // Event listeners for undo and redo buttons
 document.getElementById('UndoBtn').addEventListener('click', undo);
-document.getElementById('RedoBtn').addEventListener('click', redo);
+// document.getElementById('RedoBtn').addEventListener('click', redo);
 
 
 //==========================carousel functions=====================================//
