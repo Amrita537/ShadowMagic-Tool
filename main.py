@@ -88,7 +88,7 @@ def batch_process(path_to_psds = PATH_TO_PSD, var = 20):
                 # check sub shadows
                 pass    
         if processed:continue
-        open_psd(os.path.join(path_to_psds, psd), var = var)
+        open_psd_single(os.path.join(path_to_psds, psd), var = var, seg_only = True)
 
 @eel.expose
 def shadow_decrease(res_dict, reset = False):
@@ -195,67 +195,68 @@ def get_subshadow_by_label(img, label, name):
 '''
 Helper functions
 ''' 
-def preprocess(path_to_psd, name, var):
+def preprocess(path_to_psd, name, var, seg_only = False):
     # print("log:\tpredicting shadowing and segmentation result for %s"%path_to_psd)
     # test if this image has been processed
     global PATH_TO_JSON
     PATH_TO_JSON = None
     open_psd(path_to_psd, PATH_TO_PREPROCESS)
     
-    # open extracted pngs
-    flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
-    # add white backgournd if flat has alpha channel
-    if flat.shape[-1] == 4:
-        bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
-        alpha = flat[..., -1][..., np.newaxis] / 255
-        rgb = flat[..., 0:3]
-        flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
-    else:
-        Image.fromarray(add_alpha_flat(flat)).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
-
-    line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
-    line_to_save = line.copy()
-    need_add_alpha = False
-    if line.shape[-1] == 4:
-        if len(np.unique(line[..., -1])) != 1:
-            line = np.repeat((255 - line[..., -1])[..., np.newaxis], 3, axis = -1)
+    if seg_only == False:
+        # open extracted pngs
+        flat = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")))
+        # add white backgournd if flat has alpha channel
+        if flat.shape[-1] == 4:
+            bg = np.ones((flat.shape[0], flat.shape[1], 3)) * 255
+            alpha = flat[..., -1][..., np.newaxis] / 255
+            rgb = flat[..., 0:3]
+            flat = (rgb * alpha + bg * (1 - alpha)).astype(np.uint8)
         else:
-            line = line[..., 0:3]
-            line_to_save = line.copy()
+            Image.fromarray(add_alpha_flat(flat)).save(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))
+
+        line = np.array(Image.open(os.path.join(PATH_TO_PREPROCESS, name+"_line.png")))
+        line_to_save = line.copy()
+        need_add_alpha = False
+        if line.shape[-1] == 4:
+            if len(np.unique(line[..., -1])) != 1:
+                line = np.repeat((255 - line[..., -1])[..., np.newaxis], 3, axis = -1)
+            else:
+                line = line[..., 0:3]
+                line_to_save = line.copy()
+                need_add_alpha = True
+        else:
             need_add_alpha = True
-    else:
-        need_add_alpha = True
-    
-    if need_add_alpha:
-        Image.fromarray(add_alpha_line(line_to_save)).save(os.path.join(PATH_TO_PREPROCESS, name+"_line.png"))
-
-    color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
-
-    # get shadows
-    pbar = tqdm(total=len(DIRS) * var)
-    for direction in DIRS:
-        pbar.set_description("Predicting shadow for %s" %name)
-        url = "http://127.0.0.1:%d/shadowsingle"%int(ARGS.port_to_backend)
-        data_send = {}
-        data_send['user'] = 'userA'
-        data_send['direction'] = direction
-        data_send['name'] = name
-        data_send['flat'] = array_to_base64(flat)
-        data_send['line'] = array_to_base64(line)
-        data_send['color'] = array_to_base64(color.astype(np.uint8))
         
-        for i in range(var):
-            # print("log:\tpredicting #%d shadow from direction %s"%(i, direction))
-            resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
-            resp = resp.json()
-            shadow = np.array(to_pil(resp['shadow_0']))
-            # add alpha channel to shadow output
-            alpha = np.zeros((shadow.shape[0], shadow.shape[1]))
-            alpha[shadow[..., 0] == 0] = 255
-            shadow = np.concatenate((shadow, alpha[..., np.newaxis]), axis = -1)
-            Image.fromarray(shadow.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
-            pbar.update(1)
-    pbar.close()
+        if need_add_alpha:
+            Image.fromarray(add_alpha_line(line_to_save)).save(os.path.join(PATH_TO_PREPROCESS, name+"_line.png"))
+
+        color = flat * (line.mean(axis = -1) / 255)[..., np.newaxis]
+
+        # get shadows
+        pbar = tqdm(total=len(DIRS) * var)
+        for direction in DIRS:
+            pbar.set_description("Predicting shadow for %s" %name)
+            url = "http://127.0.0.1:%d/shadowsingle"%int(ARGS.port_to_backend)
+            data_send = {}
+            data_send['user'] = 'userA'
+            data_send['direction'] = direction
+            data_send['name'] = name
+            data_send['flat'] = array_to_base64(flat)
+            data_send['line'] = array_to_base64(line)
+            data_send['color'] = array_to_base64(color.astype(np.uint8))
+            
+            for i in range(var):
+                # print("log:\tpredicting #%d shadow from direction %s"%(i, direction))
+                resp = requests.post(url=url, data=json.dumps(data_send), timeout=5000)
+                resp = resp.json()
+                shadow = np.array(to_pil(resp['shadow_0']))
+                # add alpha channel to shadow output
+                alpha = np.zeros((shadow.shape[0], shadow.shape[1]))
+                alpha[shadow[..., 0] == 0] = 255
+                shadow = np.concatenate((shadow, alpha[..., np.newaxis]), axis = -1)
+                Image.fromarray(shadow.astype(np.uint8)).save(os.path.join(PATH_TO_PREPROCESS, name + "_" + direction + "_shadow_%d.png"%i))
+                pbar.update(1)
+        pbar.close()
 
     # get the segmentation result
     # a dirty fix for the path issue...
@@ -267,18 +268,21 @@ def preprocess(path_to_psd, name, var):
     for f in os.listdir(PATH_TO_SHADOW):
         delete_item(os.path.join(PATH_TO_SHADOW, f))
     seg_path_cleanup()
-    # find all shadowing results
-    shadows = []
-    for img in os.listdir(PATH_TO_PREPROCESS):
-        if name not in img or 'shadow' not in img or 'png' not in img: continue
-        shadows.append(img)
-        shutil.copy(os.path.join(PATH_TO_PREPROCESS, img), os.path.join(PATH_TO_SHADOW, img))
-    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_shadows"),
-        'zip',
-        PATH_TO_SHADOW)
-    for img in shadows:
-        os.remove(os.path.join(PATH_TO_PREPROCESS, img))
-    assert len(shadows) == len(DIRS) * var
+
+    if seg_only == False:
+        # find all shadowing results
+        shadows = []
+        for img in os.listdir(PATH_TO_PREPROCESS):
+            if name not in img or 'shadow' not in img or 'png' not in img: continue
+            shadows.append(img)
+            shutil.copy(os.path.join(PATH_TO_PREPROCESS, img), os.path.join(PATH_TO_SHADOW, img))
+        shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_shadows"),
+            'zip',
+            PATH_TO_SHADOW)
+        for img in shadows:
+            os.remove(os.path.join(PATH_TO_PREPROCESS, img))
+        assert len(shadows) == len(DIRS) * var
+    
     segment_single(name)
 
     # copy segmentation result to preprocess folder
@@ -399,10 +403,10 @@ def to_shadow_img(shadow):
     shadow.save(b, 'png')
     return to_base64url(base64.encodebytes(b.getvalue()).decode("utf-8"))
     
-def open_psd_single(path_to_psd, var = 4):
+def open_psd_single(path_to_psd, var = 4, seg_only = False):
     # extract png images from psd files
     name = get_file_name(path_to_psd)
-    if (os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png"))):
+    if (os.path.exists(os.path.join(PATH_TO_PREPROCESS, name+"_flat.png")) and seg_only == False):
         try:
             preprocess_to_work(name)
         except Exception as e:
@@ -410,7 +414,7 @@ def open_psd_single(path_to_psd, var = 4):
             preprocess(path_to_psd, name, var)
             preprocess_to_work(name)
     else:
-        preprocess(path_to_psd, name, var)
+        preprocess(path_to_psd, name, var, seg_only)
         preprocess_to_work(name)
 
 def base64_to_np(img_base64):
@@ -436,9 +440,9 @@ def shadow_decrease_single(shadow, line):
 if __name__ == "__main__":
     # for debug
     # open_psd("./test/image7.psd")
-    # import pdb
-    # pdb.set_trace()
-    # batch_process()
+    batch_process()
+    import pdb
+    pdb.set_trace()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
     #     if "flat" not in png: continue
