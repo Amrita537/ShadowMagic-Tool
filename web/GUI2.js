@@ -1442,7 +1442,8 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                 if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
                     jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                     // console.log(jsonFileName);
-                    fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
+                    // fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
+                    fetch(`http://164.90.158.133:${port}/RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
                         .then(data => {
                             isDataFetched = true;
@@ -2303,7 +2304,9 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 //====================================Modal events====================================================//
     document.getElementById("yes_btn").addEventListener("click", function() {
         console.log("Yes button clicked");
+        // what... just reloading?
         location.reload();
+
     });
 
     // Get the "Continue Working" button by ID and attach a click event handler
