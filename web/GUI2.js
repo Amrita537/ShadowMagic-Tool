@@ -128,8 +128,15 @@ document.addEventListener("keydown", function(event) {
     var undoQueue = [];
     var redoStack = [];
 
+
+//after undo, every time alt is pressed, everything renders like it was before. 
+// looks like vector layer saves all the paths from start.
+// How to clean vector layer and start fresh? I have tried vectorLayer.remove(obj), doesn't work.
+// Whatever we do, erase or undo, if alt is clicked, it gets back to the previous version. 
+
 document.addEventListener("keydown", function(event) {
     if (event.altKey) {
+        console.log("clicked");
         const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
         objects.forEach(obj=>{
             if (obj.type == 'path'){
@@ -144,10 +151,11 @@ document.addEventListener("keydown", function(event) {
         canvas.remove(...objects);
 
         let rasterNew = rasterizeLayer(vectorLayer)
+
+        //how to start fresh when undoQueue becomes empty?
         if(undoQueue.length<1){
             firstRasterize = true;
             rasterOld = rasterNew;
-            
         }
         if (firstRasterize){
           rasterOld = rasterNew;
@@ -303,6 +311,7 @@ function addMergedImageToCanvas(imageData) {
         img.opacity=global_opacity;
         img.customImageName=direction+global_number;
         img.erasable = true;
+        img.selectable=true;
         canvas.add(img);
         // img.bringToFront();
         undoQueue.push(img);
@@ -1851,6 +1860,22 @@ function undo() {
         canvas.remove(last_object);
         firstRasterize = true;
     }
+
+    //How to remove vector layer? 
+    // const objects = canvas.getObjects().filter(obj => obj.layerName == 'vectorLayer');
+    //     objects.forEach(obj=>{
+    //         vectorLayer.remove(obj);
+    //       });
+
+
+    
+    // Remove all paths from the canvas
+    // canvas.getObjects().forEach(obj => {
+    //     if (obj.type === 'path') {
+    //         canvas.remove(obj);
+    //     }
+    // });
+
     console.log("Final Queue:", undoQueue);
     console.log("Redo Stack:", redoStack);
 }
