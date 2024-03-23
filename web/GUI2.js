@@ -14,12 +14,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
     canvas.setDimensions({ width: 750, height: 600});
-    fabric.Image.fromURL('background.png', function (img) {
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-            scaleX: canvas.width / img.width,
-            scaleY: canvas.height / img.height
-        });
-    });
+    // fabric.Image.fromURL('background.png', function (img) {
+    //     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+    //         scaleX: canvas.width / img.width,
+    //         scaleY: canvas.height / img.height
+    //     });
+    // });
 
 
     $('[data-toggle="tooltip"]').tooltip({
@@ -311,7 +311,7 @@ function addMergedImageToCanvas(imageData) {
         img.opacity=global_opacity;
         img.customImageName=direction+global_number;
         img.erasable = true;
-        img.selectable=true;
+        // img.selectable=true;
         canvas.add(img);
         // img.bringToFront();
         undoQueue.push(img);
@@ -920,8 +920,10 @@ allCheckbox.addEventListener('change', function () {
     if (this.checked) {
         cursorInfo.style.display = 'block';
         getOutline(this.checked);
-        document.getElementById('collapse4').style.maxHeight = '120px';
+        document.getElementById('collapse4').style.maxHeight = '200px';
         document.getElementById('collapse4').style.overflowY = 'auto';
+        document.getElementById('collapse2').style.maxHeight = '420px';
+        document.getElementById('collapse2').style.overflowY = 'auto';
     } else {
         cursorInfo.style.display = 'none';
         getOutline(this.checked);
@@ -948,6 +950,7 @@ function addShadowButton() {
     shadowButton.style.textAlign = "left";
     shadowButton.style.backgroundColor = "#6c757d";
     shadowButton.style.color = "#ffffff";
+    shadowButton.style.padding="4px"
 
     const SHEyeIcon = document.createElement("i");
     SHEyeIcon.id="CurrentEye";
@@ -1436,8 +1439,8 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
           });
 
 function turn_on_zoom(){
-    zoomButton.style.backgroundColor = "black";
-    zoomButton.style.color = "white";
+    zoomButton.style.backgroundColor = "#B5B5B5";
+    // zoomButton.style.color = "white";
     deactivatePanning();
     deactivatePainting();
     deactivateEraser();
@@ -1472,8 +1475,8 @@ function togglePanning() {
     deactivatePainting();
     deactivateZooming();
     canvas.hoverCursor = 'pointer';
-    panBtn.style.backgroundColor = "black";
-    panBtn.style.color = "white";
+    panBtn.style.backgroundColor = "#B5B5B5";
+    // panBtn.style.color = "";
   } else {
     canvas.hoverCursor = 'default';
     panBtn.style.backgroundColor = "";
@@ -1593,8 +1596,8 @@ function toggleErasing() {
       {   
          toolSize.style.display = 'flex'
          canvas.isDrawingMode = true;
-         eraserBtn.style.backgroundColor = "black";
-         eraserBtn.style.color = "white";
+         eraserBtn.style.backgroundColor = "#B5B5B5";
+         // eraserBtn.style.color = "white";
          canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
          canvas.freeDrawingBrush.width = global_brush_width;
 
@@ -1640,8 +1643,8 @@ function UndoErase() {
     canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
     canvas.freeDrawingBrush.width = global_brush_width;
     canvas.freeDrawingBrush.inverted = true;
-    undoEraser.style.backgroundColor = "black";
-    undoEraser.style.color = "white";
+    undoEraser.style.backgroundColor = "#B5B5B5";
+    // undoEraser.style.color = "white";
     }
     else
     {
@@ -1693,8 +1696,8 @@ function UndoErase() {
             canvas.freeDrawingBrush.width = global_brush_width;
             canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
 
-            this.style.backgroundColor = 'black';
-            this.style.color = 'white';
+            this.style.backgroundColor = '#B5B5B5';
+            // this.style.color = 'white';
 
             // canvas.on('object:added', function(e) {
             // e.target.selectable = false;
@@ -1868,7 +1871,7 @@ function undo() {
     //       });
 
 
-    
+
     // Remove all paths from the canvas
     // canvas.getObjects().forEach(obj => {
     //     if (obj.type === 'path') {
@@ -2032,9 +2035,9 @@ function setCardBackgroundImages(direction) {
               updateCheckboxes();
 
               deactivatePainting();
-              dict_id=direction+global_number;
-              addObjectToDictionary(dict_id);
-              removeAllPaths();
+              // dict_id=direction+global_number;
+              // addObjectToDictionary(dict_id);
+              // removeAllPaths();
 
               paginationItems.forEach(item => item.classList.remove('active'));
               paginationItems[index].classList.add('active');
