@@ -178,12 +178,12 @@ padding: 10px 5px 10px 5px;
 
 #UndoBtn:hover {
     color: white; /* Change to the desired color */
-    background-color: black;
+    background-color: #B5B5B5;
 }
 
 #RedoBtn:hover {
     color: white; /* Change to the desired color */
-    background-color: black;
+    background-color: #B5B5B5;
 }
 
 #pointerBtn:hover
@@ -222,7 +222,7 @@ canvas {
     position: relative;
     display: flex;
     height: 600px;
-    width: 600px;
+    width: 750px;
     justify-content: center;
 }
 
@@ -230,10 +230,9 @@ canvas {
 #canvas_id2 {
     background-size: cover; 
     position: relative;
-    display: flex; /* Display as flex container */
+/*    display: flex; */
     justify-content: center; /* Center horizontally */
 }
-
 
 /*================Style for operation_id================*/
 
