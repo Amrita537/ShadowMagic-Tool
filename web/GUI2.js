@@ -125,6 +125,9 @@ document.addEventListener("keydown", function(event) {
 });
 
 
+    var undoQueue = [];
+    var redoStack = [];
+
 document.addEventListener("keydown", function(event) {
     if (event.altKey) {
         const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
@@ -135,11 +138,17 @@ document.addEventListener("keydown", function(event) {
               obj.set('opacity', global_opacity);
               obj.set('erasable', true);
               vectorLayer.addWithUpdate(obj);
+              console.log(vectorLayer);
             }
           });
         canvas.remove(...objects);
 
         let rasterNew = rasterizeLayer(vectorLayer)
+        if(undoQueue.length<1){
+            firstRasterize = true;
+            rasterOld = rasterNew;
+            
+        }
         if (firstRasterize){
           rasterOld = rasterNew;
           firstRasterize = false;
@@ -296,6 +305,7 @@ function addMergedImageToCanvas(imageData) {
         img.erasable = true;
         canvas.add(img);
         // img.bringToFront();
+        undoQueue.push(img);
         c = null;
         canvas.renderAll();
     });
@@ -1647,8 +1657,8 @@ function UndoErase() {
 
     const cursorUrl = 'circle_icon.png';
     var mousecursor; 
-    var undoStack = [];
-    var redoStack = [];
+    // var undoStack = [];
+    // var redoStack = [];
 
     let vectorLayer = new fabric.Group([], 
           {
@@ -1677,11 +1687,11 @@ function UndoErase() {
             this.style.backgroundColor = 'black';
             this.style.color = 'white';
 
-            canvas.on('object:added', function(e) {
-            e.target.selectable = false;
-            undoStack.push(e.target);
-            redoStack = [];
-            });
+            // canvas.on('object:added', function(e) {
+            // e.target.selectable = false;
+            // undoStack.push(e.target);
+            // redoStack = [];
+            // });
         } 
         else {
             toolSize.style.display = 'none'
@@ -1786,32 +1796,77 @@ function deactivateUndoEraser() {
 }
 
 
-// Function to undo the last action
-function undo() {
+//============================== undo redo===============================
+// // Function to undo the last action
+// function undo() {
 
-    if (undoStack.length > 0) {
-        var obj = undoStack.pop();
-        canvas.remove(obj);
-        redoStack.push(obj);
-        canvas.renderAll();
-    }
-}
+//     if (undoStack.length > 0) {
+//         var obj = undoStack.pop();
+//         canvas.remove(obj);
+//         redoStack.push(obj);
+//         canvas.renderAll();
+//     }
+// }
 
-// Function to redo the last undone action
-// this logic will definitely not work anymore
-// todo: update undo logic
-function redo() {
-    if (redoStack.length > 0) {
-        var obj = redoStack.pop();
-        canvas.add(obj);
-        undoStack.push(obj);
-        canvas.renderAll();
-    }
-}
+// // Function to redo the last undone action
+// // this logic will definitely not work anymore
+// // todo: update undo logic
+// function redo() {
+//     if (redoStack.length > 0) {
+//         var obj = redoStack.pop();
+//         canvas.add(obj);
+//         undoStack.push(obj);
+//         canvas.renderAll();
+//     }
+// }
+
+// // Event listeners for undo and redo buttons
+// document.getElementById('UndoBtn').addEventListener('click', undo);
+// document.getElementById('RedoBtn').addEventListener('click', redo);
+
 
 // Event listeners for undo and redo buttons
 document.getElementById('UndoBtn').addEventListener('click', undo);
 document.getElementById('RedoBtn').addEventListener('click', redo);
+
+function undo() {
+    deactivatePanning();
+    deactivateZooming();
+    deactivateEraser();
+    deactivatePainting();
+
+    console.log("Undo Queue:", undoQueue);
+
+    if (undoQueue.length > 1) {
+        var last_object = undoQueue.pop();
+        redoStack.push(last_object);
+        var second_last_object = undoQueue[undoQueue.length - 1];
+        canvas.remove(last_object);
+        console.log("Removed:", last_object);
+        console.log("Next:", second_last_object);
+        canvas.add(second_last_object);
+    } else if (undoQueue.length === 1) {
+        var last_object = undoQueue.pop();
+        redoStack.push(last_object);
+        canvas.remove(last_object);
+        firstRasterize = true;
+    }
+    console.log("Final Queue:", undoQueue);
+    console.log("Redo Stack:", redoStack);
+}
+
+function redo() {
+    if (redoStack.length > 0) {
+        var last_redo_object = redoStack.pop();
+        var last_undo_object = undoQueue[undoQueue.length - 1];
+        canvas.remove(last_undo_object);
+        canvas.add(last_redo_object);
+        undoQueue.push(last_redo_object);
+        console.log("Redo Stack:", redoStack);
+        console.log("Undo Queue:", undoQueue);
+    }
+}
+
 
 
 //============================ Drawing Layer dictionary================================//
