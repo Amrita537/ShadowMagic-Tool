@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let maxDisplayHeight = 600;
     let realWidth = null;
     let realHeight = null;
+    let maskLayer = [];
     canvas.setDimensions({ width: maxDisplayWidth, height: maxDisplayHeight});
 
     const canvasElement= document.getElementById('canvas_div')
@@ -148,59 +149,42 @@ document.addEventListener("DOMContentLoaded", function () {
             //how to start fresh when undoQueue becomes empty?
             if(undoQueue.length<1){
                 firstRasterize = true;
-                rasterOld = rasterNew;
+                rasterAccumulatedShadow = rasterNew;
             }
             if (firstRasterize){
-              rasterOld = rasterNew;
+              rasterAccumulatedShadow = rasterNew;
               firstRasterize = false;
             }
             else{
-              rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
+              rasterAccumulatedShadow = mergeBinaryMaps(rasterNew, rasterAccumulatedShadow);
             }
-            addMergedImageToCanvas(rasterOld);
+            addMergedImageToCanvas(rasterAccumulatedShadow);
         }
     });
 
-    // document.addEventListener("keydown", function(event) {
-    //     if (event.altKey) {
-    //         if(!isErasing)
-    //         {
-    //         const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
-    //         objects.forEach(obj=>{
-    //             if (obj.type == 'path'){
-    //               console.log(obj);
-    //               obj.set('stroke', 'black');
-    //               obj.set('opacity', global_opacity);
-    //               obj.set('erasable', true);
-    //               vectorLayer.addWithUpdate(obj);
-    //             }
-    //           });
-    //         canvas.remove(...objects);
-
-    //         let rasterNew = rasterizeLayer(vectorLayer) // image file
-    //         }
-    //                 let rasterNew = rasterizeLayer(vectorLayer) // image file
-    //         if (isErasing){
-    //             let raster_objects = canvas.getObjects().filter(obj=>obj.layerName == 'rasterLayer')
-    //             raster_objects.forEach(obj=>{
-    //                 rasterNew= obj;
-    //                 rasterOld= obj;
-    //             });
-    //         }
-
-    //         if (firstRasterize){
-    //           rasterOld = rasterNew; //new image file becomes old
-    //           firstRasterize = false;
-    //         }
-    //         else{
-    //           rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
-    //         }
-    //         addMergedImageToCanvas(rasterOld);
-    //     }
-
-    // });
-
     // helper functions added by Chuan
+    function applyBinaryMaps(imageData, maskData) {
+        const width = imageData.width;
+        const height = imageData.height;
+
+        // Create a new ImageData object to store the result
+        let mergedData = new ImageData(width, height);
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            if (imageData.data[i+3] != 0 && maskData.data[i] != 0 ) {
+                mergedData.data[i] = 0; // R
+                mergedData.data[i + 1] = 0; // G
+                mergedData.data[i + 2] = 0; // B
+                mergedData.data[i + 3] = 255*global_opacity; // A 
+            } 
+            else {
+                mergedData.data[i] = 0; // R
+                mergedData.data[i + 1] = 0; // G
+                mergedData.data[i + 2] = 0; // B
+                mergedData.data[i + 3] = 0; // A    
+            }
+        }
+        return mergedData;  
+    };
     function ImageDatatoPNG(imgData){
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = imgData.width; // Set to your Fabric.js canvas width
@@ -440,18 +424,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     loader.style.display = 'none';
                     const imgData = e.target.result;
                     fabric.Image.fromURL(imgData, function (img) {
-                        // then never rescale the image!
-                        // global_scaleFactor = calculateScaleFactor(img.width, img.height, canvas.width, canvas.height);
-                        // img.scale(global_scaleFactor);
-
-
-                        // set up the canvas size if we haven't do so
+                        // initialize canvas if we haven't do so
                         if (realWidth == null || realHeight == null){
                             realWidth = img.width;
                             realHeight = img.height;    
                         };
-
                         if (canvasSizeInitialized == false){
+                            // set zoom ratio that make sure the display canvas size always fully display contents
                             let ratio = null;
                             if (realWidth < realHeight){
                                 ratio = maxDisplayWidth / realWidth;
@@ -486,38 +465,46 @@ document.addEventListener("DOMContentLoaded", function () {
                             canvasSizeInitialized = true;
                         };
 
+                        // get flat mask data
+                        if (psdlayername.includes('flat')){
+                            let tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = img.width;
+                            tempCanvas.height = img.height;
+                            let ctx = tempCanvas.getContext('2d');
+                            img.render(ctx,{
+                                left: 0,
+                                top: 0,
+                                scaleX: 1,
+                                scaleY: 1
+                            });
+
+                            let maskWholeData = new ImageData(tempCanvas.width, tempCanvas.height);
+                            const flatData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                            for (var i = 0; i < flatData.data.length; i += 4) {
+                                if (flatData.data[i + 3] != 0){
+                                    // Using the alpha value as the luminance for RGB
+                                    maskWholeData.data[i] = 255;    // Red channel
+                                    maskWholeData.data[i + 1] = 255; // Green channel
+                                    maskWholeData.data[i + 2] = 255; // Blue channel
+                                    maskWholeData.data[i + 3] = 255;         // Set alpha to fully opaque    
+                                }
+                                else{
+                                    maskWholeData.data[i] = 0;    // Red channel
+                                    maskWholeData.data[i + 1] = 0; // Green channel
+                                    maskWholeData.data[i + 2] = 0; // Blue channel
+                                    maskWholeData.data[i + 3] = 255;         // Set alpha to fully opaque    
+                                }
+                                
+                            };
+                            maskWholeData.layerName = 'maskFlat';
+                            maskWholeData.activated = true;
+                            maskLayer.push(maskWholeData);
+                        }
+
                         img.customSelected = false; // Custom property to indicate selected state
                         img.customImageName = psdlayername;
                         img.customBase64 = imgData; // Set custom base64 data
                         img.selectable = false;
-
-                        // this offset is the source of evil...
-                        // global_pos_top=(canvas.height - img.height * global_scaleFactor) / 2;
-                        // global_pos_left=(canvas.width - img.width * global_scaleFactor) / 2;
-                        // img.top = global_pos_top;
-                        // img.left = global_pos_left;
-                        // global_img_h=img.height*global_scaleFactor;
-                        // global_img_w=img.width*global_scaleFactor;
-                        // canvas.setBackgroundImage(null);
-                        // let backimg_name = 'backgroundVer.png';
-                        // if (img.width < 400) {
-                        //     backimg_name = 'backgroundVer.png';
-                        // } else if (img.width > 400 && img.width < 600) {
-                        //     backimg_name = 'backgroundVer2.png';
-                        // } else {
-                        //     backimg_name = 'background.png';
-                        // }
-
-                        // fabric.Image.fromURL(backimg_name, function (backimg) {
-                        //     backimg.width=img.width*global_scaleFactor;
-                        //     backimg.height=img.height*global_scaleFactor;
-                        //     backimg.top = global_pos_top;
-                        //     backimg.left = global_pos_left;
-                        //     backimg.customImageName="backgroundImage";
-                        //     canvas.add(backimg);
-                        //     canvas.sendToBack(backimg);
-                        // });
-
 
                         images.push(img);
                         initialSizes.push({ width: img.width, height: img.height });
@@ -1531,53 +1518,36 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     canvas.on("mouse:up", function () {
-      if (isPanning) {
-        canvas.set("isGrabMode", false); // Disable fabric.js grab mode
-        canvas.selection = true; // Re-enable object selection
-      }
-      // this logic belongs to painting, but we probably can't define two canvas.on("mouse:up")
-      // therefore I put them here. 
-      // And there is no reason to put rasterization logic under keyboard press
-      if (isPainting){
-            // let skip mask layer first
-
-            // hide all none shadow layers
-            let currentShadows = getAllShadowLayers(canvas);
-            
-            // for debug
-            let shadowRasterized = rasterizeLayer(currentShadows);
-            ImageDatatoPNG(shadowRasterized);
-
-            const objects = canvas.getObjects().filter(obj => obj.type == 'path');
-            // //     if (obj.type == 'path'){
-            // //       vectorLayer.addWithUpdate(obj);
-            // //     }
-            // //   })
-      
-            // let rasterNew = rasterizeLayer(vectorLayer);
-            // if (rasterNew.width != mergedMask.width || rasterNew.height != mergedMask.height){
-            
-            // }sha
-
-            // if (firstRasterize){
-            //     if (rasterOld == null){
-            //         rasterOld = new ImageData(rasterNew.width, rasterNew.height);
-            //         rasterOld = rasterNew;    
-            //     }
-            //     else{
-            //         rasterOld = rasterNew;
-            //     }
-            //     rasterOld = applyBinaryMaps(rasterOld, mergedMask);
-            //     firstRasterize = false;
-            //     // for debug
-            //     // ImageDatatoPNG(rasterOld);
-            // }
-            // else{
-            //     rasterOld = mergeBinaryMaps(rasterNew, rasterOld, maskData = mergedMask);
-            //     // rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
-            // }
-            // addMergedImageToCanvas(rasterOld);
-        
+        if (isPanning) {
+            canvas.set("isGrabMode", false); // Disable fabric.js grab mode
+            canvas.selection = true; // Re-enable object selection
+        }
+        // this logic belongs to painting, but we probably can't define two canvas.on("mouse:up")
+        // therefore I put them here. 
+        // And there is no reason to put rasterization logic under keyboard press
+        if (isPainting){
+            // get drawing mask
+            const activateMasks = maskLayer.filter(layer => layer.activated);
+            let mergedMask = activateMasks.reduce(
+                (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true));
+            // get new drawn vector stroke
+            let tempStrokeLayer = new fabric.Group([], {
+                subTargetCheck: true,
+                layerName: "tempLayer"
+            });
+            const objects = canvas.getObjects().filter(obj => (obj.type == 'path' && obj.layerName != "grids")||(obj.type=="image" && obj.layerName == "rasterLayer"));
+            objects.forEach(obj=>{
+                if (obj.type == 'path'){
+                    obj.set('stroke', 'black');  
+                }
+                obj.set('opacity', global_opacity);
+                obj.set('erasable', true);
+                tempStrokeLayer.addWithUpdate(obj);
+            });
+            canvas.remove(...objects);
+            let rasterizedStroke = rasterizeLayer(tempStrokeLayer);
+            let rasterAccumulatedShadow = applyBinaryMaps(rasterizedStroke, mergedMask);
+            addMergedImageToCanvas(rasterAccumulatedShadow);
         }
     });
 
@@ -1706,13 +1676,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // var undoStack = [];
     // var redoStack = [];
 
+    // I will not use this logic
     let vectorLayer = new fabric.Group([], 
           {
             subTargetCheck: true,
             layerName: "vectorLayer"
           }
       );
-    let rasterOld = new ImageData(canvas.width, canvas.height);
+    let rasterAccumulatedShadow = new ImageData(canvas.width, canvas.height);
     let firstRasterize = true;
 
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
@@ -1841,34 +1812,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     //============================== undo redo===============================
-    // // Function to undo the last action
-    // function undo() {
-
-    //     if (undoStack.length > 0) {
-    //         var obj = undoStack.pop();
-    //         canvas.remove(obj);
-    //         redoStack.push(obj);
-    //         canvas.renderAll();
-    //     }
-    // }
-
-    // // Function to redo the last undone action
-    // // this logic will definitely not work anymore
-    // // todo: update undo logic
-    // function redo() {
-    //     if (redoStack.length > 0) {
-    //         var obj = redoStack.pop();
-    //         canvas.add(obj);
-    //         undoStack.push(obj);
-    //         canvas.renderAll();
-    //     }
-    // }
-
-    // // Event listeners for undo and redo buttons
-    // document.getElementById('UndoBtn').addEventListener('click', undo);
-    // document.getElementById('RedoBtn').addEventListener('click', redo);
-
-
     // Event listeners for undo and redo buttons
     document.getElementById('UndoBtn').addEventListener('click', undo);
     document.getElementById('RedoBtn').addEventListener('click', redo);
@@ -2065,9 +2008,6 @@ document.addEventListener("DOMContentLoaded", function () {
                   updateCheckboxes();
 
                   deactivatePainting();
-                  // dict_id=direction+global_number;
-                  // addObjectToDictionary(dict_id);
-                  // removeAllPaths();
 
                   paginationItems.forEach(item => item.classList.remove('active'));
                   paginationItems[index].classList.add('active');
@@ -2228,21 +2168,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         fabric.Image.fromURL(newImageUrl, function(newImage) {
             newImage.customBase64 = newImageUrl
-            // newImage.scale(global_scaleFactor);
             newImage.customImageName = label;
             newImage.selectable = false;
             newImage.visible = true;
-            newImage.opacity = global_opacity; 
-            // Remove the old background image
-            // this logic is also ugly...
-            // for (let i = 0; i < shadow_segment_images.length; i++){
-            //     if (shadow_segment_images[i].customImageName == label){
-            //         shadow_segment_images[i] = newImage;        
-            //     }
-            // }
+            newImage.opacity = global_opacity;
             canvas.remove(layerImageObject);
             canvas.add(newImage);
-            // canvas.moveTo(newImage, 0); // Move to background if necessary    
         });    
     }
 
