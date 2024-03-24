@@ -411,7 +411,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (canvasSizeInitialized == false){
                             // set zoom ratio that make sure the display canvas size always fully display contents
                             let ratio = null;
-                            if (realWidth < realHeight){
+                            if (realWidth > realHeight){
                                 ratio = maxDisplayWidth / realWidth;
                             }
                             else{
