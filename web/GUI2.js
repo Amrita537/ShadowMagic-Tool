@@ -2091,7 +2091,7 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
 
 //======================= Change Shadow Size =====================================//
 
-    const incrementButton = document.querySelector('.increment');
+       const incrementButton = document.querySelector('.increment');
     const decrementButton = document.querySelector('.decrement');
 
     incrementButton.addEventListener('click', function(labels = []) {
@@ -2180,12 +2180,11 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
         fabric.Image.fromURL(newImageUrl, function(newImage) {
             newImage.customBase64 = newImageUrl
             newImage.scale(global_scaleFactor);
-            newImage.left=global_pos_left;
-            newImage.top=global_pos_top;
             newImage.customImageName = label;
             newImage.selectable = false;
             newImage.visible = true;
             newImage.opacity = global_opacity; 
+            newImage.left=global_pos_left;
             // Remove the old background image
             // this logic is also ugly...
             // for (let i = 0; i < shadow_segment_images.length; i++){
