@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let realWidth = null;
     let realHeight = null;
     let maskLayer = [];
+    let firstRasterize = true;
     canvas.setDimensions({ width: maxDisplayWidth, height: maxDisplayHeight});
 
     const canvasElement= document.getElementById('canvas_div')
@@ -63,16 +64,6 @@ document.addEventListener("DOMContentLoaded", function () {
         transparentCorners: false,
         selectable: false
       });
-
-    // I will generate the background and never use canvas2
-    // canvas2.setDimensions({ width: 750, height: 600});
-    // // set up a new canvas for display background image only?
-    // fabric.Image.fromURL('background.png', function (img) {
-    //     canvas2.setBackgroundImage(img, canvas2.renderAll.bind(canvas2), {
-    //         scaleX: canvas2.width / img.width,
-    //         scaleY: canvas2.height / img.height
-    //     });
-    // });
 
 //========================== Keyboard shortcuts ===========================
     document.addEventListener("keydown", function(event) {
@@ -123,46 +114,64 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var undoQueue = [];
     var redoStack = [];
-    //after undo, every time alt is pressed, everything renders like it was before. 
-    // looks like vector layer saves all the paths from start.
-    // How to clean vector layer and start fresh? I have tried vectorLayer.remove(obj), doesn't work.
-    // Whatever we do, erase or undo, if alt is clicked, it gets back to the previous version. 
-
-    document.addEventListener("keydown", function(event) {
-        if (event.altKey) {
-            console.log("clicked");
-            const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
-            objects.forEach(obj=>{
-                if (obj.type == 'path'){
-                  console.log(obj);
-                  obj.set('stroke', 'black');
-                  obj.set('opacity', global_opacity);
-                  obj.set('erasable', true);
-                  vectorLayer.addWithUpdate(obj);
-                  console.log(vectorLayer);
-                }
-              });   
-            canvas.remove(...objects);
-
-            let rasterNew = rasterizeLayer(vectorLayer);
-
-            //how to start fresh when undoQueue becomes empty?
-            if(undoQueue.length<1){
-                firstRasterize = true;
-                rasterAccumulatedShadow = rasterNew;
-            }
-            if (firstRasterize){
-              rasterAccumulatedShadow = rasterNew;
-              firstRasterize = false;
-            }
-            else{
-              rasterAccumulatedShadow = mergeBinaryMaps(rasterNew, rasterAccumulatedShadow);
-            }
-            addMergedImageToCanvas(rasterAccumulatedShadow);
-        }
-    });
 
     // helper functions added by Chuan
+    function mergeBinaryMaps(imageData1, imageData2, maskData = null, mergeMask = false) {
+        const width = imageData1.width;
+        const height = imageData1.height;
+
+        // Create a new ImageData object to store the result
+        let mergedData = new ImageData(width, height);
+
+        for (let i = 0; i < imageData1.data.length; i += 4) {
+            // Assuming black pixels are strictly RGBA(0, 0, 0, 255)
+            let needMerge = null;
+            if (mergeMask){
+                needMerge = imageData1.data[i] != 0 || imageData2.data[i] != 0;
+            }
+            else{
+                if (maskData != null){
+                    needMerge = (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0 )&&maskData.data[i]!=0;   
+                }
+                else{
+                    needMerge = imageData1.data[i+3] > 125 || imageData2.data[i+3] > 125;   
+                }
+                
+            }
+            if (needMerge) {
+                if (mergeMask){
+                    // merge mask image
+                    mergedData.data[i] = 255; // R
+                    mergedData.data[i + 1] = 255; // G
+                    mergedData.data[i + 2] = 255; // B
+                    mergedData.data[i + 3] = 255; // A    
+                }
+                else{
+                    // merge shadows
+                    mergedData.data[i] = 0; // R
+                    mergedData.data[i + 1] = 0; // G
+                    mergedData.data[i + 2] = 0; // B
+                    mergedData.data[i + 3] = global_opacity*255; // A        
+                }   
+                 
+            } 
+            else {
+                // Else, set the pixel to white
+                mergedData.data[i] = 0; // R
+                mergedData.data[i + 1] = 0; // G
+                mergedData.data[i + 2] = 0; // B
+                if (mergeMask){
+                    mergedData.data[i + 3] = 255; // A    
+                }
+                else{
+                    mergedData.data[i + 3] = 0; // A    
+                }
+                
+            }
+        }
+
+        return mergedData;  
+    }
     function applyBinaryMaps(imageData, maskData) {
         const width = imageData.width;
         const height = imageData.height;
@@ -240,33 +249,6 @@ document.addEventListener("DOMContentLoaded", function () {
         return imageData;
     };
 
-    function mergeBinaryMaps(imageData1, imageData2) {
-        const width = imageData1.width;
-        const height = imageData1.height;
-
-        // Create a new ImageData object to store the result
-        let mergedData = new ImageData(width, height);
-
-        for (let i = 0; i < imageData1.data.length; i += 4) {
-            // Assuming black pixels are strictly RGBA(0, 0, 0, 255)
-            if (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0) {
-                // If either of the pixels is black, set the result pixel to black
-                mergedData.data[i] = 0; // R
-                mergedData.data[i + 1] = 0; // G
-                mergedData.data[i + 2] = 0; // B
-                mergedData.data[i + 3] = 255; // A
-            } else {
-                // Else, set the pixel to white
-                mergedData.data[i] = 0; // R
-                mergedData.data[i + 1] = 0; // G
-                mergedData.data[i + 2] = 0; // B
-                mergedData.data[i + 3] = 0; // A
-            }
-        }
-
-        return mergedData;  
-    }
-
     // just for debug
     function base64ToPNG(base64URL){
         // Convert the base64 URL to a blob
@@ -320,15 +302,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // base64ToPNG(c.toDataURL());
         fabric.Image.fromURL(c.toDataURL(), function(img) {
-            img.left = 0;
-            img.top = 0;
             img.layerName = 'rasterLayer';
-            img.opacity=global_opacity;
+            // img.opacity=global_opacity;
             img.customImageName=direction+global_number;
             img.erasable = true;
             canvas.add(img);
             undoQueue.push(img);
-            c = null;
             // requestRenderAll has higher efficiency than renderAll
             canvas.requestRenderAll();
         });
@@ -704,59 +683,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     }
 
-    // function fetch_Shadow_files(shadow_arr) {
-    //     if (shadow_arr == names_shadow_segment) {
-    //         let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
-    //         names_shadow_segment.forEach(name => {
-    //             let fullPath = relativePath + name;
-    //             fetch(fullPath)
-    //                 .then(response => {
-    //                     if (response.ok) {
-    //                         fabric.Image.fromURL(fullPath, function (img) {
-    //                             // why scale?
-    //                             img.customBase64 = img.toDataURL({ format: 'png' });
-    //                             img.scale(global_scaleFactor);
-    //                             img.customImageName = name;
-    //                             img.selectable = false;
-    //                             img.visible = false;
-    //                             img.opacity = global_opacity; 
-    //                             img.top=global_pos_top;
-    //                             img.left=global_pos_left;
-    //                             // img.customBase64 = img.toDataURL({ format: 'png' });
-    //                             canvas.add(img);
-    //                             shadow_segment_images.push(img);
-    //                         });
-    //                     } else {
-    //                         console.log(`Image ${fullPath} does not exist`);
-    //                     }
-    //                 });
-    //         });
-    //          // console.log("Loaded shadow_segment_images", shadow_segment_images);
-    //     } 
-    //     else {
-    //         let relativePath = 'Shadows/'; // Adjust this relative path based on your directory structure
-    //         names_shadow.forEach(name => {
-    //             let fullPath = relativePath + name;
-    //             fetch(fullPath)
-    //                 .then(response => {
-    //                     if (response.ok) {
-    //                         fabric.Image.fromURL(fullPath, function (img) {
-    //                             img.scale(global_scaleFactor);
-    //                             img.customImageName = name;
-    //                             img.selectable = false;
-    //                             img.visible = false;
-    //                             base_shadow_images.push(img);
-    //                         });
-    //                     } else {
-    //                         console.log(`Image ${fullPath} does not exist`);
-    //                     }
-
-    //                 });
-    //         });
-    //         // console.log("Loaded base_shadow_images", base_shadow_images);
-    //     }
-    // }
-
     function fetch_Shadow_files(shadow_arr) {
         if (shadow_arr == names_shadow_segment) {
             let relativePath = 'Shadows/sub_shadows/'; // Adjust this relative path based on your directory structure
@@ -767,13 +693,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (response.ok) {
                             fabric.Image.fromURL(fullPath, function (img) {
                                 img.customBase64 = img.toDataURL({ format: 'png' });
-                                // img.scale(global_scaleFactor);
                                 img.customImageName = name;
                                 img.selectable = false;
                                 img.visible = false;
                                 img.opacity = global_opacity; 
-                                // img.top=global_pos_top;
-                                // img.left=global_pos_left;
                                 canvas.add(img);
                                 shadow_segment_images.push(img);
                             });
@@ -1300,22 +1223,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                 // console.log(jsonFileName);
                 fetch(`/RefinedOutput/json/${jsonFileName}`)
-                // fetch(`http://localhost:8000/RefinedOutput/json/${jsonFileName}`)
                     .then(response => response.json())
                     .then(data => {
                         isDataFetched = true;
-
                         data.regions.forEach(region => {
                             const originalCoordinates = region.coordinates;
                             const color = region.color; // Get color from JSON
-                            // const scaledCoordinates = originalCoordinates.map(point => ({
-                            //     x: point[0] * global_scaleFactor + global_pos_left,
-                            //     y: point[1] * global_scaleFactor + global_pos_top
-                            // }));
+                            const scaledCoordinates = originalCoordinates.map(point => ({
+                                x: point[0],
+                                y: point[1],
+                            }));
 
                             // Draw the polygon on the canvas and set its initial visibility
-                            // drawPolygon(scaledCoordinates, region.label);
-                            drawPolygon(originalCoordinates, region.label);
+                            drawPolygon(scaledCoordinates, region.label);
+                            // drawPolygon(originalCoordinates, region.label);
                         });
                     })
                     .catch(error => console.error('Error fetching JSON file:', error));
@@ -1535,7 +1456,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 subTargetCheck: true,
                 layerName: "tempLayer"
             });
-            const objects = canvas.getObjects().filter(obj => (obj.type == 'path' && obj.layerName != "grids")||(obj.type=="image" && obj.layerName == "rasterLayer"));
+            const objects = canvas.getObjects().filter(obj => (obj.type == 'path' && obj.layerName != "grids"));
             objects.forEach(obj=>{
                 if (obj.type == 'path'){
                     obj.set('stroke', 'black');  
@@ -1546,10 +1467,34 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             canvas.remove(...objects);
             let rasterizedStroke = rasterizeLayer(tempStrokeLayer);
-            let rasterAccumulatedShadow = applyBinaryMaps(rasterizedStroke, mergedMask);
+            rasterizedStroke = applyBinaryMaps(rasterizedStroke, mergedMask);
+            if (firstRasterize){
+                rasterAccumulatedShadow = rasterizedStroke;
+                firstRasterize = false;
+            }
+            else{
+                rasterAccumulatedShadow = mergeBinaryMaps(rasterizedStroke, rasterAccumulatedShadow);    
+            }
             addMergedImageToCanvas(rasterAccumulatedShadow);
         }
     });
+
+    canvas.on("erasing:end", ({ targets, drawables }) => {
+        const activateMasks = maskLayer.filter(layer => layer.activated);
+        let mergedMask = activateMasks.reduce(
+                (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true));
+        let tempEraserLayer = new fabric.Group([], {
+                subTargetCheck: true,
+                layerName: "tempLayer"
+            });
+            const objects = canvas.getObjects().filter(obj => (obj.type == 'image' && obj.layerName == "rasterLayer"));
+            objects.forEach(obj=>{
+                tempEraserLayer.addWithUpdate(obj);
+            });
+            canvas.remove(...objects);
+            rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
+            addMergedImageToCanvas(rasterAccumulatedShadow);
+      });
 
 
     function deactivatePanning() {
@@ -1684,8 +1629,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
       );
     let rasterAccumulatedShadow = new ImageData(canvas.width, canvas.height);
-    let firstRasterize = true;
-
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
         var toolSize = document.getElementById('ToolSize');
         isPainting= !isPainting;
