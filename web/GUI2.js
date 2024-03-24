@@ -232,7 +232,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function canvasToImageData(targetCanvas){
         var tempCanvas = targetCanvas.toCanvasElement();
         var ctx = tempCanvas.getContext('2d');
-        var imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        var imageData = ctx.getImageData(0, 0, tempCanvas.width*targetCanvas.getZoom(), tempCanvas.height*targetCanvas.getZoom());
         return imageData;
     }
 
@@ -418,7 +418,9 @@ document.addEventListener("DOMContentLoaded", function () {
                                 ratio = maxDisplayHeight / realHeight;
                             }
                             canvas.setDimensions({ width: realWidth, height: realHeight});
+                            canvas2.setDimensions({ width: realWidth, height: realHeight});
                             canvas.setZoom(ratio);
+                            canvas2.setZoom(ratio);
 
                             // add transparent background texture
                             const checkerSize = 150; // Size of the checker squares
@@ -940,9 +942,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let tempCanvas = document.createElement('canvas');
         let tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        tempCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+        tempCanvas.width = canvas.width*canvas.getZoom();
+        tempCanvas.height = canvas.height*canvas.getZoom();
+        tempCtx.putImageData(canvasToImageData(canvas), 0, 0);
         iconImageS.src = tempCanvas.toDataURL();
 
         const tickIcon = document.createElement("i");
@@ -1048,7 +1050,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             let iconCanvas = document.createElement('canvas');
             let iconCanvasCtx = iconCanvas.getContext('2d');
-            iconCanvas.width = canvas.width;
+            iconCanvas.width =  canvas.width;
             iconCanvas.height = canvas.height;
             iconCanvasCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
             BmIconImg.src = iconCanvas.toDataURL();
