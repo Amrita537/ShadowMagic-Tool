@@ -1433,37 +1433,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initially hide the zoom controls
     zoomControls.style.display = "none";
-
-    // // Add click event listener to the search button
-    // zoomButton.addEventListener("click", function() {
-    //   isZooming=!isZooming;
-    //   if(isZooming)
-    //   {
-    //       zoomButton.style.backgroundColor = "black";
-    //       zoomButton.style.color = "white";
-    //       deactivatePanning();
-    //       deactivatePainting();
-    //       deactivateEraser();
-    //       deactivateUndoEraser();
-
-    //       canvasElement2.style.display = 'none';
-    //       canvasElement.style.display = 'block';
-
-    //       updateBookmarkedShadows();
-    //       // Toggle visibility of the zoom controls
-    //       if (zoomButton.classList.toggle("checked")) {
-    //         zoomControls.style.display = "block";
-    //       } else {
-    //         zoomControls.style.display = "none";
-    //       }
-    //   }
-    //   else{
-    //         zoomButton.style.backgroundColor = "";
-    //         zoomButton.style.color = "";
-    //   }
-
-    // });
-
     zoomButton.addEventListener("click", function() 
     {
         isZooming=!isZooming;
