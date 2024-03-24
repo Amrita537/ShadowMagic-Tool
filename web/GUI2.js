@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
         transparentCorners: false
       });
 
-    canvas.setDimensions({ width: 750, height: 600});
+    canvas.setDimensions({ width: 750, height: 650});
     fabric.Image.fromURL('background.png', function (img) {
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
             scaleX: canvas.width / img.width,
@@ -49,6 +49,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let isPanning=false;
     let isZooming = false;
+    var toolSize = document.getElementById('ToolSize');
+
+    // let left0_arr=[], left1_arr=[], left2_arr=[]
+
+    //  // Function to be executed after arrays are initialized
+    // let left_arr = [];
+
+    // for (let i = 0; i < 4; i++) {
+    //     window[`left${i}_arr`] = [];
+    // }
+
+    // // Testing the arrays
+    // console.log(left0_arr); // []
+    // console.log(left1_arr); // []
+    // console.log(left2_arr); // []
+    // console.log(left3_arr); // []
+
 
     //======================Temporary Canvas ==========================
 
@@ -63,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function () {
         selectable: false
       });
 
-    canvas2.setDimensions({ width: 750, height: 600});
+    canvas2.setDimensions({ width: 750, height: 650});
 
     fabric.Image.fromURL('background.png', function (img) {
         canvas2.setBackgroundImage(img, canvas2.renderAll.bind(canvas2), {
@@ -73,6 +90,18 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 //========================== Keyboard shortcuts ===========================
+
+let isOverImage = false; // Flag to track if mouse is over an image
+
+canvas.on('mouse:over', function(e) {
+    isOverImage = true;
+});
+
+canvas.on('mouse:out', function(e) {
+    isOverImage = false;
+});
+
+
 document.addEventListener("keydown", function(event) {
     if (event.key === 'b') {
         event.preventDefault(); // Prevent the default behavior
@@ -127,21 +156,14 @@ document.addEventListener("keydown", function(event) {
 
     var undoQueue = [];
     var redoStack = [];
+    let eraserPaths = [];
 
-
-//after undo, every time alt is pressed, everything renders like it was before. 
-// looks like vector layer saves all the paths from start.
-// How to clean vector layer and start fresh? I have tried vectorLayer.remove(obj), doesn't work.
-// Whatever we do, erase or undo, if alt is clicked, it gets back to the previous version. 
-
-let eraserPaths = [];
 document.addEventListener("keydown", function(event) {
     if (event.altKey) {
         UpdateRasterLayer();
     }
 
 });
-
 
 function UpdateRasterLayer(){
         const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
@@ -735,7 +757,7 @@ function fetch_Shadow_files(shadow_arr) {
 
 const checkboxIds = ['hairCheckbox', 'faceCheckbox', 'clothCheckbox', 'armCheckbox', 'objectCheckbox', 'allCheckbox'];
 const buttonIds = ['btnTop', 'btnLeft', 'btnRight', 'btnBack'];
-
+// const left0_arr=[];
 let direction = null; 
 
 
@@ -1223,8 +1245,8 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
 
 
         function getOutline(checkval){
-            let port = eel.get_port();
-            console.log(port);
+            // let port = eel.get_port();
+
             const isChecked = checkval;
 
             if (isChecked) {
@@ -1232,8 +1254,7 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                 if (!isDataFetched||FlatImage.customImageName !== jsonFileName) {
                     jsonFileName = FlatImage.customImageName.replace('.png', '.json');
                     // console.log(jsonFileName);
-                    fetch(`http://localhost:${port}/RefinedOutput/json/${jsonFileName}`)
-                    // fetch(`http://localhost:8000/RefinedOutput/json/${jsonFileName}`)
+                    fetch(`RefinedOutput/json/${jsonFileName}`)
                         .then(response => response.json())
                         .then(data => {
                             isDataFetched = true;
@@ -1241,9 +1262,10 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                             data.regions.forEach(region => {
                                 const originalCoordinates = region.coordinates;
                                 const color = region.color; // Get color from JSON
+                                // console.log("ScaleFactor from getOutline", global_scaleFactor)
                                 const scaledCoordinates = originalCoordinates.map(point => ({
-                                    x: point[0] * global_scaleFactor + global_pos_left,
-                                    y: point[1] * global_scaleFactor + global_pos_top
+                                    x: point[0] * global_scaleFactor,
+                                    y: point[1] * global_scaleFactor
                                 }));
 
                                 // Draw the polygon on the canvas and set its initial visibility
@@ -1264,7 +1286,6 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                     togglePolygonVisibility(polygonVisible);
             }
           }
-      
 
 
         const colors = {
@@ -1545,7 +1566,6 @@ var isPainting = false;
 let undoErasing = false;
 
 const eraserBtn = document.getElementById("eraserBtn");
-var toolSize = document.getElementById('ToolSize');
 
 eraserBtn.addEventListener("click", toggleErasing);
 
@@ -1643,6 +1663,7 @@ function UndoErase() {
 
 //========================paint brush functions==========================//
 
+
     const cursorUrl = 'circle_icon.png';
     var mousecursor; 
     // var undoStack = [];
@@ -1673,13 +1694,6 @@ function UndoErase() {
             canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
 
             this.style.backgroundColor = '#B5B5B5';
-            // this.style.color = 'white';
-
-            // canvas.on('object:added', function(e) {
-            // e.target.selectable = false;
-            // undoStack.push(e.target);
-            // redoStack = [];
-            // });
         } 
         else {
             toolSize.style.display = 'none'
@@ -1765,6 +1779,7 @@ function deactivateEraser() {
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.isDrawingMode = false;
     canvas.off('path:created');
+    toolSize.style.display = 'none'
 }
 
 function deactivatePainting() {
@@ -1773,6 +1788,7 @@ function deactivatePainting() {
     paintBrushBtn.style.backgroundColor = '';
     paintBrushBtn.style.color = '';
     canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
 }
 
 function deactivateUndoEraser() {
@@ -1782,6 +1798,7 @@ function deactivateUndoEraser() {
     UndoEraseBtn.style.color = '';
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
 }
 
 
@@ -1826,7 +1843,36 @@ function redo() {
     UpdateRasterLayer();
 }
 
+//=============================== vectorLayer operation====================================//
 
+// function SaveVectorLayer(vect_arr){
+//        const vectorPaths = vectorLayer.getObjects();
+        
+//         vectorPaths.forEach((index) => {
+//             vect_arr.push( vectorPaths[index]);
+//         });
+//         return vect_arr;
+
+// }
+
+function SaveVectorLayer(vect_arr) {
+    const vectorPaths = vectorLayer.getObjects();
+
+    vectorPaths.forEach(path => {
+        vect_arr.push(path);
+        vectorLayer.removeWithUpdate(path);
+    });
+
+    return vect_arr;
+}
+
+function GetVectorLayers(vect_arr)
+{
+        vect_arr.forEach(item => {
+            vectorLayer.addWithUpdate(item);
+        });
+        UpdateRasterLayer();
+}
 
 //============================ Drawing Layer dictionary================================//
 let objectsDictionary = {};
@@ -1907,6 +1953,7 @@ goTo(0);
 
 
 let clicked_index= null;
+
 function setCardBackgroundImages(direction) {
     
     goTo(0);
@@ -1966,9 +2013,11 @@ function setCardBackgroundImages(direction) {
               updateCheckboxes();
 
               deactivatePainting();
-              // dict_id=direction+global_number;
-              // addObjectToDictionary(dict_id);
-              // removeAllPaths();
+              
+              // let arr_name = `${direction}${global_number}_arr`;
+              // let vect_arr = window[arr_name];
+              // console.log("layers saved for ",SaveVectorLayer(vect_arr));
+              // GetVectorLayers(vect_arr)
 
               paginationItems.forEach(item => item.classList.remove('active'));
               paginationItems[index].classList.add('active');
@@ -2037,7 +2086,6 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     deactivateUndoEraser(); 
     deactivateZooming();
     deactivatePanning();
-    var toolSize = document.getElementById('ToolSize');
     toolSize.style.display = 'none';
 });
 
@@ -2132,6 +2180,8 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
         fabric.Image.fromURL(newImageUrl, function(newImage) {
             newImage.customBase64 = newImageUrl
             newImage.scale(global_scaleFactor);
+            newImage.left=global_pos_left;
+            newImage.top=global_pos_top;
             newImage.customImageName = label;
             newImage.selectable = false;
             newImage.visible = true;
@@ -2160,6 +2210,30 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
     document.getElementById("continue_btn").addEventListener("click", function() {
         console.log("Continue Working...");
     });
+
+//================================= GetBinaryBitmap ==============================================//
+
+
+function GetBinaryBitMap(imageObj)
+{
+        let BitCanvas = document.createElement('canvas');
+        let BitCtx = BitCanvas.getContext('2d');
+
+        BitCanvas.width = imageObj.width;
+        BitCanvas.height = imageObj.height;
+        BitCtx.drawImage(imageObj, 0, 0);
+
+        let imageData = BitCtx.getImageData(0, 0, BitCanvas.width, BitCanvas.height);
+        let data = imageData.data;
+
+        let binaryBitmap = [];
+        for (let i = 0; i < data.length; i += 4) {
+            let isBlack = (data[i] + data[i + 1] + data[i + 2]) / 3 >= 128 ? 1 : 0;
+            binaryBitmap.push(isBlack);
+        }
+        console.log(binaryBitmap);
+        return binaryBitmap;
+}
 
 
 
