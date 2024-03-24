@@ -1264,8 +1264,8 @@ document.getElementById('opacityValue').textContent = global_opacity.toFixed(1);
                                 const color = region.color; // Get color from JSON
                                 // console.log("ScaleFactor from getOutline", global_scaleFactor)
                                 const scaledCoordinates = originalCoordinates.map(point => ({
-                                    x: point[0] * global_scaleFactor,
-                                    y: point[1] * global_scaleFactor
+                                    x: point[0] * global_scaleFactor + global_pos_left,
+                                    y: point[1] * global_scaleFactor + global_pos_top
                                 }));
 
                                 // Draw the polygon on the canvas and set its initial visibility
