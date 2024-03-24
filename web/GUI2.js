@@ -437,6 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                   height: checkerSize,
                                   selectable: false, // The squares should not be selectable
                                   evented: false, // The squares should not react to events
+                                  erasable: false
                                 });
                                 canvas.add(rect);
                               }
@@ -1438,7 +1439,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    canvas.on("mouse:up", function () {
+    canvas.on("mouse:up", function ({ targets, drawables }) {
         if (isPanning) {
             canvas.set("isGrabMode", false); // Disable fabric.js grab mode
             canvas.selection = true; // Re-enable object selection
@@ -1457,15 +1458,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 layerName: "tempLayer"
             });
             const objects = canvas.getObjects().filter(obj => (obj.type == 'path' && obj.layerName != "grids"));
-            objects.forEach(obj=>{
-                if (obj.type == 'path'){
-                    obj.set('stroke', 'black');  
-                }
-                obj.set('opacity', global_opacity);
-                obj.set('erasable', true);
-                tempStrokeLayer.addWithUpdate(obj);
-            });
-            canvas.remove(...objects);
+            tempStrokeLayer.addWithUpdate(objects[0]);
+            // this is the logic that update to a raster layer
+            canvas.remove(objects[0]);
             let rasterizedStroke = rasterizeLayer(tempStrokeLayer);
             rasterizedStroke = applyBinaryMaps(rasterizedStroke, mergedMask);
             if (firstRasterize){
@@ -1476,6 +1471,40 @@ document.addEventListener("DOMContentLoaded", function () {
                 rasterAccumulatedShadow = mergeBinaryMaps(rasterizedStroke, rasterAccumulatedShadow);    
             }
             addMergedImageToCanvas(rasterAccumulatedShadow);
+            // // the following logic updates to the sub-shadow layers
+            // // find the intersected objects
+            // let intersectedObjs = [];
+            // canvas.forEachObject(obj=>{
+            //     try{
+            //         if (obj.intersectsWithObject(objects[0]) && obj.visible && obj.customImageName.includes('shadow')){
+            //             intersectedObjs.push(obj);
+            //         }    
+            //     }
+            //     catch(error){
+            //         console.log(error);
+            //     }
+            // });
+            // // apply update to each layer
+            // intersectedObjs.forEach(obj=>{
+            //     var tempCanvas = document.createElement('canvas');
+            //     var tempCtx = tempCanvas.getContext('2d');
+
+            //     // Adjust the dimensions as necessary
+            //     tempCanvas.width = obj.width;
+            //     tempCanvas.height = obj.height;
+
+            //     // Draw the original image
+            //     tempCtx.drawImage(obj.getElement(), 0, 0);
+            //     // apply changes by free painting
+            //     let rasterizedShadow = rasterizeLayer(obj);
+            //     // TODO: need to get mask for each sub-shadow!
+            //     rasterizedShadow = mergeBinaryMaps(rasterizedStroke, rasterizedShadow); 
+            //     tempCtx.putImageData(rasterizedShadow, 0, 0);
+            //     // Update the imageA source
+            //     obj.setElement(tempCanvas);
+            //     obj.setCoords();
+            //     canvas.requestRenderAll();
+            // });
         }
     });
 
@@ -1487,13 +1516,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 subTargetCheck: true,
                 layerName: "tempLayer"
             });
-            const objects = canvas.getObjects().filter(obj => (obj.type == 'image' && obj.layerName == "rasterLayer"));
-            objects.forEach(obj=>{
-                tempEraserLayer.addWithUpdate(obj);
-            });
-            canvas.remove(...objects);
-            rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
-            addMergedImageToCanvas(rasterAccumulatedShadow);
+        const objects = canvas.getObjects().filter(obj => (obj.type == 'image' && obj.layerName == "rasterLayer"));
+        objects.forEach(obj=>{
+            tempEraserLayer.addWithUpdate(obj);
+        });
+        canvas.remove(...objects);
+        rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
+        addMergedImageToCanvas(rasterAccumulatedShadow);
       });
 
 
