@@ -2088,15 +2088,20 @@ document.addEventListener("DOMContentLoaded", function () {
         const lineRegExp = new RegExp(`line`);    
         // super weird logic...
         const objs = canvas.getObjects().forEach(obj => {
-            if (obj.customImageName.match(lineRegExp)){
+            try{
+                if (obj.customImageName.match(lineRegExp)){
                 res['line'] = obj.customBase64;
+                }
+                if (obj.customImageName && obj.customImageName.match(shadowRegExp) && obj.visible) {
+                    res[obj.customImageName] = obj.customBase64;
+                    return true;
+                }
+                else{
+                    return false;
+                }    
             }
-            if (obj.customImageName && obj.customImageName.match(shadowRegExp) && obj.visible) {
-                res[obj.customImageName] = obj.customBase64;
-                return true;
-            }
-            else{
-                return false;
+            catch(error){
+                console.log(error)
             }
         });
 

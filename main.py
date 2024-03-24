@@ -426,7 +426,7 @@ def to_base64url(img_base64):
 def shadow_decrease_single(shadow, line):
     bg_mask = ~shadow
     # decrease line
-    shadow_conv = decrease_shadow_gaussian(shadow.astype(float), line, bg_mask)
+    shadow_conv = decrease_shadow_gaussian(shadow.astype(float), line, bg_mask, iters = 10)
     return shadow_conv
 
 if __name__ == "__main__":
