@@ -137,12 +137,13 @@ document.addEventListener("keydown", function(event) {
 let eraserPaths = [];
 document.addEventListener("keydown", function(event) {
     if (event.altKey) {
-        console.log("clicked");
-        console.log("vectorLayer", vectorLayer);
-        console.log("rasterOld", rasterOld);
-        console.log("firstRasterize", firstRasterize);
+        UpdateRasterLayer();
+    }
+
+});
 
 
+function UpdateRasterLayer(){
         const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
         
         eraserPaths.forEach(path => {
@@ -153,7 +154,6 @@ document.addEventListener("keydown", function(event) {
         objects.forEach(obj=>{
             if (obj.type == 'path'){
               console.log(obj);
-              // obj.set('stroke', 'black');
               obj.set('opacity', global_opacity);
               obj.set('erasable', true);
               vectorLayer.addWithUpdate(obj);
@@ -172,48 +172,8 @@ document.addEventListener("keydown", function(event) {
         rasterOld=mergeBinaryMaps(rasterNew, rasterNew);
         addMergedImageToCanvas(rasterOld);
         canvas.renderAll();
-    }
+}
 
-});
-
-// document.addEventListener("keydown", function(event) {
-//     if (event.altKey) {
-//         if(!isErasing)
-//         {
-//         const objects = canvas.getObjects().filter(obj => obj.type == 'path' || (obj.type=='group' && obj.layerName == 'vectorLayer'));
-//         objects.forEach(obj=>{
-//             if (obj.type == 'path'){
-//               console.log(obj);
-//               obj.set('stroke', 'black');
-//               obj.set('opacity', global_opacity);
-//               obj.set('erasable', true);
-//               vectorLayer.addWithUpdate(obj);
-//             }
-//           });
-//         canvas.remove(...objects);
-
-//         let rasterNew = rasterizeLayer(vectorLayer) // image file
-//         }
-//                 let rasterNew = rasterizeLayer(vectorLayer) // image file
-//         if (isErasing){
-//             let raster_objects = canvas.getObjects().filter(obj=>obj.layerName == 'rasterLayer')
-//             raster_objects.forEach(obj=>{
-//                 rasterNew= obj;
-//                 rasterOld= obj;
-//             });
-//         }
-
-//         if (firstRasterize){
-//           rasterOld = rasterNew; //new image file becomes old
-//           firstRasterize = false;
-//         }
-//         else{
-//           rasterOld = mergeBinaryMaps(rasterNew, rasterOld);
-//         }
-//         addMergedImageToCanvas(rasterOld);
-//     }
-
-// });
 
 // helper functions added by Chuan
 function rasterizeLayer(layerOfPaths){
@@ -321,7 +281,7 @@ function addMergedImageToCanvas(imageData) {
         // img.selectable=true;
         canvas.add(img);
         // img.bringToFront();
-        undoQueue.push(img);
+        // undoQueue.push(img);
         c = null;
         canvas.renderAll();
     });
@@ -1591,50 +1551,6 @@ eraserBtn.addEventListener("click", toggleErasing);
 
 let global_brush_width=10;
 
-// function toggleErasing() {
-//     isErasing = !isErasing;
-//     isPainting=false;
-
-//     deactivatePainting();
-//     deactivateUndoEraser();
-//     deactivatePanning();
-//     deactivateZooming();
-//     if (isErasing)
-//       {   
-//          toolSize.style.display = 'flex'
-//          canvas.isDrawingMode = true;
-//          eraserBtn.style.backgroundColor = "#B5B5B5";
-//          // eraserBtn.style.color = "white";
-//          canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
-//          canvas.freeDrawingBrush.width = global_brush_width;
-
-//          canvas.forEachObject(function(obj) {
-//             if (obj.type === 'image') 
-//               {
-//                 for (let i = 0; i < images.length; i++) {
-//                     if (images[i].customImageName === obj.customImageName) {
-//                           obj.erasable = false;
-//                           break;
-//                         }
-//                       }
-//                     } 
-//                     if (!obj.visible || obj.customImageName === 'backgroundImage') {
-//                         obj.erasable = false;
-//                     }
-//               });
-
-//       }
-//     else {
-//       isErasing = false;
-//       toolSize.style.display = 'none'
-//       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-//       canvas.isDrawingMode = false;
-//       eraserBtn.style.backgroundColor = "";
-//       eraserBtn.style.color = "";
-//     }
-
-// }
-
 function toggleErasing() {
     isErasing = !isErasing;
     isPainting=false;
@@ -1764,10 +1680,6 @@ function UndoErase() {
             // undoStack.push(e.target);
             // redoStack = [];
             // });
-
-            console.log("vectorLayer", vectorLayer);
-            console.log("rasterOld", rasterOld);
-            console.log("firstRasterize", firstRasterize);
         } 
         else {
             toolSize.style.display = 'none'
@@ -1874,90 +1786,44 @@ function deactivateUndoEraser() {
 
 
 //============================== undo redo===============================
-// // Function to undo the last action
-// function undo() {
-
-//     if (undoStack.length > 0) {
-//         var obj = undoStack.pop();
-//         canvas.remove(obj);
-//         redoStack.push(obj);
-//         canvas.renderAll();
-//     }
-// }
-
-// // Function to redo the last undone action
-// // this logic will definitely not work anymore
-// // todo: update undo logic
-// function redo() {
-//     if (redoStack.length > 0) {
-//         var obj = redoStack.pop();
-//         canvas.add(obj);
-//         undoStack.push(obj);
-//         canvas.renderAll();
-//     }
-// }
-
-// // Event listeners for undo and redo buttons
-// document.getElementById('UndoBtn').addEventListener('click', undo);
-// document.getElementById('RedoBtn').addEventListener('click', redo);
-
 
 // Event listeners for undo and redo buttons
 document.getElementById('UndoBtn').addEventListener('click', undo);
 document.getElementById('RedoBtn').addEventListener('click', redo);
 
 function undo() {
-    deactivatePanning();
+    deactivatePainting();
     deactivateZooming();
     deactivateEraser();
-    deactivatePainting();
+    deactivateUndoEraser();
+    deactivatePanning();
 
-    console.log("Undo Queue:", undoQueue);
+    const vectorPaths = vectorLayer.getObjects();
 
-    if (undoQueue.length > 1) {
-        var last_object = undoQueue.pop();
-        redoStack.push(last_object);
-        var second_last_object = undoQueue[undoQueue.length - 1];
-        canvas.remove(last_object);
-        console.log("Removed:", last_object);
-        console.log("Next:", second_last_object);
-        canvas.add(second_last_object);
-    } else if (undoQueue.length === 1) {
-        var last_object = undoQueue.pop();
-        redoStack.push(last_object);
-        canvas.remove(last_object);
-        firstRasterize = true;
+    if (vectorPaths.length > 0) {
+        const lastPath = vectorPaths[vectorPaths.length - 1];
+        redoStack.push(lastPath)
+        vectorLayer.removeWithUpdate(lastPath);
     }
-
-    //How to remove vector layer? 
-    // const objects = canvas.getObjects().filter(obj => obj.layerName == 'vectorLayer');
-    //     objects.forEach(obj=>{
-    //         vectorLayer.remove(obj);
-    //       });
-
-
-
-    // Remove all paths from the canvas
-    // canvas.getObjects().forEach(obj => {
-    //     if (obj.type === 'path') {
-    //         canvas.remove(obj);
-    //     }
-    // });
-
-    console.log("Final Queue:", undoQueue);
-    console.log("Redo Stack:", redoStack);
+    console.log("clickedUndo vector", vectorPaths.length);
+    UpdateRasterLayer();
 }
 
+
 function redo() {
+    deactivatePainting();
+    deactivateZooming();
+    deactivateEraser();
+    deactivateUndoEraser();
+    deactivatePanning();
+
+    console.log(redoStack);
     if (redoStack.length > 0) {
         var last_redo_object = redoStack.pop();
-        var last_undo_object = undoQueue[undoQueue.length - 1];
-        canvas.remove(last_undo_object);
-        canvas.add(last_redo_object);
-        undoQueue.push(last_redo_object);
-        console.log("Redo Stack:", redoStack);
-        console.log("Undo Queue:", undoQueue);
+        vectorLayer.addWithUpdate(last_redo_object);
     }
+    console.log("clicked Redo vector", vectorLayer);
+    UpdateRasterLayer();
 }
 
 
