@@ -14,12 +14,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
     canvas.setDimensions({ width: 750, height: 650});
-    // fabric.Image.fromURL('background.png', function (img) {
-    //     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
-    //         scaleX: canvas.width / img.width,
-    //         scaleY: canvas.height / img.height
-    //     });
-    // });
+    fabric.Image.fromURL('background.png', function (img) {
+        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+            scaleX: canvas.width / img.width,
+            scaleY: canvas.height / img.height
+        });
+    });
 
 
     $('[data-toggle="tooltip"]').tooltip({
@@ -2185,6 +2185,7 @@ document.getElementById("pointerBtn").addEventListener("click", function(event) 
             newImage.visible = true;
             newImage.opacity = global_opacity; 
             newImage.left=global_pos_left;
+            newImage.top=global_pos_top;
             // Remove the old background image
             // this logic is also ugly...
             // for (let i = 0; i < shadow_segment_images.length; i++){
