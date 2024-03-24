@@ -221,7 +221,7 @@ canvas {
     background-size: cover; /* Adjust as needed */
     position: relative;
     display: flex;
-    height: 600px;
+    height: 650px;
     width: 750px;
     justify-content: center;
 }
