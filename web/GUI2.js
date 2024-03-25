@@ -1933,10 +1933,50 @@ function deactivateUndoEraser() {
 }
 
     //============================== undo redo===============================
-    // Event listeners for undo and redo buttons
+    // // Event listeners for undo and redo buttons
     document.getElementById('UndoBtn').addEventListener('click', undo);
     document.getElementById('RedoBtn').addEventListener('click', redo);
 
+    // function undo() {
+    //     deactivatePanning();
+    //     deactivateZooming();
+    //     deactivateEraser();
+    //     deactivatePainting();
+
+    //     console.log("Undo Queue:", undoQueue);
+
+    //     if (undoQueue.length > 1) {
+    //         var last_object = undoQueue.pop();
+    //         redoStack.push(last_object);
+    //         var second_last_object = undoQueue[undoQueue.length - 1];
+    //         canvas.remove(last_object);
+    //         console.log("Removed:", last_object);
+    //         console.log("Next:", second_last_object);
+    //         canvas.add(second_last_object);
+    //     } else if (undoQueue.length === 1) {
+    //         var last_object = undoQueue.pop();
+    //         redoStack.push(last_object);
+    //         canvas.remove(last_object);
+    //         firstRasterize = true;
+    //     }
+
+    //     console.log("Final Queue:", undoQueue);
+    //     console.log("Redo Stack:", redoStack);
+    // }
+
+    // function redo() {
+    //     if (redoStack.length > 0) {
+    //         var last_redo_object = redoStack.pop();
+    //         var last_undo_object = undoQueue[undoQueue.length - 1];
+    //         canvas.remove(last_undo_object);
+    //         canvas.add(last_redo_object);
+    //         undoQueue.push(last_redo_object);
+    //         console.log("Redo Stack:", redoStack);
+    //         console.log("Undo Queue:", undoQueue);
+    //     }
+    // }
+
+    
     function undo() {
         deactivatePanning();
         deactivateZooming();
@@ -1949,30 +1989,49 @@ function deactivateUndoEraser() {
             var last_object = undoQueue.pop();
             redoStack.push(last_object);
             var second_last_object = undoQueue[undoQueue.length - 1];
+            
             canvas.remove(last_object);
-            console.log("Removed:", last_object);
-            console.log("Next:", second_last_object);
             canvas.add(second_last_object);
-        } else if (undoQueue.length === 1) {
-            var last_object = undoQueue.pop();
-            redoStack.push(last_object);
-            canvas.remove(last_object);
-            firstRasterize = true;
-        }
 
-        console.log("Final Queue:", undoQueue);
-        console.log("Redo Stack:", redoStack);
+            let tempEraserLayer = new fabric.Group([], {
+                        subTargetCheck: true,
+                        layerName: "rasterLayer"
+                });
+            const objects = canvas.getObjects().filter(obj => (obj.type == 'image' && obj.layerName == "rasterLayer"));
+
+            tempEraserLayer.addWithUpdate(objects[0])
+
+            rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
+            addMergedImageToCanvas(rasterAccumulatedShadow, noOpacity = true);
+            undoQueue.pop();
+            }
     }
 
     function redo() {
+        deactivatePanning();
+        deactivateZooming();
+        deactivateEraser();
+        deactivatePainting();
+
         if (redoStack.length > 0) {
             var last_redo_object = redoStack.pop();
             var last_undo_object = undoQueue[undoQueue.length - 1];
+
             canvas.remove(last_undo_object);
             canvas.add(last_redo_object);
-            undoQueue.push(last_redo_object);
-            console.log("Redo Stack:", redoStack);
-            console.log("Undo Queue:", undoQueue);
+            // undoQueue.push(last_redo_object);
+            
+            let tempEraserLayer = new fabric.Group([], {
+                        subTargetCheck: true,
+                        layerName: "rasterLayer"
+                });
+            const objects = canvas.getObjects().filter(obj => (obj.type == 'image' && obj.layerName == "rasterLayer"));
+
+            tempEraserLayer.addWithUpdate(objects[0])
+
+            rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
+            addMergedImageToCanvas(rasterAccumulatedShadow, noOpacity = true);
+            // redoStack.pop();
         }
     }
 
