@@ -121,10 +121,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // helper functions added by Chuan
     function cleanUpImageData(imageData){
         for (let i = 0; i < imageData.data.length; i += 4) {
-            mergedData.data[i] = 0; // R
-            mergedData.data[i + 1] = 0; // G
-            mergedData.data[i + 2] = 0; // B
-            mergedData.data[i + 3] = 0; // A       
+            imageData.data[i] = 0; // R
+            imageData.data[i + 1] = 0; // G
+            imageData.data[i + 2] = 0; // B
+            imageData.data[i + 3] = 0; // A       
         }
         return imageData;
     };
@@ -897,7 +897,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('objectCheckbox').addEventListener('click', function() {
         toggleVisibilityByCheckbox('object');
     });
-
 
     const cursorInfo = document.getElementById('cursorInfo');
     const allCheckbox = document.getElementById('allswitch');
@@ -1682,14 +1681,7 @@ document.addEventListener("DOMContentLoaded", function () {
             toolSize.style.display = 'flex';
             canvas.freeDrawingBrush.width = global_brush_width;
             canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-
             this.style.backgroundColor = '#B5B5B5';
-
-            // canvas.on('object:added', function(e) {
-            // e.target.selectable = false;
-            // undoStack.push(e.target);
-            // redoStack = [];
-            // });
         } 
         else {
             toolSize.style.display = 'none'
