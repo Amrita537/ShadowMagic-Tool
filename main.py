@@ -34,6 +34,7 @@ PATH_TO_FLAT = './InputFlats'
 PATH_TO_LINE = './InputLines'
 PATH_TO_SHADOW = './web/Shadows'
 PATH_TO_SHADOWS = './web/Shadows/sub_shadows'
+PATH_TO_SHADOW_MASKS = './web/Shadows/sub_shadows_mask'
 # PATH_TO_REFINEDJSON= "./web/RefinedOutput/json"
 PATH_TO_REFINEDJSON= "./RefinedOutput/Unmerged_json"
 PATH_TO_SEGS = []
@@ -289,6 +290,9 @@ def preprocess(path_to_psd, name, var, seg_only = False):
     shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_sub_shadows"), 
         'zip', 
         PATH_TO_SHADOWS)
+    shutil.make_archive(os.path.join(PATH_TO_PREPROCESS, name+"_sub_shadows_mask"), 
+        'zip', 
+        PATH_TO_SHADOW_MASKS)
 
 def preprocess_to_work(fname):
     print("log:\tpreparing shadowing result for %s"%fname)
@@ -305,9 +309,9 @@ def preprocess_to_work(fname):
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_AnnotOutput.zip"), "./AnnotOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_YoloOutput.zip"), "./YoloOutput")
     shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_RefinedOutput.zip"), "./web/RefinedOutput")
-    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_shadows.zip"), "./web/Shadows")
-    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), "./web/Shadows/sub_shadows")
-
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_shadows.zip"), PATH_TO_SHADOW)
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows.zip"), PATH_TO_SHADOWS)
+    shutil.unpack_archive(os.path.join(PATH_TO_PREPROCESS, fname+"_sub_shadows_mask.zip"), PATH_TO_SHADOW_MASKS)
     # copy the preprocessed result to
     if os.path.exists(PATH_TO_LAYERS) == False:
         os.makedirs(PATH_TO_LAYERS)
@@ -406,8 +410,7 @@ def open_psd_single(path_to_psd, var = 4, seg_only = False):
             preprocess_to_work(name)
     else:
         preprocess(path_to_psd, name, var, seg_only)
-        preprocess_to_work(name)
-    # preprocess(path_to_psd, name, var, seg_only)
+        # preprocess_to_work(name)
 
 def base64_to_np(img_base64):
     try:
@@ -432,9 +435,9 @@ def shadow_decrease_single(shadow, line):
 if __name__ == "__main__":
     # for debug
     # open_psd("./test/image7.psd")
-    batch_process()
-    import pdb
-    pdb.set_trace()
+    # batch_process()
+    # import pdb
+    # pdb.set_trace()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
     #     if "flat" not in png: continue

@@ -119,6 +119,16 @@ document.addEventListener("DOMContentLoaded", function () {
     var redoStack = [];
 
     // helper functions added by Chuan
+    function cleanUpImageData(imageData){
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            mergedData.data[i] = 0; // R
+            mergedData.data[i + 1] = 0; // G
+            mergedData.data[i + 2] = 0; // B
+            mergedData.data[i + 3] = 0; // A       
+        }
+        return imageData;
+    };
+
     function mergeBinaryMaps(imageData1, imageData2, maskData = null, mergeMask = false) {
         const width = imageData1.width;
         const height = imageData1.height;
@@ -808,33 +818,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     function toggleVisibilityByDirectionAndSegment(direction, segment, index, isVisible) {
-
-      console.log(direction, segment, index, isVisible);
-      if (isErasing) {
+        console.log(direction, segment, index, isVisible);
+        if (isErasing) {
               const eraserBtn_1 = document.getElementById("eraserBtn");
               eraserBtn_1.click();
-      }
-      
-      names_shadow_segment.forEach(name => {
-        const isDirectionMatch = name.includes(`_${direction}_`);
-        const isSegmentMatch = name.endsWith(`_${segment}.png`);
-        const isIndexMatch = name.includes(`shadow_${index}`);
+        }
 
-        if (isDirectionMatch && isSegmentMatch && isIndexMatch) 
-              {
-                    const image = canvas.getObjects().find(obj => obj.customImageName === name);
-                    if (image) {
-                      image.erasable = true;
-                      image.visible = isVisible;
-                      canvas.renderAll();
-                    }
-                    else{
-                      canvas.renderAll();
-                    }
-              }
+        names_shadow_segment.forEach(name => {
+            const isDirectionMatch = name.includes(`_${direction}_`);
+            const isSegmentMatch = name.endsWith(`_${segment}.png`);
+            const isIndexMatch = name.includes(`shadow_${index}`);
 
-      });
-
+            if (isDirectionMatch && isSegmentMatch && isIndexMatch) {
+                const image = canvas.getObjects().find(obj => obj.customImageName === name);
+                if (image) {
+                  image.erasable = true;
+                  image.visible = isVisible;
+                  canvas.renderAll();
+                }
+                else{
+                  canvas.renderAll();
+                }
+            }
+        });
+        rasterAccumulatedShadow = cleanUpImageData(rasterAccumulatedShadow);
     }
 
 //============================= Part selector checkboxes ========================
