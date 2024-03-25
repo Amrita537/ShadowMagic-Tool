@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let isPanning=false;
     let isZooming = false;
+    var toolSize = document.getElementById('ToolSize');
 
 //======================Temporary Canvas ==========================
 
@@ -1399,7 +1400,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const polygon = new fabric.Polygon(points, {
             fill: 'transparent',
             stroke: `rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`, // Assign color to stroke
-            strokeWidth: 12,
+            strokeWidth:10,
             selectable: false,
             isPolygon: true,
             smooth: true,
@@ -1452,9 +1453,9 @@ document.addEventListener("DOMContentLoaded", function () {
     function zoomOut() {
     const zoom = canvas.getZoom();
     const center = { x: maxDisplayWidth / 2, y: maxDisplayHeight / 2 };
-    // if (zoom <= 1) {
-    //     resetPosition(); // Reset the image position to its initial position
-    // }
+    if (zoom <= 1) {
+        resetPosition(); // Reset the image position to its initial position
+    }
     canvas.zoomToPoint(center, zoom / 1.1);
     updateZoomPercentage();
     }
@@ -1687,7 +1688,7 @@ document.addEventListener("DOMContentLoaded", function () {
 //===============eraser code========================//
 
     const eraserBtn = document.getElementById("eraserBtn");
-    var toolSize = document.getElementById('ToolSize');
+
 
     eraserBtn.addEventListener("click", toggleErasing);
 
@@ -1780,7 +1781,6 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     let rasterAccumulatedShadow = new ImageData(canvas.width, canvas.height);
     document.getElementById('paintBrushBtn').addEventListener('click', function() {
-        var toolSize = document.getElementById('ToolSize');
         isPainting= !isPainting;
         isErasing=false;
         deactivateEraser();
@@ -1830,7 +1830,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 span.style.backgroundColor= '';
             });
 
-
             this.style.color = 'white';
             this.style.backgroundColor= 'black';
 
@@ -1871,32 +1870,60 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 //=================================Deactivate drawing tools ============================//
-    function deactivateEraser() {
-        isErasing = false;
-        var eraserBtn = document.getElementById('eraserBtn');
-        eraserBtn.style.backgroundColor = '';
-        eraserBtn.style.color = '';
-        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-        canvas.isDrawingMode = false;
-    }
+    // function deactivateEraser() {
+    //     isErasing = false;
+    //     var eraserBtn = document.getElementById('eraserBtn');
+    //     eraserBtn.style.backgroundColor = '';
+    //     eraserBtn.style.color = '';
+    //     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+    //     canvas.isDrawingMode = false;
+    // }
 
-    function deactivatePainting() {
-        isPainting = false;
-        var paintBrushBtn = document.getElementById('paintBrushBtn');
-        paintBrushBtn.style.backgroundColor = '';
-        paintBrushBtn.style.color = '';
-        canvas.isDrawingMode = false;
-    }
+    // function deactivatePainting() {
+    //     isPainting = false;
+    //     var paintBrushBtn = document.getElementById('paintBrushBtn');
+    //     paintBrushBtn.style.backgroundColor = '';
+    //     paintBrushBtn.style.color = '';
+    //     canvas.isDrawingMode = false;
+    // }
 
-    function deactivateUndoEraser() {
-        undoErasing = false;
-        var UndoEraseBtn = document.getElementById("magicBtn");
-        UndoEraseBtn.style.backgroundColor = '';
-        UndoEraseBtn.style.color = '';
-        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-        canvas.isDrawingMode = false;
-    }
+    // function deactivateUndoEraser() {
+    //     undoErasing = false;
+    //     var UndoEraseBtn = document.getElementById("magicBtn");
+    //     UndoEraseBtn.style.backgroundColor = '';
+    //     UndoEraseBtn.style.color = '';
+    //     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+    //     canvas.isDrawingMode = false;
+    // }
 
+function deactivateEraser() {
+    isErasing = false;
+    var eraserBtn = document.getElementById('eraserBtn');
+    eraserBtn.style.backgroundColor = '';
+    eraserBtn.style.color = '';
+    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+    canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
+}
+
+function deactivatePainting() {
+    isPainting = false;
+    var paintBrushBtn = document.getElementById('paintBrushBtn');
+    paintBrushBtn.style.backgroundColor = '';
+    paintBrushBtn.style.color = '';
+    canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
+}
+
+function deactivateUndoEraser() {
+    undoErasing = false;
+    var UndoEraseBtn = document.getElementById("magicBtn");
+    UndoEraseBtn.style.backgroundColor = '';
+    UndoEraseBtn.style.color = '';
+    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+    canvas.isDrawingMode = false;
+    toolSize.style.display = 'none'
+}
 
     //============================== undo redo===============================
     // Event listeners for undo and redo buttons
@@ -2144,7 +2171,6 @@ document.addEventListener("DOMContentLoaded", function () {
         deactivateUndoEraser(); 
         deactivateZooming();
         deactivatePanning();
-        var toolSize = document.getElementById('ToolSize');
         toolSize.style.display = 'none';
     });
 
@@ -2248,6 +2274,7 @@ document.addEventListener("DOMContentLoaded", function () {
             newImage.visible = true;
             newImage.opacity = global_opacity;
             canvas.remove(layerImageObject);
+            //shadow_segment_images.push(newImage); // added by amrita
             canvas.add(newImage);
         });    
     }
