@@ -124,6 +124,32 @@ document.addEventListener("DOMContentLoaded", function () {
     var redoStack = [];
 
     // helper functions added by chuan
+    function saveShadowFromCanvas(shadowCanvas, postfix = `_current_canvas.png`){
+        const objects = shadowCanvas.getObjects().filter(obj => {
+            if (obj.customImageName){
+                if (obj.customImageName.includes('shadow') && obj.visible){
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            } 
+            else{
+                return false;
+            }
+        });
+        let exportLayer = new fabric.Group([], {
+                subTargetCheck: true,
+            });
+        objects.forEach(obj=>{
+            exportLayer.addWithUpdate(obj);
+        });
+        let dataURL = ImageDatatoPNG(rasterizeLayer(exportLayer), true);
+        const link = document.createElement('a');
+        link.download = global_filename+postfix;
+        link.href = dataURL;
+        link.click();        
+    }
     function mergeToShadowLayers(){
         // the following logic updates to the sub-shadow layers
         // for each visibal shadows, find corresponding region mask
@@ -1246,29 +1272,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function Download_Bookmarked() {
         for (let i= 0; i < savedShadowsOnly.length; i++) {
-                const savedCanvasData = JSON.parse(savedShadowsOnly[i]);
-
-                const tempCanvas3 = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
-                const originalWidth = tempCanvas3.getWidth();
-                const originalHeight = tempCanvas3.getHeight();
-
-                tempCanvas3.loadFromJSON(savedCanvasData, function() {
-                    // what is this???
-                    const scaleFactor = global_scaleFactor*10;
-
-                    tempCanvas3.setWidth(originalWidth * scaleFactor);
-                    tempCanvas3.setHeight(originalHeight * scaleFactor);
-                    tempCanvas3.setZoom(scaleFactor);
-
-                    tempCanvas3.renderAll();
-
-                    const dataURL = tempCanvas3.toDataURL('image/png', 1.0);
-
-                    const link = document.createElement('a');
-                    link.download = global_filename+`_bookmarked.png`;
-                    link.href = dataURL;
-                    link.click();
-                });
+            const savedCanvasData = JSON.parse(savedShadowsOnly[i]);
+            const tempCanvas3 = new fabric.Canvas(null, { width: realWidth, height: realHeight });
+            tempCanvas3.loadFromJSON(savedCanvasData);
+            saveShadowFromCanvas(tempCanvas3, `_bookmarked.png`);
         }
     }
 
@@ -1277,38 +1284,16 @@ document.addEventListener("DOMContentLoaded", function () {
     saveBtn.addEventListener('click', saveCanvasImage);
     function saveCanvasImage() {
 
-        Download_Bookmarked();
-        const filteredObjects = canvas.getObjects().filter(obj => !obj.customImageName || (!obj.customImageName.includes('flat') && !obj.customImageName.includes('line') && !obj.customImageName.includes('backgroundImage')));
-
-        // Create a new canvas with the filtered objects
-        const tempCanvas2 = new fabric.Canvas(null, { width: canvas.getWidth(), height: canvas.getHeight() });
-        filteredObjects.forEach(obj => tempCanvas2.add(obj));
-
-        // Download the canvas image
-        const scaleFactor = global_scaleFactor*10;
-        const backgroundImage = tempCanvas2.backgroundImage;
-        tempCanvas2.backgroundImage = null;
-
-        // Scale up the canvas
-        const originalWidth = tempCanvas2.getWidth();
-        const originalHeight = tempCanvas2.getHeight();
-        tempCanvas2.setWidth(originalWidth * scaleFactor);
-        tempCanvas2.setHeight(originalHeight * scaleFactor);
-        tempCanvas2.setZoom(scaleFactor);
-
-        tempCanvas2.renderAll();
-
-        const dataURL = tempCanvas2.toDataURL('image/png', 1.0);
-
-        tempCanvas2.backgroundImage = backgroundImage;
-        tempCanvas2.setWidth(originalWidth);
-        tempCanvas2.setHeight(originalHeight);
-        tempCanvas2.setZoom(1);
-
-        const link = document.createElement('a');
-        link.download = global_filename+`_current.png`;
-        link.href = dataURL;
-        link.click();
+        // let's do this first
+        // merge content on content to shadow layers
+        var answer = window.confirm("Have you merged all current drawn shadows? Otherwise you will loss all your modification!");
+        if (answer) {
+            Download_Bookmarked();
+            saveShadowFromCanvas(canvas);
+        }
+        else {
+            console.log("abort saving.");
+        } 
     }
 
 //===================shadow opacity function====================//
@@ -1326,14 +1311,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
         canvas.getObjects().forEach(obj => {
             canvas.getObjects().forEach(obj => {
-                if (obj.type === 'path' || obj.layerName==='rasterLayer' || obj.layerName ==='vectorLayer') {
-                    // obj.set('stroke', 'black');
-                    obj.set('opacity', value);
-                }
+                if (obj.type === 'path' || obj.type === 'image'){
+                    if (obj.layerName){
+                        if(obj.layerName.includes('raster')){
+                            obj.set('opacity', value);        
+                        }
+                    }
+                    if (obj.customImageName){
+                        if(obj.customImageName.includes('shadow')){
+                            obj.set('opacity', value);        
+                        }
+                    }
+                }         
             });
         });
         canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
-
         displayImages();
     }
 
