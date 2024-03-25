@@ -1399,7 +1399,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const polygon = new fabric.Polygon(points, {
             fill: 'transparent',
             stroke: `rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`, // Assign color to stroke
-            strokeWidth: 2,
+            strokeWidth: 12,
             selectable: false,
             isPolygon: true,
             smooth: true,
@@ -1820,15 +1820,16 @@ document.addEventListener("DOMContentLoaded", function () {
             } 
             else {
                 console.log('Circle span clicked: ', circle_id.id);
-                canvas.freeDrawingBrush.width = parseInt(circle_id.id);
+                global_brush_width= parseInt(circle_id.id)*5;
+                canvas.freeDrawingBrush.width =  global_brush_width;
                 canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
                 selectedCircleId = circle_id.id;
-                global_brush_width= parseInt(circle_id.id);
 
                 document.querySelectorAll('#drawSizeCircle span').forEach(function(span) {
                 span.style.color = 'black';
                 span.style.backgroundColor= '';
             });
+
 
             this.style.color = 'white';
             this.style.backgroundColor= 'black';
