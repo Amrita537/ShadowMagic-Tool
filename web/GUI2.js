@@ -39,6 +39,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let maskLayer = [];
     let firstRasterize = true;
     let globalZoomRatio = null;
+    let globalRelativePanDelta = null;
+    
     canvas.setDimensions({ width: maxDisplayWidth, height: maxDisplayHeight});
 
     const canvasElement= document.getElementById('canvas_div')
@@ -419,14 +421,14 @@ document.addEventListener("DOMContentLoaded", function () {
                             else{
                                 globalZoomRatio = maxDisplayHeight / realHeight;
                             }
+                            globalRelativePanDelta = new fabric.Point((maxDisplayWidth - realWidth*globalZoomRatio)/2, (maxDisplayHeight - realHeight*globalZoomRatio)/2);
                             canvas.setDimensions({ width: realWidth, height: realHeight});
                             canvas.setZoom(globalZoomRatio);
-                            let delta = new fabric.Point((maxDisplayWidth - realWidth*globalZoomRatio)/2, (maxDisplayHeight - realHeight*globalZoomRatio)/2)
-                            canvas.relativePan(delta);
+                            canvas.relativePan(globalRelativePanDelta);
                             
                             canvas2.setDimensions({ width: realWidth, height: realHeight});
                             canvas2.setZoom(globalZoomRatio);
-                            canvas2.relativePan(delta);
+                            canvas2.relativePan(globalRelativePanDelta);
 
                             // add transparent background texture
                             const checkerSize = 150; // Size of the checker squares
@@ -538,8 +540,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function resetPosition() {
         canvas.setViewportTransform([1, 0, 0, 1, 0, 0]); // Reset the viewport transform to identity matrix (no zoom or panning)
+        canvas.setZoom(globalZoomRatio); // Reset the zoom level to 1 (no zoom)
         canvas.absolutePan(new fabric.Point(0, 0)); // Pan the canvas to the top-left corner
-        canvas.setZoom(1); // Reset the zoom level to 1 (no zoom)
+        canvas.relativePan(globalRelativePanDelta);
         canvas.renderAll(); // Render the canvas to apply the changes
     }
 
