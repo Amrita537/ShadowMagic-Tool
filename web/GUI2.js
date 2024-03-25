@@ -245,7 +245,15 @@ document.addEventListener("DOMContentLoaded", function () {
     function canvasToImageData(targetCanvas){
         var tempCanvas = targetCanvas.toCanvasElement();
         var ctx = tempCanvas.getContext('2d');
-        var imageData = ctx.getImageData(0, 0, tempCanvas.width*targetCanvas.getZoom(), tempCanvas.height*targetCanvas.getZoom());
+        // get real top left positiion
+        var objs = targetCanvas.getObjects().filter(obj=>obj.customImageName);
+        var boundingRect = objs[0].getBoundingRect();
+        // save image content to new canvas
+        var imageData = ctx.getImageData(
+            boundingRect.left, 
+            boundingRect.top, 
+            tempCanvas.width*targetCanvas.getZoom(), 
+            tempCanvas.height*targetCanvas.getZoom());
         return imageData;
     }
 
@@ -726,6 +734,27 @@ document.addEventListener("DOMContentLoaded", function () {
                         console.error(`Error fetching ${fullPath}:`, error);
                     });
             });
+
+            // fetch mask layers
+            relativePath = 'Shadows/sub_shadows_mask/'; // Adjust this relative path based on your directory structure
+            names_shadow_segment.forEach(name => {
+                let fullPath = relativePath + name.replace(".png", "_mask.png");
+                fetch(fullPath)
+                    .then(response => {
+                        if (response.ok) {
+                            fabric.Image.fromURL(fullPath, function (img) {
+                                let imgData = rasterizeLayer(img);
+                                imgData.layerName = name;
+                                maskLayer.push(imgData);
+                            });
+                        } else {
+                            console.log(`Image ${fullPath} does not exist`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Error fetching ${fullPath}:`, error);
+                    });
+            });
         } 
         else {
             let relativePath = 'Shadows/'; // Adjust this relative path based on your directory structure
@@ -841,7 +870,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
-        rasterAccumulatedShadow = cleanUpImageData(rasterAccumulatedShadow);
+        // todo: merge raster to shadows
+        // rasterAccumulatedShadow = cleanUpImageData(rasterAccumulatedShadow);
     }
 
 //============================= Part selector checkboxes ========================
@@ -955,6 +985,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = canvas.width*canvas.getZoom();
         tempCanvas.height = canvas.height*canvas.getZoom();
+        // for debug
+        // ImageDatatoPNG(canvasToImageData(canvas));
         tempCtx.putImageData(canvasToImageData(canvas), 0, 0);
         iconImageS.src = tempCanvas.toDataURL();
 
@@ -1062,8 +1094,7 @@ document.addEventListener("DOMContentLoaded", function () {
             let iconCanvasCtx = iconCanvas.getContext('2d');
             iconCanvas.width =  canvas.width;
             iconCanvas.height = canvas.height;
-            iconCanvasCtx.drawImage(canvas.getElement(), 0, 0, canvas.width*globalZoomRatio, canvas.height*globalZoomRatio);
-            // base64ToPNG(canvas.getElement().toDataURL());
+            iconCanvasCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
             BmIconImg.src = iconCanvas.toDataURL();
 
             BMshadow_btn.appendChild(BMEyeIcon);
@@ -1813,21 +1844,6 @@ document.addEventListener("DOMContentLoaded", function () {
             firstRasterize = true;
         }
 
-        //How to remove vector layer? 
-        // const objects = canvas.getObjects().filter(obj => obj.layerName == 'vectorLayer');
-        //     objects.forEach(obj=>{
-        //         vectorLayer.remove(obj);
-        //       });
-
-
-
-        // Remove all paths from the canvas
-        // canvas.getObjects().forEach(obj => {
-        //     if (obj.type === 'path') {
-        //         canvas.remove(obj);
-        //     }
-        // });
-
         console.log("Final Queue:", undoQueue);
         console.log("Redo Stack:", redoStack);
     }
@@ -1886,8 +1902,6 @@ document.addEventListener("DOMContentLoaded", function () {
     prev.addEventListener("click", function (e) {
                 goTo(0); 
     });
-
-
 
     function Hide_allshadows(){
         canvas.getObjects().forEach(obj => {
@@ -2155,8 +2169,6 @@ document.addEventListener("DOMContentLoaded", function () {
             canvas.add(newImage);
         });    
     }
-
-
 //====================================Modal events====================================================//
     document.getElementById("yes_btn").addEventListener("click", function() {
         console.log("Yes button clicked");
