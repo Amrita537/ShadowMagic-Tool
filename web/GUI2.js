@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let realHeight = null;
     let maskLayer = [];
     let firstRasterize = true;
+    let globalZoomRatio = null;
     canvas.setDimensions({ width: maxDisplayWidth, height: maxDisplayHeight});
 
     const canvasElement= document.getElementById('canvas_div')
@@ -151,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     mergedData.data[i] = 0; // R
                     mergedData.data[i + 1] = 0; // G
                     mergedData.data[i + 2] = 0; // B
-                    mergedData.data[i + 3] = global_opacity*255; // A        
+                    mergedData.data[i + 3] = 255; // A        
                 }   
                  
             } 
@@ -183,7 +184,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 mergedData.data[i] = 0; // R
                 mergedData.data[i + 1] = 0; // G
                 mergedData.data[i + 2] = 0; // B
-                mergedData.data[i + 3] = 255*global_opacity; // A 
+                mergedData.data[i + 3] = imageData.data[i+3]; // A 
             } 
             else {
                 mergedData.data[i] = 0; // R
@@ -291,7 +292,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return blob;
     }
 
-    function addMergedImageToCanvas(imageData) {
+    function addMergedImageToCanvas(imageData, noOpacity = false) {
         const objects = canvas.getObjects().filter(obj => obj.layerName == 'rasterLayer');
         canvas.remove(...objects);
         var c = document.createElement('canvas');
@@ -303,7 +304,9 @@ document.addEventListener("DOMContentLoaded", function () {
         // base64ToPNG(c.toDataURL());
         fabric.Image.fromURL(c.toDataURL(), function(img) {
             img.layerName = 'rasterLayer';
-            // img.opacity=global_opacity;
+            if (noOpacity == false){
+                img.opacity=global_opacity;    
+            };
             img.customImageName=direction+global_number;
             img.erasable = true;
             canvas.add(img);
@@ -410,17 +413,20 @@ document.addEventListener("DOMContentLoaded", function () {
                         };
                         if (canvasSizeInitialized == false){
                             // set zoom ratio that make sure the display canvas size always fully display contents
-                            let ratio = null;
                             if (realWidth > realHeight){
-                                ratio = maxDisplayWidth / realWidth;
+                                globalZoomRatio = maxDisplayWidth / realWidth;
                             }
                             else{
-                                ratio = maxDisplayHeight / realHeight;
+                                globalZoomRatio = maxDisplayHeight / realHeight;
                             }
                             canvas.setDimensions({ width: realWidth, height: realHeight});
+                            canvas.setZoom(globalZoomRatio);
+                            let delta = new fabric.Point((maxDisplayWidth - realWidth*globalZoomRatio)/2, (maxDisplayHeight - realHeight*globalZoomRatio)/2)
+                            canvas.relativePan(delta);
+                            
                             canvas2.setDimensions({ width: realWidth, height: realHeight});
-                            canvas.setZoom(ratio);
-                            canvas2.setZoom(ratio);
+                            canvas2.setZoom(globalZoomRatio);
+                            canvas2.relativePan(delta);
 
                             // add transparent background texture
                             const checkerSize = 150; // Size of the checker squares
@@ -1016,7 +1022,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function updateBookmarkedShadows(){
         BmShadow_div.innerHTML = "";
-
         for (let i = 0; i < savedLayers.length; i++) 
         {
             let BMshadow_btn = document.createElement("button");
@@ -1052,13 +1057,12 @@ document.addEventListener("DOMContentLoaded", function () {
             let iconCanvasCtx = iconCanvas.getContext('2d');
             iconCanvas.width =  canvas.width;
             iconCanvas.height = canvas.height;
-            iconCanvasCtx.drawImage(canvas.getElement(), 0, 0, canvas.width, canvas.height);
+            iconCanvasCtx.drawImage(canvas.getElement(), 0, 0, canvas.width*globalZoomRatio, canvas.height*globalZoomRatio);
+            // base64ToPNG(canvas.getElement().toDataURL());
             BmIconImg.src = iconCanvas.toDataURL();
-
 
             BMshadow_btn.appendChild(BMEyeIcon);
             BMshadow_btn.appendChild(NameSpan);
-
 
             const BMiconElement = BMshadow_btn.querySelector("i");
             BMiconElement.addEventListener("click", function (event) {
@@ -1074,8 +1078,6 @@ document.addEventListener("DOMContentLoaded", function () {
             BMshadow_btn.addEventListener("mouseleave", function() {
                 BMshadow_btn.style.backgroundColor = "#6c757d"; // Change back to the original color
             });
-
-
             BmShadow_div.appendChild(BMshadow_btn);
         }
 
@@ -1524,7 +1526,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         canvas.remove(...objects);
         rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
-        addMergedImageToCanvas(rasterAccumulatedShadow);
+        addMergedImageToCanvas(rasterAccumulatedShadow, noOpacity = true);
       });
 
 
@@ -1750,11 +1752,11 @@ document.addEventListener("DOMContentLoaded", function () {
         cursorCanvas.height = cursorSize;
 
         cursorCtx.beginPath();
-        cursorCtx.arc(cursorSize / 2, cursorSize / 2, cursorSize / 2, 0, 2 * Math.PI);
+        cursorCtx.arc(cursorSize / 4, cursorSize / 4, cursorSize / 4, 0, 2 * Math.PI);
         cursorCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         cursorCtx.fill();
 
-        canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 2 + ' ' + cursorSize / 2 + ', auto';
+        canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 4 + ' ' + cursorSize / 4 + ', auto';
     }
 
 //=================================Deactivate drawing tools ============================//
@@ -2101,7 +2103,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }    
             }
             catch(error){
-                console.log(error)
+                console.log(error);
             }
         });
 
