@@ -1260,7 +1260,8 @@ document.addEventListener("DOMContentLoaded", function () {
             canvasElement2.style.display = 'block';
             canvasElement.style.display = 'none';
             const savedCanvasData = JSON.parse(savedLayers[val]);
-
+            // clone the status from canvas
+            canvas2.setZoom(canvas.getZoom());
             canvas2.loadFromJSON(savedCanvasData, function() {
                 canvas2.renderAll();
             });
@@ -1274,8 +1275,22 @@ document.addEventListener("DOMContentLoaded", function () {
         for (let i= 0; i < savedShadowsOnly.length; i++) {
             const savedCanvasData = JSON.parse(savedShadowsOnly[i]);
             const tempCanvas3 = new fabric.Canvas(null, { width: realWidth, height: realHeight });
-            tempCanvas3.loadFromJSON(savedCanvasData);
-            saveShadowFromCanvas(tempCanvas3, `_bookmarked.png`);
+            tempCanvas3.loadFromJSON(savedCanvasData, function () {
+                tempCanvas3.renderAll();
+                const objects = tempCanvas3.getObjects().filter(obj => obj.erasable && obj.visible);
+                let exportLayer = new fabric.Group([], {
+                        subTargetCheck: true,
+                    });
+                objects.forEach(obj=>{
+                    exportLayer.addWithUpdate(obj);
+                });
+                let dataURL = ImageDatatoPNG(rasterizeLayer(exportLayer), true);
+                const link = document.createElement('a');
+                link.download = global_filename+`_bookmarked.png`;
+                link.href = dataURL;
+                link.click();
+            });
+            
         }
     }
 
