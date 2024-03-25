@@ -36,10 +36,11 @@ document.addEventListener("DOMContentLoaded", function () {
     let maxDisplayHeight = 600;
     let realWidth = null;
     let realHeight = null;
-    let maskLayer = [];
+    let maskLayer = {};
     let firstRasterize = true;
     let globalZoomRatio = null;
     let globalRelativePanDelta = null;
+    let layerVisibilityChanged = true;
     
     canvas.setDimensions({ width: maxDisplayWidth, height: maxDisplayHeight});
 
@@ -86,6 +87,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     document.addEventListener("keydown", function(event) {
+        if (event.key === "Enter"){
+            mergeToShadowLayers();
+        }
         if (event.ctrlKey && event.key ==="+") 
         {
             event.preventDefault(); 
@@ -118,7 +122,116 @@ document.addEventListener("DOMContentLoaded", function () {
     var undoQueue = [];
     var redoStack = [];
 
-    // helper functions added by Chuan
+    // helper functions added by chuan
+    function mergeToShadowLayers(){
+        // the following logic updates to the sub-shadow layers
+        // for each visibal shadows, find corresponding region mask
+        let activateObjs = canvas.getObjects().filter(obj=>obj.type=='image' && obj.visible);
+        activateObjs.forEach(obj=>{
+            // find region mask
+            if (obj.customImageName){
+                if (obj.customImageName.includes('shadow')){
+                    let maskRegion = maskLayer[obj.customImageName];
+                    // get drawing update
+                    let rasterUpdatedLayer = applyMaskToShadow(rasterAccumulatedShadow, maskRegion);
+                    // get original shadow
+                    let rasterLayer = rasterizeLayer(obj);
+                    rasterUpdatedLayer = mergeBinaryMaps(rasterLayer, rasterUpdatedLayer);
+                    // apply update to layer
+                    UpdateLayerByName(ImageDatatoPNG(rasterUpdatedLayer, true), obj.customImageName);        
+                }
+            }
+            
+        });
+        resetDrawingState();
+        canvas.renderAll();
+    }
+
+    function resetDrawingState(){
+        // reset all intermediate variables, cause they will not work after merge 
+        rasterAccumulatedShadow = cleanUpImageData(rasterAccumulatedShadow);
+        undoQueue.splice(0, undoQueue.length);
+        redoStack.splice(0, redoStack.length);    
+        const objects = canvas.getObjects().filter(obj => obj.visible && obj.layerName == 'rasterLayer');
+        canvas.remove(...objects);
+        delete maskLayer['mergedMask'];
+        layerVisibilityChanged = true;    
+    }
+
+    function applyMaskToShadow(shadowData, maskData){
+        const width = shadowData.width;
+        const height = shadowData.height;
+        let mergedData = new ImageData(width, height);
+        for (let i = 0; i < shadowData.data.length; i += 4) {
+            // apply mask to shadow
+            if (maskData.data[i] != 255){        
+                mergedData.data[i] = 0; // R
+                mergedData.data[i + 1] = 0; // G
+                mergedData.data[i + 2] = 0; // B
+                mergedData.data[i + 3] = 0; // A    
+            }
+            else{
+                mergedData.data[i] = shadowData.data[i]; // R
+                mergedData.data[i + 1] = shadowData.data[i+1]; // G
+                mergedData.data[i + 2] = shadowData.data[i+2]; // B
+                mergedData.data[i + 3] = shadowData.data[i+3]; // A    
+            }
+        }
+        return mergedData;
+    }
+
+    function maskSubstraction(maskData1, maskData2){
+        const width = maskData1.width;
+        const height = maskData1.height;
+
+        // Create a new ImageData object to store the result
+        let mergedData = new ImageData(width, height);
+
+        for (let i = 0; i < maskData1.data.length; i += 4) {
+            // substract mask2 from mask1
+            if (maskData1.data[i] != 0 && maskData2.data[i] == 0){        
+                mergedData.data[i] = 255; // R
+                mergedData.data[i + 1] = 255; // G
+                mergedData.data[i + 2] = 255; // B
+                mergedData.data[i + 3] = 255; // A    
+            }
+        }
+        return mergedData;
+    }
+    function getMaskFromImage(img, layerName){
+        let tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        let ctx = tempCanvas.getContext('2d');
+        img.render(ctx,{
+            left: 0,
+            top: 0,
+            scaleX: 1,
+            scaleY: 1
+        });
+
+        let maskData = new ImageData(tempCanvas.width, tempCanvas.height);
+        const flatData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        for (var i = 0; i < flatData.data.length; i += 4) {
+            if (flatData.data[i + 3] != 0){
+                // Using the alpha value as the luminance for RGB
+                maskData.data[i] = 255;    // Red channel
+                maskData.data[i + 1] = 255; // Green channel
+                maskData.data[i + 2] = 255; // Blue channel
+                maskData.data[i + 3] = 255;         // Set alpha to fully opaque    
+            }
+            else{
+                maskData.data[i] = 0;    // Red channel
+                maskData.data[i + 1] = 0; // Green channel
+                maskData.data[i + 2] = 0; // Blue channel
+                maskData.data[i + 3] = 255;         // Set alpha to fully opaque    
+            }
+            
+        };
+        maskData.layerName = layerName;
+        return maskData;
+    }
+
     function cleanUpImageData(imageData){
         for (let i = 0; i < imageData.data.length; i += 4) {
             imageData.data[i] = 0; // R
@@ -207,13 +320,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         return mergedData;  
     };
-    function ImageDatatoPNG(imgData){
+    function ImageDatatoPNG(imgData, base64 = false){
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = imgData.width; // Set to your Fabric.js canvas width
         tempCanvas.height = imgData.height; // Set to your Fabric.js canvas height
         const ctx = tempCanvas.getContext('2d');
         ctx.putImageData(imgData, 0, 0);
-        base64ToPNG(tempCanvas.toDataURL());    
+        if (base64){
+            return tempCanvas.toDataURL();
+        }
+        else{
+            base64ToPNG(tempCanvas.toDataURL());    
+        }
     };
 
     function getAllShadowLayers(targetCanvas){
@@ -313,7 +431,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function addMergedImageToCanvas(imageData, noOpacity = false) {
-        const objects = canvas.getObjects().filter(obj => obj.layerName == 'rasterLayer');
+        const objects = canvas.getObjects().filter(obj => obj.visible && obj.layerName == 'rasterLayer');
         canvas.remove(...objects);
         var c = document.createElement('canvas');
         c.width = canvas.width;
@@ -475,38 +593,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         // get flat mask data
                         if (psdlayername.includes('flat')){
-                            let tempCanvas = document.createElement('canvas');
-                            tempCanvas.width = img.width;
-                            tempCanvas.height = img.height;
-                            let ctx = tempCanvas.getContext('2d');
-                            img.render(ctx,{
-                                left: 0,
-                                top: 0,
-                                scaleX: 1,
-                                scaleY: 1
-                            });
-
-                            let maskWholeData = new ImageData(tempCanvas.width, tempCanvas.height);
-                            const flatData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                            for (var i = 0; i < flatData.data.length; i += 4) {
-                                if (flatData.data[i + 3] != 0){
-                                    // Using the alpha value as the luminance for RGB
-                                    maskWholeData.data[i] = 255;    // Red channel
-                                    maskWholeData.data[i + 1] = 255; // Green channel
-                                    maskWholeData.data[i + 2] = 255; // Blue channel
-                                    maskWholeData.data[i + 3] = 255;         // Set alpha to fully opaque    
-                                }
-                                else{
-                                    maskWholeData.data[i] = 0;    // Red channel
-                                    maskWholeData.data[i + 1] = 0; // Green channel
-                                    maskWholeData.data[i + 2] = 0; // Blue channel
-                                    maskWholeData.data[i + 3] = 255;         // Set alpha to fully opaque    
-                                }
-                                
-                            };
-                            maskWholeData.layerName = 'maskFlat';
+                            let maskWholeData = getMaskFromImage(img, "flatMask");
                             maskWholeData.activated = true;
-                            maskLayer.push(maskWholeData);
+                            maskLayer["flatMask"] = maskWholeData;
                         }
 
                         img.customSelected = false; // Custom property to indicate selected state
@@ -745,7 +834,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             fabric.Image.fromURL(fullPath, function (img) {
                                 let imgData = rasterizeLayer(img);
                                 imgData.layerName = name;
-                                maskLayer.push(imgData);
+                                maskLayer[name] = imgData;
                             });
                         } else {
                             console.log(`Image ${fullPath} does not exist`);
@@ -1488,10 +1577,43 @@ document.addEventListener("DOMContentLoaded", function () {
         // therefore I put them here. 
         // And there is no reason to put rasterization logic under keyboard press
         if (isPainting){
-            // get drawing mask
-            const activateMasks = maskLayer.filter(layer => layer.activated);
-            let mergedMask = activateMasks.reduce(
-                (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true));
+            // this is ugly, hope to learn some better way 
+            let mergedMask = new ImageData(canvas.width, canvas.height);
+            if (layerVisibilityChanged){
+                // get mask from all activate shadows
+                let firstMerge = true; 
+                let shadowMask = new ImageData(canvas.width, canvas.height);
+                let activateObjs = canvas.getObjects().filter(obj=>obj.type=='image' && obj.visible);
+                activateObjs.forEach(obj=>{
+                    if (obj.customImageName){
+                        if (obj.customImageName.includes('shadow')){
+                            let mask = getMaskFromImage(obj, obj.customImageName);
+                            if (firstMerge){
+                                shadowMask = mask;
+                                firstMerge = false;
+                            }
+                            else{
+                                shadowMask = mergeBinaryMaps(shadowMask, mask, null, true);
+                            }
+                        }
+                    }
+                });
+    
+                // get flat mask
+                const flatMask = maskLayer["flatMask"];
+    
+                // substract two mask
+                let mergedMask = maskSubstraction(flatMask, shadowMask);
+                maskLayer['mergedMask'] = mergedMask;
+                layerVisibilityChanged = false;
+            }
+            else{
+                mergedMask = maskLayer['mergedMask'];
+            }
+
+            // for debug
+            // ImageDatatoPNG(mergedMask);
+
             // get new drawn vector stroke
             let tempStrokeLayer = new fabric.Group([], {
                 subTargetCheck: true,
@@ -1503,55 +1625,14 @@ document.addEventListener("DOMContentLoaded", function () {
             canvas.remove(objects[0]);
             let rasterizedStroke = rasterizeLayer(tempStrokeLayer);
             rasterizedStroke = applyBinaryMaps(rasterizedStroke, mergedMask);
-            if (firstRasterize){
-                rasterAccumulatedShadow = rasterizedStroke;
-                firstRasterize = false;
-            }
-            else{
-                rasterAccumulatedShadow = mergeBinaryMaps(rasterizedStroke, rasterAccumulatedShadow);    
-            }
+            // the first stroke always failed, don't know why
+            rasterAccumulatedShadow = mergeBinaryMaps(rasterizedStroke, rasterAccumulatedShadow);    
             addMergedImageToCanvas(rasterAccumulatedShadow);
-            // // the following logic updates to the sub-shadow layers
-            // // find the intersected objects
-            // let intersectedObjs = [];
-            // canvas.forEachObject(obj=>{
-            //     try{
-            //         if (obj.intersectsWithObject(objects[0]) && obj.visible && obj.customImageName.includes('shadow')){
-            //             intersectedObjs.push(obj);
-            //         }    
-            //     }
-            //     catch(error){
-            //         console.log(error);
-            //     }
-            // });
-            // // apply update to each layer
-            // intersectedObjs.forEach(obj=>{
-            //     var tempCanvas = document.createElement('canvas');
-            //     var tempCtx = tempCanvas.getContext('2d');
-
-            //     // Adjust the dimensions as necessary
-            //     tempCanvas.width = obj.width;
-            //     tempCanvas.height = obj.height;
-
-            //     // Draw the original image
-            //     tempCtx.drawImage(obj.getElement(), 0, 0);
-            //     // apply changes by free painting
-            //     let rasterizedShadow = rasterizeLayer(obj);
-            //     // TODO: need to get mask for each sub-shadow!
-            //     rasterizedShadow = mergeBinaryMaps(rasterizedStroke, rasterizedShadow); 
-            //     tempCtx.putImageData(rasterizedShadow, 0, 0);
-            //     // Update the imageA source
-            //     obj.setElement(tempCanvas);
-            //     obj.setCoords();
-            //     canvas.requestRenderAll();
-            // });
+            // mergeToShadowLayers();
         }
     });
 
     canvas.on("erasing:end", ({ targets, drawables }) => {
-        const activateMasks = maskLayer.filter(layer => layer.activated);
-        let mergedMask = activateMasks.reduce(
-                (merged, current)=>mergeBinaryMaps(merged, current, mergeMask = true));
         let tempEraserLayer = new fabric.Group([], {
                 subTargetCheck: true,
                 layerName: "tempLayer"
