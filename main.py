@@ -432,9 +432,9 @@ def shadow_decrease_single(shadow, line):
 if __name__ == "__main__":
     # for debug
     # open_psd("./test/image7.psd")
-    # batch_process()
-    # import pdb
-    # pdb.set_trace()
+    batch_process()
+    import pdb
+    pdb.set_trace()
     
     # for png in os.listdir(PATH_TO_PREPROCESS):
     #     if "flat" not in png: continue

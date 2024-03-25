@@ -607,7 +607,6 @@ document.addEventListener("DOMContentLoaded", function () {
           displayImages();
         });
 
-
         crossIcon.addEventListener("click", function (event) {
             const removedImage = images.splice(i, 1)[0];
             if (removedImage.customImageName.includes('flat')) {
@@ -623,12 +622,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 displayImages();
             }
         });
-
         layerList.appendChild(layerButton);
-      }
-
-
-    }
+      };
+    };
 
 
     function toggleLayerVisibility(index) {

@@ -30,6 +30,7 @@ def get_sub_shadow(img, label, regions_by_label, image_path = None, output_folde
     masked_regions = []
     # Loop through each region in the label group
     regions = regions_by_label[label]
+    combined_mask = np.zeros((img.size[1], img.size[0])).astype(bool)
     for region in regions:
         # Get region coordinates and flatten them
         coordinates = flatten_coordinates(region['coordinates'])
@@ -41,24 +42,29 @@ def get_sub_shadow(img, label, regions_by_label, image_path = None, output_folde
 
         # Convert the mask to a NumPy array
         mask_array = np.array(mask)
-
+        combined_mask[mask_array.astype(bool)] = True
         # Apply the mask to the original image
         masked_region = Image.fromarray(np.asarray(img) * mask_array[:, :, None], img.mode)
         masked_regions.append(masked_region)
 
+    if os.path.exists(output_folder) == False:
+        os.makedirs(output_folder)
+
+    mask_folder = output_folder.replace("sub_shadows", "sub_shadows_mask")
+    if os.path.exists(mask_folder) == False:
+        os.makedirs(mask_folder)
+    file_name = os.path.basename(image_path)
+    Image.fromarray(combined_mask).save(os.path.join(mask_folder, file_name.replace(".png", "_%s_mask.png"%label)))
+    
     # Merge all masked regions belonging to the same label into one image
     if len(masked_regions) > 0:
         merged_image = masked_regions[0]
         for i in range(1, len(masked_regions)):
             merged_image = Image.alpha_composite(merged_image.convert('RGBA'), masked_regions[i].convert('RGBA'))
-
         if to_png:
             # Generate a unique output file name based on the label
-            file_name = os.path.basename(image_path)
             output_name = f"{os.path.splitext(file_name)[0]}_{label}.png"
             output_path = os.path.join(output_folder, output_name)
-            if os.path.exists(output_folder) == False:
-                os.makedirs(output_folder)
             # Save the merged image as a separate image with the same format as the input image
             merged_image.save(output_path, format=img.format)
     end = time.time()
