@@ -1775,6 +1775,7 @@ deactivateUndoEraser();
 
 //===============eraser code========================//
 
+
     const eraserBtn = document.getElementById("eraserBtn");
 
 
@@ -1797,7 +1798,7 @@ deactivateUndoEraser();
              // eraserBtn.style.color = "white";
              canvas.freeDrawingBrush = new fabric.EraserBrush(canvas);
              canvas.freeDrawingBrush.width = global_brush_width;
-
+             Drawing_Cursor(global_brush_width);
              // why need to repeat this logic everytime the eraser button is pressed? is it just need to be ran once?
              canvas.forEachObject(function(obj) {
                 if (obj.type === 'image') 
@@ -1834,6 +1835,7 @@ deactivateUndoEraser();
         deactivateEraser();
         deactivateZooming();
         undoErasing = !undoErasing;
+        Drawing_Cursor(global_brush_width);
         // console.log("undoErasing clicked", undoErasing);
         if(undoErasing)
         {
