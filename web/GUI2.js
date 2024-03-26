@@ -484,6 +484,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+
+//==========================Disable all================================
+
+function disable_all_tool(){
+deactivatePainting();
+deactivateEraser();
+deactivateZooming();
+deactivatePanning();
+deactivateUndoEraser();
+}
 //====================Open image functions================
     const fileInput = document.getElementById("fileInput");
     fileInput.addEventListener("change", handleFileSelect);
@@ -919,6 +929,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 canvasElement2.style.display = 'none';
                 canvasElement.style.display = 'block';
                 updateBookmarkedShadows();
+                disable_all_tool();
 
                 if (current_button.classList.contains('active-button')) 
                 {
@@ -1029,33 +1040,39 @@ document.addEventListener("DOMContentLoaded", function () {
     // Add click event listeners to each checkbox
     document.getElementById('hairCheckbox').addEventListener('click', function() {
         toggleVisibilityByCheckbox('hair');
+        disable_all_tool();
     });
 
     document.getElementById('faceCheckbox').addEventListener('click', function() {
         toggleVisibilityByCheckbox('face');
+        disable_all_tool();
     });
 
     document.getElementById('clothCheckbox').addEventListener('click', function() {
         toggleVisibilityByCheckbox('cloth');
+        disable_all_tool();
     });
 
     document.getElementById('armCheckbox').addEventListener('click', function() {
         toggleVisibilityByCheckbox('arm');
+        disable_all_tool();
     });
 
     document.getElementById('objectCheckbox').addEventListener('click', function() {
         toggleVisibilityByCheckbox('object');
+        disable_all_tool();
     });
 
     const cursorInfo = document.getElementById('cursorInfo');
     const allCheckbox = document.getElementById('allswitch');
     allCheckbox.addEventListener('change', function () {
+        disable_all_tool();
         if (this.checked) {
             cursorInfo.style.display = 'block';
             getOutline(this.checked);
             document.getElementById('collapse4').style.maxHeight = '200px';
             document.getElementById('collapse4').style.overflowY = 'auto';
-            document.getElementById('collapse2').style.maxHeight = '420px';
+            document.getElementById('collapse2').style.maxHeight = '400px';
             document.getElementById('collapse2').style.overflowY = 'auto';
         } else {
             cursorInfo.style.display = 'none';
@@ -1132,7 +1149,7 @@ document.addEventListener("DOMContentLoaded", function () {
         shadowList.appendChild(shadowButton);
 
         tickIcon.addEventListener("click", function (event) {
-
+            disable_all_tool();
             togglePolygonVisibility(false) 
 
             //saving the current canvas status
@@ -1221,6 +1238,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const BMiconElement = BMshadow_btn.querySelector("i");
             BMiconElement.addEventListener("click", function (event) {
+              disable_all_tool();
               event.stopPropagation(); // Stop event propagation
               toggleBMCanvas(BMshadow_btn.id, i);
               updateBookmarkedShadows(); // Update the button with the new visibility state
@@ -1301,6 +1319,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const saveBtn = document.getElementById("save_id");
     saveBtn.addEventListener('click', saveCanvasImage);
     function saveCanvasImage() {
+        disable_all_tool();
 
         // let's do this first
         // merge content on content to shadow layers
@@ -1348,6 +1367,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.getElementById('opacityRange').addEventListener('input', function() {
+      disable_all_tool();
       updateOpacity(this.value);
     });
 
@@ -1486,6 +1506,7 @@ document.addEventListener("DOMContentLoaded", function () {
     {
         isZooming=!isZooming;
         updateBookmarkedShadows();
+        updateZoomPercentage();
         console.log("zooming is ", isZooming);
         if(isZooming){
             console.log("zoom is on")
@@ -2169,12 +2190,12 @@ function deactivateUndoEraser() {
               }
 
               card.addEventListener("click", function () {
+
                   
                   Hide_allshadows();
                   addShadowButton();
                   updateCheckboxes();
-
-                  deactivatePainting();
+                  disable_all_tool();
 
                   paginationItems.forEach(item => item.classList.remove('active'));
                   paginationItems[index].classList.add('active');
