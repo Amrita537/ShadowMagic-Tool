@@ -1844,7 +1844,7 @@ deactivateUndoEraser();
         }
     }
 
-/========================paint brush functions==========================//
+//========================paint brush functions==========================//
 
     const cursorUrl = 'circle_icon.png';
     var mousecursor; 
