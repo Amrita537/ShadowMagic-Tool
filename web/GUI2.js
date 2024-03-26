@@ -608,15 +608,29 @@ deactivateUndoEraser();
 
                             // add transparent background texture
                             const checkerSize = 150; // Size of the checker squares
+                            let cSizeWidth = null;
+                            let cSizeHeight = null;
                             const numRows = canvas.height / checkerSize;
                             const numCols = canvas.width / checkerSize;
                             for (let row = 0; row < numRows; row++) {
                               for (let col = 0; col < numCols; col++) {
+                                if (row == numRows - 1){
+                                    cSizeWidth = checkerSize*numRows - realWidth;
+                                }
+                                else{
+                                    cSizeWidth = checkerSize;
+                                }
+                                if (col == numCols - 1){
+                                    cSizeHeight = checkerSize*numCols - realHeight;
+                                }
+                                else{
+                                    cSizeHeight = checkerSize;
+                                }
                                 // Determine the color of the square based on its position
                                 const color = (row % 2 === 0) ^ (col % 2 === 0) ? 'lightgray' : 'white';
                                 const rect = new fabric.Rect({
-                                  left: col * checkerSize,
-                                  top: row * checkerSize,
+                                  left: col * cSizeHeight,
+                                  top: row * cSizeWidth,
                                   fill: color,
                                   layerName: "grids",
                                   width: checkerSize,
