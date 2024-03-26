@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let globalZoomRatio = null;
     let globalRelativePanDelta = null;
     let layerVisibilityChanged = true;
+    let rasterLayerCleaned = true;
     
     canvas.setDimensions({ width: maxDisplayWidth, height: maxDisplayHeight});
 
@@ -89,7 +90,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.addEventListener("keydown", function(event) {
         if (event.key === "Enter"){
-            mergeToShadowLayers();
+            if (rasterLayerCleaned == false){
+                mergeToShadowLayers();}
         }
         if (event.ctrlKey && event.key ==="+") 
         {
@@ -182,7 +184,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const objects = canvas.getObjects().filter(obj => obj.visible && obj.layerName == 'rasterLayer');
         canvas.remove(...objects);
         delete maskLayer['mergedMask'];
-        layerVisibilityChanged = true;    
+        layerVisibilityChanged = true;
+        rasterLayerCleaned = true;
     }
 
     function applyMaskToShadow(shadowData, maskData){
@@ -287,7 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     needMerge = (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0 )&&maskData.data[i]!=0;   
                 }
                 else{
-                    needMerge = imageData1.data[i+3] > 125 || imageData2.data[i+3] > 125;   
+                    needMerge = imageData1.data[i+3] > 0 || imageData2.data[i+3] > 0;   
                 }
                 
             }
@@ -1585,11 +1588,11 @@ document.addEventListener("DOMContentLoaded", function () {
         // therefore I put them here. 
         // And there is no reason to put rasterization logic under keyboard press
         if (isPainting){
-            // this is ugly, hope to learn some better way 
+            // this is ugly, hope to learn some better way
             let mergedMask = new ImageData(canvas.width, canvas.height);
             if (layerVisibilityChanged){
                 // get mask from all activate shadows
-                let firstMerge = true; 
+                let firstMerge = true;
                 let shadowMask = new ImageData(canvas.width, canvas.height);
                 let activateObjs = canvas.getObjects().filter(obj=>obj.type=='image' && obj.visible);
                 activateObjs.forEach(obj=>{
@@ -1634,9 +1637,9 @@ document.addEventListener("DOMContentLoaded", function () {
             let rasterizedStroke = rasterizeLayer(tempStrokeLayer);
             rasterizedStroke = applyBinaryMaps(rasterizedStroke, mergedMask);
             // the first stroke always failed, don't know why
-            rasterAccumulatedShadow = mergeBinaryMaps(rasterizedStroke, rasterAccumulatedShadow);    
+            rasterAccumulatedShadow = mergeBinaryMaps(rasterizedStroke, rasterAccumulatedShadow);
+            rasterLayerCleaned = false;
             addMergedImageToCanvas(rasterAccumulatedShadow);
-            // mergeToShadowLayers();
         }
     });
 
@@ -1651,6 +1654,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         canvas.remove(...objects);
         rasterAccumulatedShadow = rasterizeLayer(tempEraserLayer);
+        rasterLayerCleaned = false;
         addMergedImageToCanvas(rasterAccumulatedShadow, noOpacity = true);
       });
 
