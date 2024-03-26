@@ -221,7 +221,7 @@ canvas {
     background-size: cover; /* Adjust as needed */
     position: relative;
     display: flex;
-    height: 600px;
+    height: 650px;
     width: 750px;
     justify-content: center;
 }
@@ -507,6 +507,10 @@ hr{
     }
 
 
+.disabled {
+        opacity: 0.5; /* Dim the button */
+        pointer-events: none; /* Disable pointer events */
+  }
 
     /* Change button background color on hover */
 #ChangeSize .increment:hover,
