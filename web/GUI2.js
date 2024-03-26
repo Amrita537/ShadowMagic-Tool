@@ -608,33 +608,35 @@ deactivateUndoEraser();
 
                             // add transparent background texture
                             const checkerSize = 150; // Size of the checker squares
-                            let cSizeWidth = null;
-                            let cSizeHeight = null;
+                            let cSizeWidth = checkerSize;
+                            let cSizeHeight = checkerSize;
                             const numRows = canvas.height / checkerSize;
                             const numCols = canvas.width / checkerSize;
                             for (let row = 0; row < numRows; row++) {
                               for (let col = 0; col < numCols; col++) {
-                                if (row == numRows - 1){
-                                    cSizeWidth = checkerSize*numRows - realWidth;
-                                }
-                                else{
-                                    cSizeWidth = checkerSize;
-                                }
-                                if (col == numCols - 1){
-                                    cSizeHeight = checkerSize*numCols - realHeight;
+                                if ((row === (Math.ceil(numRows)-1)) && (canvas.height % checkerSize != 0)){
+                                    cSizeHeight = canvas.height + checkerSize - checkerSize*Math.ceil(numRows);
                                 }
                                 else{
                                     cSizeHeight = checkerSize;
                                 }
+                                if ((col === (Math.ceil(numCols)-1)) && (canvas.width % checkerSize != 0)){
+                                    cSizeWidth = canvas.width + checkerSize - checkerSize*Math.ceil(numCols);
+                                }
+                                else{
+                                    cSizeWidth = checkerSize;
+                                }
                                 // Determine the color of the square based on its position
                                 const color = (row % 2 === 0) ^ (col % 2 === 0) ? 'lightgray' : 'white';
                                 const rect = new fabric.Rect({
-                                  left: col * cSizeHeight,
-                                  top: row * cSizeWidth,
+                                  left: col * checkerSize,
+                                  top: row * checkerSize,
                                   fill: color,
                                   layerName: "grids",
-                                  width: checkerSize,
-                                  height: checkerSize,
+                                  width: cSizeWidth,
+                                  height: cSizeHeight,
+                                  // width: checkerSize,
+                                  // height: checkerSize,
                                   selectable: false, // The squares should not be selectable
                                   evented: false, // The squares should not react to events
                                   erasable: false
