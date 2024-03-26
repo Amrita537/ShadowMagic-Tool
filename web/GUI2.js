@@ -2249,6 +2249,9 @@ function deactivateUndoEraser() {
     const incrementButton = document.querySelector('.increment');
     const decrementButton = document.querySelector('.decrement');
 
+    incrementButton.disabled = true;
+    incrementButton.classList.add('disabled');
+
     incrementButton.addEventListener('click', function(labels = []) {
         let res = {};
         if (!labels.length){
@@ -2272,6 +2275,9 @@ function deactivateUndoEraser() {
     decrementButton.addEventListener('click', function(labels = []) {
         // lables
         console.log('decrement button clicked');
+        incrementButton.disabled = false;
+        incrementButton.classList.remove('disabled');
+
         if (!labels.length){
             labels = [];
         }
@@ -2302,6 +2308,7 @@ function deactivateUndoEraser() {
         loader.style.display = 'block';
         shadowChanged = true;
     });
+
 
     // call back function for layer update
     eel.expose(UpdataShadow);
