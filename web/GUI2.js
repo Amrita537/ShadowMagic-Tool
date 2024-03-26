@@ -1184,8 +1184,8 @@ deactivateUndoEraser();
             togglePolygonVisibility(false) 
  
 
-            if (rasterLayerCleaned == false){
-            mergeToShadowLayers();}
+            // if (rasterLayerCleaned == false){
+            // mergeToShadowLayers();}
 
             //saving the current canvas status
             const canvasStatus = JSON.stringify(canvas.toJSON());
