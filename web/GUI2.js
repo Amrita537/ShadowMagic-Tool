@@ -1608,9 +1608,10 @@ deactivateUndoEraser();
         deactivateEraser();
         deactivatePainting();
         deactivateZooming();
-        canvas.hoverCursor = 'pointer';
+        // canvas.hoverCursor = 'pointer';
+        // document.body.appendChild(panCursor); 
+        canvas.hoverCursor = 'url(assets/pancursor.png) 5 5, auto';
         panBtn.style.backgroundColor = "#B5B5B5";
-        // panBtn.style.color = "";
       } else {
         canvas.hoverCursor = 'default';
         panBtn.style.backgroundColor = "";
@@ -1843,7 +1844,7 @@ deactivateUndoEraser();
         }
     }
 
-//========================paint brush functions==========================//
+/========================paint brush functions==========================//
 
     const cursorUrl = 'circle_icon.png';
     var mousecursor; 
@@ -1912,7 +1913,9 @@ deactivateUndoEraser();
             this.style.backgroundColor= 'black';
 
             document.getElementById('BrushRange').value = circle_id.id;
-            Drawing_Cursor(circle_id.id);
+            // Drawing_Cursor(circle_id.id);
+            Drawing_Cursor(global_brush_width);
+
             }
         });
     });
@@ -1926,10 +1929,14 @@ deactivateUndoEraser();
         console.log(rangeValue);
         canvas.freeDrawingBrush.width = parseInt(rangeValue);
         global_brush_width=parseInt(rangeValue);
-        Drawing_Cursor(rangeValue);
+        // Drawing_Cursor(rangeValue);
+        Drawing_Cursor(global_brush_width);
     });
             
     function Drawing_Cursor(cursor_Size){
+        const zoom = canvas.getZoom(); // Get the current zoom level of the canvas
+        cursor_Size = cursor_Size * zoom;
+
         canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
         canvas.isDrawingMode = true;
 
@@ -1940,12 +1947,13 @@ deactivateUndoEraser();
         cursorCanvas.height = cursorSize;
 
         cursorCtx.beginPath();
-        cursorCtx.arc(cursorSize / 4, cursorSize / 4, cursorSize / 4, 0, 2 * Math.PI);
+        cursorCtx.arc(cursorSize / 2, cursorSize / 2, cursorSize / 2, 0, 2 * Math.PI);
         cursorCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         cursorCtx.fill();
 
-        canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 4 + ' ' + cursorSize / 4 + ', auto';
+        canvas.freeDrawingCursor = 'url(' + cursorCanvas.toDataURL() + ') ' + cursorSize / 2 + ' ' + cursorSize / 2 + ', auto';
     }
+
 
 //=================================Deactivate drawing tools ============================//
     // function deactivateEraser() {
