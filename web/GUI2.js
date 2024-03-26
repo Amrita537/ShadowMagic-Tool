@@ -709,6 +709,15 @@ deactivateUndoEraser();
         canvas.renderAll(); // Render the canvas to apply the changes
     }
 
+    function resetPosition2() {
+        canvas2.setViewportTransform([1, 0, 0, 1, 0, 0]); // Reset the viewport transform to identity matrix (no zoom or panning)
+        canvas2.setZoom(globalZoomRatio); // Reset the zoom level to 1 (no zoom)
+        canvas2.absolutePan(new fabric.Point(0, 0)); // Pan the canvas to the top-left corner
+        canvas2.relativePan(globalRelativePanDelta);
+        canvas2.renderAll(); // Render the canvas to apply the changes
+    }
+
+
 //====================Base Layer functions================
 
     const layerList = document.getElementById("layerList");
@@ -1167,6 +1176,10 @@ deactivateUndoEraser();
         tickIcon.addEventListener("click", function (event) {
             disable_all_tool();
             togglePolygonVisibility(false) 
+ 
+
+            if (rasterLayerCleaned == false){
+            mergeToShadowLayers();}
 
             //saving the current canvas status
             const canvasStatus = JSON.stringify(canvas.toJSON());
@@ -1275,6 +1288,7 @@ deactivateUndoEraser();
     let activeBMButtonId = null;
 
     function toggleBMCanvas(BM_button_id, val) {
+        resetPosition2();
         visibility_arr = new Array(visibility_arr.length).fill(false);
         if (activeBMButtonId === BM_button_id ) {
                 console.log(`Button ${BM_button_id} is already active`);
@@ -1298,7 +1312,8 @@ deactivateUndoEraser();
             canvasElement.style.display = 'none';
             const savedCanvasData = JSON.parse(savedLayers[val]);
             // clone the status from canvas
-            canvas2.setZoom(canvas.getZoom());
+            // canvas2.setZoom(canvas.getZoom());
+            resetPosition2();
             canvas2.loadFromJSON(savedCanvasData, function() {
                 canvas2.renderAll();
             });
@@ -1557,6 +1572,28 @@ deactivateUndoEraser();
 //======================panning===============================//
     const panBtn = document.getElementById("panBtn");
 
+    // // Create a custom cursor element
+    // const panCursor = document.createElement("div");
+    // customCursor.style.width = "32px"; // Set the width of the cursor image
+    // customCursor.style.height = "32px"; // Set the height of the cursor image
+    // customCursor.style.backgroundImage = "url('path_to_your_png_cursor_image.png')"; // Set the background image
+    // customCursor.style.position = "absolute"; // Set the cursor position to absolute
+    // customCursor.style.pointerEvents = "none"; // Make sure the cursor does not interfere with mouse events
+    // document.body.appendChild(customCursor); // Append the cursor to the document body
+
+    // // Hide the default cursor
+    // document.body.style.cursor = "none";
+
+    // // Update the custom cursor position based on the mouse movement
+    // document.addEventListener("mousemove", function(event) {
+    //   customCursor.style.left = (event.clientX - 16) + "px"; // Adjust the position to center the cursor image
+    //   customCursor.style.top = (event.clientY - 16) + "px"; // Adjust the position to center the cursor image
+    // });
+
+    // // Set the CSS style of the canvas to use the custom cursor
+    // canvas.upperCanvasEl.style.cursor = "none";
+
+
     // Add event listener to the pan button
     panBtn.addEventListener("click", togglePanning);
 
@@ -1606,13 +1643,6 @@ deactivateUndoEraser();
         canvas.lastPosX = event.e.clientX;
         canvas.lastPosY = event.e.clientY;
 
-        // why this??
-        // real don't understand this logic...
-        // const maxTop = Math.min(0, canvas.height - imgHeight);
-        // const newTop = Math.max(maxTop, Math.min(0, canvas.viewportTransform[5] + deltaY));
-        // const actualDeltaY = newTop - canvas.viewportTransform[5];
-        // canvas.relativePan(new fabric.Point(0, actualDeltaY));
-        // canvas.lastPosY = event.e.clientY;
       }
     });
 
@@ -1868,7 +1898,7 @@ deactivateUndoEraser();
             } 
             else {
                 console.log('Circle span clicked: ', circle_id.id);
-                global_brush_width= parseInt(circle_id.id)*5;
+                global_brush_width= parseInt(circle_id.id)*2.2;
                 canvas.freeDrawingBrush.width =  global_brush_width;
                 canvas.freeDrawingBrush.color = 'rgba(0,0,0,'+global_opacity+')';
                 selectedCircleId = circle_id.id;
