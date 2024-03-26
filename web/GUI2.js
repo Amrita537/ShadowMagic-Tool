@@ -773,6 +773,9 @@ deactivateUndoEraser();
         const iconElement = layerButton.querySelector("i");
 
         iconElement.addEventListener("click", function (event) {
+          canvasElement2.style.display = 'none';
+          canvasElement.style.display = 'block';
+          updateBookmarkedShadows();
           event.stopPropagation(); // Stop event propagation
           toggleLayerVisibility(i);
           updateLayerList(images); // Update the button with the new visibility state
@@ -1092,6 +1095,9 @@ deactivateUndoEraser();
     const allCheckbox = document.getElementById('allswitch');
     allCheckbox.addEventListener('change', function () {
         disable_all_tool();
+        canvasElement2.style.display = 'none';
+        canvasElement.style.display = 'block';
+        updateBookmarkedShadows();
         if (this.checked) {
             cursorInfo.style.display = 'block';
             getOutline(this.checked);
@@ -1525,7 +1531,7 @@ deactivateUndoEraser();
     function updateZoomPercentage() {
     const zoomPercentage = (canvas.getZoom() * 100).toFixed(0);
     zoomPercentageElement.innerText = `${zoomPercentage}%`;
-
+    // Drawing_Cursor(global_brush_width);
     }
 
     const zoomButton = document.getElementById("searchButton");
@@ -1536,7 +1542,10 @@ deactivateUndoEraser();
     zoomButton.addEventListener("click", function() 
     {
         isZooming=!isZooming;
+        canvasElement2.style.display = 'none';
+        canvasElement.style.display = 'block';
         updateBookmarkedShadows();
+        
         updateZoomPercentage();
         console.log("zooming is ", isZooming);
         if(isZooming){
@@ -1895,7 +1904,7 @@ deactivateUndoEraser();
                 this.style.color = 'black';
                 this.style.backgroundColor= '';
                 document.getElementById('BrushRange').value = 1;
-                Drawing_Cursor(10);
+                Drawing_Cursor(2.2);
             } 
             else {
                 console.log('Circle span clicked: ', circle_id.id);
@@ -1927,8 +1936,9 @@ deactivateUndoEraser();
         });
         var rangeValue = parseFloat(this.value);
         console.log(rangeValue);
-        canvas.freeDrawingBrush.width = parseInt(rangeValue);
-        global_brush_width=parseInt(rangeValue);
+
+        global_brush_width=parseInt(rangeValue)*2.2;
+        canvas.freeDrawingBrush.width = global_brush_width;
         // Drawing_Cursor(rangeValue);
         Drawing_Cursor(global_brush_width);
     });
@@ -1990,6 +2000,7 @@ function deactivateEraser() {
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
     canvas.isDrawingMode = false;
     toolSize.style.display = 'none'
+    canvas.hoverCursor='default'
 }
 
 function deactivatePainting() {
@@ -1999,6 +2010,7 @@ function deactivatePainting() {
     paintBrushBtn.style.color = '';
     canvas.isDrawingMode = false;
     toolSize.style.display = 'none'
+    canvas.hoverCursor='default'
 }
 
 function deactivateUndoEraser() {
