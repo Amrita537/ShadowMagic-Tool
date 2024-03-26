@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (rasterLayerCleaned == false){
                 mergeToShadowLayers();}
         }
-        if (event.ctrlKey && event.key ==="+") 
+        if (event.ctrlKey && (event.key === '+' || event.key === '=')) 
         {
             event.preventDefault(); 
             if(!isZooming)
