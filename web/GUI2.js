@@ -1556,26 +1556,26 @@ deactivateUndoEraser();
 //======================panning===============================//
     const panBtn = document.getElementById("panBtn");
 
-    // Create a custom cursor element
-    const panCursor = document.createElement("div");
-    customCursor.style.width = "32px"; // Set the width of the cursor image
-    customCursor.style.height = "32px"; // Set the height of the cursor image
-    customCursor.style.backgroundImage = "url('path_to_your_png_cursor_image.png')"; // Set the background image
-    customCursor.style.position = "absolute"; // Set the cursor position to absolute
-    customCursor.style.pointerEvents = "none"; // Make sure the cursor does not interfere with mouse events
-    document.body.appendChild(customCursor); // Append the cursor to the document body
+    // // Create a custom cursor element
+    // const panCursor = document.createElement("div");
+    // customCursor.style.width = "32px"; // Set the width of the cursor image
+    // customCursor.style.height = "32px"; // Set the height of the cursor image
+    // customCursor.style.backgroundImage = "url('path_to_your_png_cursor_image.png')"; // Set the background image
+    // customCursor.style.position = "absolute"; // Set the cursor position to absolute
+    // customCursor.style.pointerEvents = "none"; // Make sure the cursor does not interfere with mouse events
+    // document.body.appendChild(customCursor); // Append the cursor to the document body
 
-    // Hide the default cursor
-    document.body.style.cursor = "none";
+    // // Hide the default cursor
+    // document.body.style.cursor = "none";
 
-    // Update the custom cursor position based on the mouse movement
-    document.addEventListener("mousemove", function(event) {
-      customCursor.style.left = (event.clientX - 16) + "px"; // Adjust the position to center the cursor image
-      customCursor.style.top = (event.clientY - 16) + "px"; // Adjust the position to center the cursor image
-    });
+    // // Update the custom cursor position based on the mouse movement
+    // document.addEventListener("mousemove", function(event) {
+    //   customCursor.style.left = (event.clientX - 16) + "px"; // Adjust the position to center the cursor image
+    //   customCursor.style.top = (event.clientY - 16) + "px"; // Adjust the position to center the cursor image
+    // });
 
-    // Set the CSS style of the canvas to use the custom cursor
-    canvas.upperCanvasEl.style.cursor = "none";
+    // // Set the CSS style of the canvas to use the custom cursor
+    // canvas.upperCanvasEl.style.cursor = "none";
 
 
     // Add event listener to the pan button
