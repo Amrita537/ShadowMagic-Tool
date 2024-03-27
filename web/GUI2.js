@@ -290,7 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     needMerge = (imageData1.data[i+3] != 0 || imageData2.data[i+3] != 0 )&&maskData.data[i]!=0;   
                 }
                 else{
-                    needMerge = imageData1.data[i+3] > 0 || imageData2.data[i+3] > 0;   
+                    needMerge = (imageData1.data[i+3] > global_opacity*255/2) || (imageData2.data[i+3] > global_opacity*255/2);   
                 }
                 
             }
@@ -307,7 +307,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     mergedData.data[i] = 0; // R
                     mergedData.data[i + 1] = 0; // G
                     mergedData.data[i + 2] = 0; // B
-                    mergedData.data[i + 3] = 255; // A        
+                    // need better logic here
+                    mergedData.data[i + 3] = 255; // A            
+                   
+                    
                 }   
                  
             } 
@@ -466,7 +469,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var c = document.createElement('canvas');
         c.width = canvas.width;
         c.height = canvas.height;
-        c.imageSmoothingEnabled = true; // Enable image smoothing
+        c.imageSmoothingEnabled = true; // Enable image smoothing    
         c.getContext('2d').putImageData(imageData, 0, 0);
 
         // base64ToPNG(c.toDataURL());
