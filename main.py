@@ -410,7 +410,7 @@ def open_psd_single(path_to_psd, var = 4, seg_only = False):
             preprocess_to_work(name)
     else:
         preprocess(path_to_psd, name, var, seg_only)
-        # preprocess_to_work(name)
+        preprocess_to_work(name)
 
 def base64_to_np(img_base64):
     try:
