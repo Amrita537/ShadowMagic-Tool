@@ -44,7 +44,13 @@ def get_sub_shadow(img, label, regions_by_label, image_path = None, output_folde
         mask_array = np.array(mask)
         combined_mask[mask_array.astype(bool)] = True
         # Apply the mask to the original image
-        masked_region = Image.fromarray(np.asarray(img) * mask_array[:, :, None], img.mode)
+        img_np = np.asarray(img)
+        if len(img_np.shape) == 2:
+            img_np_ = np.zeros((img_np.shape[0], img_np.shape[1], 4))
+            img_np_[..., 3][(img_np == 255)] = 0
+            img_np_[..., 3][(img_np != 255)] = 255
+            img_np = img_np_.astype(np.uint8)
+        masked_region = Image.fromarray(img_np * mask_array[:, :, None], "RGBA")
         masked_regions.append(masked_region)
 
     if os.path.exists(output_folder) == False:

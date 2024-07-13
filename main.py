@@ -436,6 +436,7 @@ if __name__ == "__main__":
     # for debug
     # open_psd("./test/image7.psd")
     # batch_process()
+    # segment_single("image_0112")
     # import pdb
     # pdb.set_trace()
     
